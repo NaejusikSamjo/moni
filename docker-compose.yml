@@ -44,6 +44,13 @@ services:
       dockerfile: user-service/Dockerfile
     ports:
       - "19090:19090"
+    environment:
+      DB_URL: ${USER_DB_URL}
+      DB_USERNAME: ${USER_DB_USERNAME}
+      DB_PASSWORD: ${USER_DB_PASSWORD}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
     depends_on:
       eureka-server:
         condition: service_healthy
@@ -54,6 +61,13 @@ services:
       dockerfile: trade-service/Dockerfile
     ports:
       - "19091:19091"
+    environment:
+      DB_URL: ${TRADE_DB_URL}
+      DB_USERNAME: ${TRADE_DB_USERNAME}
+      DB_PASSWORD: ${TRADE_DB_PASSWORD}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
     depends_on:
       eureka-server:
         condition: service_healthy
@@ -64,6 +78,13 @@ services:
       dockerfile: stock-service/Dockerfile
     ports:
       - "19092:19092"
+    environment:
+      DB_URL: ${STOCK_DB_URL}
+      DB_USERNAME: ${STOCK_DB_USERNAME}
+      DB_PASSWORD: ${STOCK_DB_PASSWORD}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
     depends_on:
       eureka-server:
         condition: service_healthy
@@ -74,6 +95,13 @@ services:
       dockerfile: portfolio-service/Dockerfile
     ports:
       - "19093:19093"
+    environment:
+      DB_URL: ${PORTFOLIO_DB_URL}
+      DB_USERNAME: ${PORTFOLIO_DB_USERNAME}
+      DB_PASSWORD: ${PORTFOLIO_DB_PASSWORD}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
     depends_on:
       eureka-server:
         condition: service_healthy
@@ -84,6 +112,13 @@ services:
       dockerfile: notification-service/Dockerfile
     ports:
       - "19094:19094"
+    environment:
+      DB_URL: ${NOTIFICATION_DB_URL}
+      DB_USERNAME: ${NOTIFICATION_DB_USERNAME}
+      DB_PASSWORD: ${NOTIFICATION_DB_PASSWORD}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
     depends_on:
       eureka-server:
         condition: service_healthy
@@ -94,6 +129,13 @@ services:
       dockerfile: payment-service/Dockerfile
     ports:
       - "19095:19095"
+    environment:
+      DB_URL: ${PAYMENT_DB_URL}
+      DB_USERNAME: ${PAYMENT_DB_USERNAME}
+      DB_PASSWORD: ${PAYMENT_DB_PASSWORD}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
     depends_on:
       eureka-server:
         condition: service_healthy
@@ -104,6 +146,13 @@ services:
       dockerfile: ai-service/Dockerfile
     ports:
       - "19096:19096"
+    environment:
+      DB_URL: ${AI_DB_URL}
+      DB_USERNAME: ${AI_DB_USERNAME}
+      DB_PASSWORD: ${AI_DB_PASSWORD}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
     depends_on:
       eureka-server:
         condition: service_healthy
