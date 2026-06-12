@@ -40,9 +40,62 @@ spring:
           predicates:
             - Path=/api/ai/**
 
+        - id: user-service-docs
+          uri: lb://user-service
+          predicates:
+            - Path=/user-service/v3/api-docs
+
+        - id: trade-service-docs
+          uri: lb://trade-service
+          predicates:
+            - Path=/trade-service/v3/api-docs
+
+        - id: stock-service-docs
+          uri: lb://stock-service
+          predicates:
+            - Path=/stock-service/v3/api-docs
+
+        - id: portfolio-service-docs
+          uri: lb://portfolio-service
+          predicates:
+            - Path=/portfolio-service/v3/api-docs
+
+        - id: notification-service-docs
+          uri: lb://notification-service
+          predicates:
+            - Path=/notification-service/v3/api-docs
+
+        - id: payment-service-docs
+          uri: lb://payment-service
+          predicates:
+            - Path=/payment-service/v3/api-docs
+
+        - id: ai-service-docs
+          uri: lb://ai-service
+          predicates:
+            - Path=/ai-service/v3/api-docs
+
 eureka:
   client:
     service-url:
       defaultZone: http://eureka-server:8761/eureka/
   instance:
     prefer-ip-address: true
+
+springdoc:
+  swagger-ui:
+    urls:
+      - name: user-service
+        url: /user-service/v3/api-docs
+      - name: trade-service
+        url: /trade-service/v3/api-docs
+      - name: stock-service
+        url: /stock-service/v3/api-docs
+      - name: portfolio-service
+        url: /portfolio-service/v3/api-docs
+      - name: notification-service
+        url: /notification-service/v3/api-docs
+      - name: payment-service
+        url: /payment-service/v3/api-docs
+      - name: ai-service
+        url: /ai-service/v3/api-docs
