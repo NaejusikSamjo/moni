@@ -60,10 +60,15 @@ subprojects {
     }
 }
 
-configure(subprojects.findAll { it.name != 'api-gateway' && it.name != 'common' }) {
+configure(subprojects.findAll {
+    it.name != 'api-gateway' &&
+            it.name != 'common' &&
+            it.name != 'config-server' &&
+            it.name != 'eureka-server'
+}) {
     dependencies {
         implementation 'org.springframework.boot:spring-boot-starter-actuator'
         implementation 'org.springframework.boot:spring-boot-starter-validation'
-        implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.17'
+        implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.14'
     }
 }
