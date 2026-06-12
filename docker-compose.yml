@@ -1,0 +1,109 @@
+name: moni
+services:
+
+  config-server:
+    build:
+      context: .
+      dockerfile: config-server/Dockerfile
+    ports:
+      - "8888:8888"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8888/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  eureka-server:
+    build:
+      context: .
+      dockerfile: eureka-server/Dockerfile
+    ports:
+      - "8761:8761"
+    depends_on:
+      config-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: api-gateway/Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+
+  user-service:
+    build:
+      context: .
+      dockerfile: user-service/Dockerfile
+    ports:
+      - "19090:19090"
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+
+  trade-service:
+    build:
+      context: .
+      dockerfile: trade-service/Dockerfile
+    ports:
+      - "19091:19091"
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+
+  stock-service:
+    build:
+      context: .
+      dockerfile: stock-service/Dockerfile
+    ports:
+      - "19092:19092"
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+
+  portfolio-service:
+    build:
+      context: .
+      dockerfile: portfolio-service/Dockerfile
+    ports:
+      - "19093:19093"
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: notification-service/Dockerfile
+    ports:
+      - "19094:19094"
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+
+  payment-service:
+    build:
+      context: .
+      dockerfile: payment-service/Dockerfile
+    ports:
+      - "19095:19095"
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+
+  ai-service:
+    build:
+      context: .
+      dockerfile: ai-service/Dockerfile
+    ports:
+      - "19096:19096"
+    depends_on:
+      eureka-server:
+        condition: service_healthy

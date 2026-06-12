@@ -1,0 +1,48 @@
+server:
+  port: 8080
+
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            - Path=/api/users/**
+
+        - id: trade-service
+          uri: lb://trade-service
+          predicates:
+            - Path=/api/trades/**
+
+        - id: stock-service
+          uri: lb://stock-service
+          predicates:
+            - Path=/api/stocks/**
+
+        - id: portfolio-service
+          uri: lb://portfolio-service
+          predicates:
+            - Path=/api/portfolios/**
+
+        - id: notification-service
+          uri: lb://notification-service
+          predicates:
+            - Path=/api/notifications/**
+
+        - id: payment-service
+          uri: lb://payment-service
+          predicates:
+            - Path=/api/payments/**
+
+        - id: ai-service
+          uri: lb://ai-service
+          predicates:
+            - Path=/api/ai/**
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka-server:8761/eureka/
+  instance:
+    prefer-ip-address: true

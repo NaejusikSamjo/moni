@@ -5,7 +5,7 @@ plugins {
 }
 
 allprojects {
-    group = 'com.invio'
+    group = 'com.moni'
     version = '0.0.1-SNAPSHOT'
 }
 
@@ -31,8 +31,6 @@ subprojects {
     }
 
     dependencies {
-        implementation 'org.springframework.boot:spring-boot-starter-actuator'
-        implementation 'org.springframework.boot:spring-boot-starter-validation'
         compileOnly 'org.projectlombok:lombok'
         annotationProcessor 'org.projectlombok:lombok'
         testCompileOnly 'org.projectlombok:lombok'
@@ -43,5 +41,12 @@ subprojects {
 
     tasks.named('test') {
         useJUnitPlatform()
+    }
+}
+
+configure(subprojects.findAll { it.name != 'api-gateway' && it.name != 'common' }) {
+    dependencies {
+        implementation 'org.springframework.boot:spring-boot-starter-actuator'
+        implementation 'org.springframework.boot:spring-boot-starter-validation'
     }
 }

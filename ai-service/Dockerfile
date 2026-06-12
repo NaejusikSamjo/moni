@@ -5,5 +5,6 @@ RUN gradle :ai-service:bootJar --no-daemon
 
 FROM amazoncorretto:21-alpine
 WORKDIR /app
+RUN apk add --no-cache curl
 COPY --from=build /app/ai-service/build/libs/*.jar app.jar
 ENTRYPOINT ["java", "-jar", "app.jar"]

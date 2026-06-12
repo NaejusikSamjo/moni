@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: portfolio-service
-  namespace: invio
+  namespace: moni
 spec:
   replicas: 1
   selector:

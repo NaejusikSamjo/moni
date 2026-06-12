@@ -1,6 +1,5 @@
 spring:
   application:
     name: api-gateway
-
-server:
-  port: 8080
+  config:
+    import: optional:configserver:http://config-server:8888

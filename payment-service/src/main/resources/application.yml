@@ -1,6 +1,5 @@
 spring:
   application:
     name: payment-service
-
-server:
-  port: 8086
+  config:
+    import: optional:configserver:http://config-server:8888

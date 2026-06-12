@@ -1,6 +1,5 @@
 spring:
   application:
     name: portfolio-service
-
-server:
-  port: 8084
+  config:
+    import: optional:configserver:http://config-server:8888

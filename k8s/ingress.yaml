@@ -1,8 +1,8 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: invio-ingress
-  namespace: invio
+  name: moni-ingress
+  namespace: moni
 spec:
   rules:
     - http:
