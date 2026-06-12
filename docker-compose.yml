@@ -1,3 +1,7 @@
+networks:
+  default:
+    name: moni-network
+
 name: moni
 services:
 
@@ -136,6 +140,16 @@ services:
       REDIS_HOST: ${REDIS_HOST}
       REDIS_PORT: ${REDIS_PORT}
       REDIS_PASSWORD: ${REDIS_PASSWORD}
+      OTEL_SERVICE_NAME: payment-service
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
+      OTEL_INSTRUMENTATION_LOGBACK_MDC_ENABLED: "true"
+      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=production"
+      volumes:
+        - ./logs/payment-service:/app/logs
     depends_on:
       eureka-server:
         condition: service_healthy
