@@ -1,4 +1,4 @@
-package com.hublink.common.architecture;
+package com.moni.common.architecture;
 
 import com.tngtech.archunit.lang.ArchRule;
 
@@ -6,7 +6,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.library.Architectures.layeredArchitecture;
 import static com.tngtech.archunit.library.GeneralCodingRules.NO_CLASSES_SHOULD_ACCESS_STANDARD_STREAMS;
 
-public class HubLinkArchRules {
+public class SamjoArchRules {
     // 1. Controller → Service → Repository 방향으로만 호출이 가능하도록 통제
     public static final ArchRule LAYER_RULE = layeredArchitecture()
             .consideringAllDependencies()
