@@ -17,7 +17,7 @@ public class SamjoArchRules {
             .layer("Client").definedBy("..client..")
             .layer("Message").definedBy("..message..", "..stream..", "..publisher..", "..consumer..", "..event..", "..prompt..", "..parser..")
             .layer("Entity").definedBy("..entity..", "..domain.entity..")
-            .layer("Common").definedBy("com.msa.core_common..")
+            .layer("Common").definedBy("com.moni.common..")
             .layer("DTO").definedBy("..dto..")
             .layer("Global").definedBy("..global..", "..fixture..")
             .layer("Infrastructure").definedBy("..infrastructure..")
