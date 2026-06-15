@@ -1,4 +1,4 @@
-networks:
+gitnetworks:
   default:
     name: moni-network
     external: true
@@ -50,6 +50,7 @@ services:
       GF_FEATURE_TOGGLES_ENABLE: traceqlEditor
     volumes:
       - ./monitor/grafana/provisioning:/etc/grafana/provisioning
+      - ./monitor/grafana/dashboards:/var/lib/grafana/dashboards
     depends_on:
       - loki
       - tempo
