@@ -23,6 +23,9 @@ public class CommonMdcFilter extends OncePerRequestFilter {
             if (MDC.get("trace_id") == null) {
                 MDC.put("trace_id", UUID.randomUUID().toString().replace("-", ""));
             }
+            if (MDC.get("span_id") == null) {
+                MDC.put("span_id", UUID.randomUUID().toString().replace("-", "").substring(0, 16));
+            }
             chain.doFilter(request, response);
         } finally {
             MDC.clear();
