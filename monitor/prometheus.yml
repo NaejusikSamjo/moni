@@ -1,10 +1,23 @@
 global:
-  scrape_interval: 15s
-  evaluation_interval: 15s
+  scrape_interval: 30s
+  evaluation_interval: 30s
 
 scrape_configs:
   - job_name: moni-services
     metrics_path: /actuator/prometheus
-    static_configs:
-      - targets:
-          - payment-service:19095
+    eureka_sd_configs:
+      - server: 'http://eureka-server:8761/eureka'
+    relabel_configs:
+      - source_labels: [__meta_eureka_app_name]
+        target_label: application
+      - source_labels: [__meta_eureka_app_instance_id]
+        target_label: instance
+    # static_configs:
+      # - targets:
+         #  - user-service:19090
+         # - trade-service:19091
+         # - stock-service:19092
+         # - portfolio-service:19093
+         # - notification-service:19094
+         # - payment-service:19095
+         # - ai-service:19096
