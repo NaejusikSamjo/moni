@@ -16,18 +16,18 @@ public class GlobalResponse<T> {
     private int status;
     private String message;
     private T data;
-    private T errors;
+    private ErrorResponse errors;
 
-    public static GlobalResponse success(int status, Object data) {
-        return GlobalResponse.builder()
+    public static <T> GlobalResponse<T> success(int status, T data) {
+        return GlobalResponse.<T>builder()
                 .status(status)
                 .message("SUCCESS")
                 .data(data)
                 .build();
     }
 
-    public static GlobalResponse failure(int status, String message, ErrorResponse errorResponse) {
-        return GlobalResponse.builder()
+    public static GlobalResponse<Void> failure(int status, String message, ErrorResponse errorResponse) {
+        return GlobalResponse.<Void>builder()
                 .status(status)
                 .message(message)
                 .errors(errorResponse)
