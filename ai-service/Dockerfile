@@ -1,7 +1,8 @@
 FROM gradle:8.14-jdk21 AS build
 WORKDIR /app
 COPY . .
-RUN gradle :ai-service:bootJar --no-daemon
+ENV GRADLE_OPTS="-Xmx512m -XX:MaxMetaspaceSize=256m"
+RUN gradle :ai-service:bootJar --no-daemon --max-workers=2
 
 FROM amazoncorretto:21-alpine
 WORKDIR /app
