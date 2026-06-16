@@ -55,6 +55,15 @@ services:
       REDIS_HOST: ${REDIS_HOST}
       REDIS_PORT: ${REDIS_PORT}
       REDIS_PASSWORD: ${REDIS_PASSWORD}
+      SPRING_PROFILES_ACTIVE: prod
+      OTEL_SERVICE_NAME: user-service
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
+      OTEL_INSTRUMENTATION_LOGBACK_MDC_ENABLED: "true"
+      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=local"
     volumes:
       - ./logs/user-service:/app/logs
     depends_on:
@@ -74,6 +83,15 @@ services:
       REDIS_HOST: ${REDIS_HOST}
       REDIS_PORT: ${REDIS_PORT}
       REDIS_PASSWORD: ${REDIS_PASSWORD}
+      SPRING_PROFILES_ACTIVE: prod
+      OTEL_SERVICE_NAME: trade-service
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
+      OTEL_INSTRUMENTATION_LOGBACK_MDC_ENABLED: "true"
+      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=local"
     volumes:
       - ./logs/trade-service:/app/logs
     depends_on:
@@ -93,6 +111,15 @@ services:
       REDIS_HOST: ${REDIS_HOST}
       REDIS_PORT: ${REDIS_PORT}
       REDIS_PASSWORD: ${REDIS_PASSWORD}
+      SPRING_PROFILES_ACTIVE: prod
+      OTEL_SERVICE_NAME: stock-service
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
+      OTEL_INSTRUMENTATION_LOGBACK_MDC_ENABLED: "true"
+      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=local"
     volumes:
       - ./logs/stock-service:/app/logs
     depends_on:
@@ -115,6 +142,15 @@ services:
       REDIS_HOST: ${REDIS_HOST}
       REDIS_PORT: ${REDIS_PORT}
       REDIS_PASSWORD: ${REDIS_PASSWORD}
+      SPRING_PROFILES_ACTIVE: prod
+      OTEL_SERVICE_NAME: portfolio-service
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
+      OTEL_INSTRUMENTATION_LOGBACK_MDC_ENABLED: "true"
+      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=local"
     volumes:
       - ./logs/portfolio-service:/app/logs
     depends_on:
@@ -134,6 +170,15 @@ services:
       REDIS_HOST: ${REDIS_HOST}
       REDIS_PORT: ${REDIS_PORT}
       REDIS_PASSWORD: ${REDIS_PASSWORD}
+      SPRING_PROFILES_ACTIVE: prod
+      OTEL_SERVICE_NAME: notification-service
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
+      OTEL_INSTRUMENTATION_LOGBACK_MDC_ENABLED: "true"
+      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=local"
     volumes:
       - ./logs/notification-service:/app/logs
     depends_on:
@@ -153,6 +198,7 @@ services:
       REDIS_HOST: ${REDIS_HOST}
       REDIS_PORT: ${REDIS_PORT}
       REDIS_PASSWORD: ${REDIS_PASSWORD}
+      SPRING_PROFILES_ACTIVE: prod
       OTEL_SERVICE_NAME: payment-service
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
       OTEL_EXPORTER_OTLP_PROTOCOL: grpc
@@ -180,6 +226,15 @@ services:
       REDIS_HOST: ${REDIS_HOST}
       REDIS_PORT: ${REDIS_PORT}
       REDIS_PASSWORD: ${REDIS_PASSWORD}
+      SPRING_PROFILES_ACTIVE: prod
+      OTEL_SERVICE_NAME: ai-service
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
+      OTEL_INSTRUMENTATION_LOGBACK_MDC_ENABLED: "true"
+      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=local"
     volumes:
       - ./logs/ai-service:/app/logs
     depends_on:
