@@ -56,7 +56,7 @@ public class AuthService {
     public LoginResponse login(LoginRequest request) {
 
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new CustomException(AuthErrorCode.USER_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(AuthErrorCode.LOGIN_FAILED));
 
         if (user.getStatus() == UserStatus.SUSPENDED) {
             throw new CustomException(AuthErrorCode.USER_SUSPENDED);
@@ -66,7 +66,7 @@ public class AuthService {
         }
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new CustomException(AuthErrorCode.INVALID_PASSWORD);
+            throw new CustomException(AuthErrorCode.LOGIN_FAILED);
         }
 
         return tokenService.issueTokens(user);

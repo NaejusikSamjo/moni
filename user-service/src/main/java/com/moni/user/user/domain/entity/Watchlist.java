@@ -17,7 +17,7 @@ import org.springframework.data.domain.Persistable;
 import java.util.UUID;
 
 @Entity
-@Table(name = "watchlist")
+@Table(name = "p_watchlist")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Watchlist extends BaseEntity implements Persistable<UUID> {

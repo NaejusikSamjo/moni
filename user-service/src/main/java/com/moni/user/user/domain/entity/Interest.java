@@ -17,7 +17,7 @@ import org.springframework.data.domain.Persistable;
 import java.util.UUID;
 
 @Entity
-@Table(name = "interests")
+@Table(name = "p_interests")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Interest extends BaseEntity implements Persistable<UUID> {

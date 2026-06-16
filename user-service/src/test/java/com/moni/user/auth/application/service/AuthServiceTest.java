@@ -122,7 +122,7 @@ class AuthServiceTest {
         }
 
         @Test
-        @DisplayName("존재하지 않는 이메일이면 예외를 던진다")
+        @DisplayName("존재하지 않는 이메일이면 LOGIN_FAILED 예외를 던진다")
         void login_fail_userNotFound() {
             // given
             given(userRepository.findByEmail(loginRequest.getEmail())).willReturn(Optional.empty());
@@ -130,11 +130,11 @@ class AuthServiceTest {
             // when & then
             assertThatThrownBy(() -> authService.login(loginRequest))
                     .isInstanceOf(CustomException.class)
-                    .hasFieldOrPropertyWithValue("errorCode", AuthErrorCode.USER_NOT_FOUND);
+                    .hasFieldOrPropertyWithValue("errorCode", AuthErrorCode.LOGIN_FAILED);
         }
 
         @Test
-        @DisplayName("비밀번호가 일치하지 않으면 예외를 던진다")
+        @DisplayName("비밀번호가 일치하지 않으면 LOGIN_FAILED 예외를 던진다")
         void login_fail_invalidPassword() {
             // given
             given(userRepository.findByEmail(loginRequest.getEmail())).willReturn(Optional.of(mockUser));
@@ -143,7 +143,7 @@ class AuthServiceTest {
             // when & then
             assertThatThrownBy(() -> authService.login(loginRequest))
                     .isInstanceOf(CustomException.class)
-                    .hasFieldOrPropertyWithValue("errorCode", AuthErrorCode.INVALID_PASSWORD);
+                    .hasFieldOrPropertyWithValue("errorCode", AuthErrorCode.LOGIN_FAILED);
         }
 
         @Test

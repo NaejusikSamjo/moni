@@ -20,7 +20,7 @@ import org.springframework.data.domain.Persistable;
 import java.util.UUID;
 
 @Entity
-@Table(name = "tendency")
+@Table(name = "p_tendency")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Tendency extends BaseEntity implements Persistable<UUID> {
