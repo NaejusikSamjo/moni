@@ -268,7 +268,7 @@
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "up{job=\"moni-services\"}",
-          "legendFormat": "payment-service",
+          "legendFormat": "{{application}}",
           "refId": "A"
         }
       ],
@@ -360,8 +360,8 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "100 * jvm_memory_used_bytes{job=\"moni-services\", area=\"heap\"} / jvm_memory_max_bytes{job=\"moni-services\", area=\"heap\"}",
-          "legendFormat": "Heap 사용율",
+          "expr": "100 * sum by (instance) (jvm_memory_used_bytes{job=\"moni-services\", area=\"heap\"}) / sum by (instance) (jvm_memory_max_bytes{job=\"moni-services\", area=\"heap\"})",
+          "legendFormat": "{{instance}}",
           "refId": "A"
         }
       ],

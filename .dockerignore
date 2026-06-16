@@ -1,6 +1,23 @@
 .git
+.gitignore
 .gradle
+**/.gradle
 .idea
-**/build
-**/.gitignore
+# build 산출물 (JAR 포함) 제외 — **/build 대신 명시적 패턴으로 누락 방지
+**/build/
+# 로컬 운영 디렉토리
+logs/
+# 모니터링 설정 (컨테이너 빌드에 불필요)
+monitor/
+# k8s 매니페스트
+k8s/
+# Claude Code 작업 디렉토리
+.claude/
+# Compose / 환경 파일
+docker-compose*.yml
+.env
+.env.*
+!.env.example
+# 문서
 **/README.md
+*.md

@@ -36,6 +36,9 @@ services:
   prometheus:
     image: prom/prometheus:v3.1.0
     container_name: moni-prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--web.enable-remote-write-receiver'
     volumes:
       - ./monitor/prometheus.yml:/etc/prometheus/prometheus.yml
     ports:
