@@ -55,6 +55,8 @@ services:
       REDIS_HOST: ${REDIS_HOST}
       REDIS_PORT: ${REDIS_PORT}
       REDIS_PASSWORD: ${REDIS_PASSWORD}
+    volumes:
+      - ./logs/user-service:/app/logs
     depends_on:
       eureka-server:
         condition: service_healthy
@@ -72,6 +74,8 @@ services:
       REDIS_HOST: ${REDIS_HOST}
       REDIS_PORT: ${REDIS_PORT}
       REDIS_PASSWORD: ${REDIS_PASSWORD}
+    volumes:
+      - ./logs/trade-service:/app/logs
     depends_on:
       eureka-server:
         condition: service_healthy
@@ -89,6 +93,8 @@ services:
       REDIS_HOST: ${REDIS_HOST}
       REDIS_PORT: ${REDIS_PORT}
       REDIS_PASSWORD: ${REDIS_PASSWORD}
+    volumes:
+      - ./logs/stock-service:/app/logs
     depends_on:
       eureka-server:
         condition: service_healthy
@@ -97,7 +103,6 @@ services:
     read_only: true
     tmpfs:
       - /tmp
-      - /app/logs
     build:
       context: .
       dockerfile: portfolio-service/Dockerfile
@@ -110,6 +115,8 @@ services:
       REDIS_HOST: ${REDIS_HOST}
       REDIS_PORT: ${REDIS_PORT}
       REDIS_PASSWORD: ${REDIS_PASSWORD}
+    volumes:
+      - ./logs/portfolio-service:/app/logs
     depends_on:
       eureka-server:
         condition: service_healthy
@@ -127,6 +134,8 @@ services:
       REDIS_HOST: ${REDIS_HOST}
       REDIS_PORT: ${REDIS_PORT}
       REDIS_PASSWORD: ${REDIS_PASSWORD}
+    volumes:
+      - ./logs/notification-service:/app/logs
     depends_on:
       eureka-server:
         condition: service_healthy
@@ -171,6 +180,8 @@ services:
       REDIS_HOST: ${REDIS_HOST}
       REDIS_PORT: ${REDIS_PORT}
       REDIS_PASSWORD: ${REDIS_PASSWORD}
+    volumes:
+      - ./logs/ai-service:/app/logs
     depends_on:
       eureka-server:
         condition: service_healthy
