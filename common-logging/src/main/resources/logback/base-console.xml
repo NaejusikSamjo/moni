@@ -1,7 +1,17 @@
 <included>
-    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder>
-            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} traceId=%X{trace_id:-} spanId=%X{span_id:-} - %msg%n</pattern>
-        </encoder>
-    </appender>
+    <springProfile name="!prod">
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+                <pattern>%clr(%d{HH:mm:ss.SSS}){faint} %clr([%thread]){faint} %clr(%-5level){highlight} %clr(%logger{36}){cyan} traceId=%clr(%X{trace_id:-}){blue} spanId=%X{span_id:-} - %msg%n</pattern>
+            </encoder>
+        </appender>
+    </springProfile>
+
+    <springProfile name="prod">
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+                <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} traceId=%X{trace_id:-} spanId=%X{span_id:-} - %msg%n</pattern>
+            </encoder>
+        </appender>
+    </springProfile>
 </included>

@@ -1,4 +1,4 @@
-gitnetworks:
+networks:
   default:
     name: moni-network
     external: true

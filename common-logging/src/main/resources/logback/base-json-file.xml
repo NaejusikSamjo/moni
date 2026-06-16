@@ -1,11 +1,13 @@
 <included>
     <springProperty scope="context" name="appName" source="spring.application.name" defaultValue="unknown"/>
+    <springProperty scope="context" name="logPath" source="logging.file.path" defaultValue="./logs"/>
 
     <appender name="FILE_JSON" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>/app/logs/${appName}.log</file>
+        <file>${logPath}/${appName}.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>/app/logs/${appName}.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <fileNamePattern>${logPath}/${appName}.%d{yyyy-MM-dd}.log</fileNamePattern>
             <maxHistory>7</maxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
         </rollingPolicy>
         <encoder class="net.logstash.logback.encoder.LogstashEncoder">
             <fieldNames>
