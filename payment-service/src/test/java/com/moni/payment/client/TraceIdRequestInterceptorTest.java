@@ -8,13 +8,6 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
 
 import static org.assertj.core.api.Assertions.assertThat;
-
-/**
- * OTel Agent 없는 환경에서 Feign 요청에 trace_id/span_id 헤더가 올바르게 전파되는지 검증.
- *
- * OTel Agent 적용 환경에서는 W3C traceparent 헤더를 자동으로 주입하므로,
- * 이 인터셉터는 Agent 미적용 환경(로컬 개발, 단위 테스트 등)을 위한 fallback 역할을 한다.
- */
 @DisplayName("TraceIdRequestInterceptor — Feign trace 헤더 전파 단위 테스트")
 class TraceIdRequestInterceptorTest {
 
