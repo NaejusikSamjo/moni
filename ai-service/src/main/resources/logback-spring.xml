@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"></include>
     <springProperty scope="context" name="appName" source="spring.application.name" defaultValue="ai-service"/>
 
     <include resource="logback/base-console.xml"/>

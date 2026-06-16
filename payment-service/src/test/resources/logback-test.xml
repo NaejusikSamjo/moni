@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-    <!-- 테스트 환경: /app/logs/ 경로가 없으므로 콘솔 출력만 사용 -->
-    <include resource="logback/base-console.xml"/>
+    <!-- 테스트 환경: Spring 컨텍스트 없이 순수 logback으로 로드되므로 springProfile/clr 미사용 -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>
     </root>
