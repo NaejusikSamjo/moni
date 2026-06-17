@@ -41,6 +41,7 @@ services:
       - '--web.enable-remote-write-receiver'
     volumes:
       - ./monitor/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./monitor/rules:/etc/prometheus/rules:ro
     ports:
       - "127.0.0.1:9090:9090"
 

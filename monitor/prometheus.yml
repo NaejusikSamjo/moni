@@ -1,9 +1,14 @@
 global:
-  scrape_interval: 30s
-  evaluation_interval: 30s
+  scrape_interval: 600s      # 메트릭 수집: 10분에 1회
+  evaluation_interval: 30s   # 알람 룰 평가: 30초 (서비스 다운 빠른 감지)
+
+rule_files:
+  - /etc/prometheus/rules/*.yml
 
 scrape_configs:
+  # 메트릭 수집: 10분 주기
   - job_name: moni-services
+    scrape_interval: 600s
     metrics_path: /actuator/prometheus
     eureka_sd_configs:
       - server: 'http://eureka-server:8761/eureka'
@@ -22,3 +27,21 @@ scrape_configs:
          # - notification-service:19094
          # - payment-service:19095
          # - ai-service:19096
+
+  # 헬스 감시 전용: 30초 주기, 실제 메트릭은 전부 drop → up 지표만 유지
+  - job_name: moni-health
+    scrape_interval: 30s
+    metrics_path: /actuator/prometheus
+    eureka_sd_configs:
+      - server: 'http://eureka-server:8761/eureka'
+    relabel_configs:
+      - source_labels: [__meta_eureka_app_name]
+        target_label: application
+        action: lowercase
+      - source_labels: [__meta_eureka_app_instance_id]
+        target_label: instance
+    metric_relabel_configs:
+      # 수집한 메트릭을 모두 버림 — Prometheus 내부 메타 지표(up 등)는 이 단계 전에 생성되므로 보존됨
+      - source_labels: [__name__]
+        regex: '.*'
+        action: drop
