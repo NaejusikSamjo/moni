@@ -1,6 +1,16 @@
 .git
+.gitignore
 .gradle
+**/.gradle
 .idea
-#**/build
-**/.gitignore
+# **/build/
+logs/
+monitor/
+k8s/
+.claude/
+docker-compose*.yml
+.env
+.env.*
+!.env.example
 **/README.md
+*.md
