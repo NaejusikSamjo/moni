@@ -1,16 +1,16 @@
 package com.moni.portfolio.domain.entity;
 
 import com.moni.common.JpaAuditing.baseEntity.BaseEntity;
+import com.moni.portfolio.domain.support.UuidV7;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.ForeignKey;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
@@ -39,7 +39,6 @@ import java.util.UUID;
 public class PortfolioSectorAnalysis extends BaseEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(nullable = false, updatable = false)
     private UUID id;
 
@@ -85,6 +84,13 @@ public class PortfolioSectorAnalysis extends BaseEntity {
                 .weight(weight)
                 .evaluationAmount(evaluationAmount)
                 .build();
+    }
+
+    @PrePersist
+    private void generateId() {
+        if (id == null) {
+            id = UuidV7.generate();
+        }
     }
 
     /** 비중 및 평가 금액 업데이트 메서드 */

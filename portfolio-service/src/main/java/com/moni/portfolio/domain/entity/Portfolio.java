@@ -1,18 +1,19 @@
 package com.moni.portfolio.domain.entity;
 
 import com.moni.common.JpaAuditing.baseEntity.BaseEntity;
+import com.moni.portfolio.domain.support.UuidV7;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.UuidGenerator;
 
 import java.util.UUID;
 
@@ -31,7 +32,6 @@ import java.util.UUID;
 public class Portfolio extends BaseEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(nullable = false, updatable = false)
     private UUID id;
 
@@ -51,6 +51,13 @@ public class Portfolio extends BaseEntity {
         return Portfolio.builder()
                 .userId(userId)
                 .build();
+    }
+
+    @PrePersist
+    private void generateId() {
+        if (id == null) {
+            id = UuidV7.generate();
+        }
     }
 
     /** AI 포트폴리오 분석 횟수 증가 메서드 */
