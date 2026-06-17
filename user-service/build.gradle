@@ -23,8 +23,8 @@ dependencies {
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
 
-    // Spring Security Crypto (BCryptPasswordEncoder)
-    implementation 'org.springframework.security:spring-security-crypto'
+    // Spring Security
+    implementation 'org.springframework.boot:spring-boot-starter-security'
 
     // Common
     implementation project(':common')

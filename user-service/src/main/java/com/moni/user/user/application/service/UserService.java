@@ -1,7 +1,8 @@
 package com.moni.user.user.application.service;
 
+import com.moni.common.error.CommonErrorCode;
 import com.moni.common.error.exception.CustomException;
-import com.moni.common.security.SecurityUtils;
+import com.moni.common.security.SecurityUtil;
 import com.moni.user.auth.application.service.TokenService;
 
 import com.moni.user.user.domain.entity.Interest;
@@ -178,8 +179,10 @@ public class UserService {
     }
 
     private void validateOwnership(UUID resourceUserId) {
-        UUID currentUserId = SecurityUtils.getCurrentUserId();
-        if (!SecurityUtils.isAdmin() && !resourceUserId.equals(currentUserId)) {
+        UUID currentUserId = SecurityUtil.getCurrentUserId()
+                .orElseThrow(() -> new CustomException(CommonErrorCode.UNAUTHORIZED));
+        boolean isAdmin = SecurityUtil.getCurrentUserRole().map("ADMIN"::equals).orElse(false);
+        if (!isAdmin && !resourceUserId.equals(currentUserId)) {
             throw new CustomException(UserErrorCode.FORBIDDEN);
         }
     }

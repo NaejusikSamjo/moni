@@ -1,7 +1,9 @@
 package com.moni.user.user.presentation.controller;
 
+import com.moni.common.error.CommonErrorCode;
+import com.moni.common.error.exception.CustomException;
 import com.moni.common.response.GlobalResponse;
-import com.moni.common.security.SecurityUtils;
+import com.moni.common.security.SecurityUtil;
 import com.moni.user.user.application.service.UserService;
 import com.moni.user.user.presentation.dto.request.InterestRequest;
 import com.moni.user.user.presentation.dto.request.TendencyRequest;
@@ -42,21 +44,21 @@ public class UserController {
     @Operation(summary = "내 정보 조회")
     @GetMapping("/me")
     public ResponseEntity<GlobalResponse<UserResponse>> getMe() {
-        UUID userId = SecurityUtils.getCurrentUserId();
+        UUID userId = currentUserId();
         return ResponseEntity.ok(GlobalResponse.success(HttpStatus.OK.value(), userService.getMe(userId)));
     }
 
     @Operation(summary = "내 정보 수정")
     @PatchMapping("/me")
     public ResponseEntity<GlobalResponse<UserResponse>> updateMe(@RequestBody @Valid UserUpdateRequest request) {
-        UUID userId = SecurityUtils.getCurrentUserId();
+        UUID userId = currentUserId();
         return ResponseEntity.ok(GlobalResponse.success(HttpStatus.OK.value(), userService.updateMe(userId, request)));
     }
 
     @Operation(summary = "회원 탈퇴")
     @DeleteMapping("/me")
     public ResponseEntity<Void> withdraw() {
-        UUID userId = SecurityUtils.getCurrentUserId();
+        UUID userId = currentUserId();
         userService.withdraw(userId, userId.toString());
         return ResponseEntity.noContent().build();
     }
@@ -67,7 +69,7 @@ public class UserController {
     @PostMapping("/me/tendency")
     public ResponseEntity<GlobalResponse<TendencyResponse>> createTendency(
             @RequestBody @Valid TendencyRequest request) {
-        UUID userId = SecurityUtils.getCurrentUserId();
+        UUID userId = currentUserId();
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(GlobalResponse.success(HttpStatus.CREATED.value(), userService.createTendency(userId, request)));
     }
@@ -75,7 +77,7 @@ public class UserController {
     @Operation(summary = "투자 성향 조회")
     @GetMapping("/me/tendency")
     public ResponseEntity<GlobalResponse<TendencyResponse>> getTendency() {
-        UUID userId = SecurityUtils.getCurrentUserId();
+        UUID userId = currentUserId();
         return ResponseEntity.ok(GlobalResponse.success(HttpStatus.OK.value(), userService.getTendency(userId)));
     }
 
@@ -83,7 +85,7 @@ public class UserController {
     @PutMapping("/me/tendency")
     public ResponseEntity<GlobalResponse<TendencyResponse>> updateTendency(
             @RequestBody @Valid TendencyRequest request) {
-        UUID userId = SecurityUtils.getCurrentUserId();
+        UUID userId = currentUserId();
         return ResponseEntity.ok(GlobalResponse.success(HttpStatus.OK.value(), userService.updateTendency(userId, request)));
     }
 
@@ -93,7 +95,7 @@ public class UserController {
     @PostMapping("/me/interests")
     public ResponseEntity<GlobalResponse<List<InterestResponse>>> createInterests(
             @RequestBody @Valid InterestRequest request) {
-        UUID userId = SecurityUtils.getCurrentUserId();
+        UUID userId = currentUserId();
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(GlobalResponse.success(HttpStatus.CREATED.value(), userService.createInterests(userId, request)));
     }
@@ -101,7 +103,7 @@ public class UserController {
     @Operation(summary = "관심사 조회")
     @GetMapping("/me/interests")
     public ResponseEntity<GlobalResponse<List<InterestResponse>>> getInterests() {
-        UUID userId = SecurityUtils.getCurrentUserId();
+        UUID userId = currentUserId();
         return ResponseEntity.ok(GlobalResponse.success(HttpStatus.OK.value(), userService.getInterests(userId)));
     }
 
@@ -109,7 +111,7 @@ public class UserController {
     @PutMapping("/me/interests")
     public ResponseEntity<GlobalResponse<List<InterestResponse>>> updateInterests(
             @RequestBody @Valid InterestRequest request) {
-        UUID userId = SecurityUtils.getCurrentUserId();
+        UUID userId = currentUserId();
         return ResponseEntity.ok(GlobalResponse.success(HttpStatus.OK.value(), userService.updateInterests(userId, request)));
     }
 
@@ -118,7 +120,7 @@ public class UserController {
     @Operation(summary = "관심종목 추가")
     @PutMapping("/me/watchlist/{stockCode}")
     public ResponseEntity<GlobalResponse<WatchlistResponse>> addWatchlist(@PathVariable String stockCode) {
-        UUID userId = SecurityUtils.getCurrentUserId();
+        UUID userId = currentUserId();
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(GlobalResponse.success(HttpStatus.CREATED.value(), userService.addWatchlist(userId, stockCode)));
     }
@@ -126,15 +128,20 @@ public class UserController {
     @Operation(summary = "관심종목 목록 조회")
     @GetMapping("/me/watchlist")
     public ResponseEntity<GlobalResponse<List<WatchlistResponse>>> getWatchlist() {
-        UUID userId = SecurityUtils.getCurrentUserId();
+        UUID userId = currentUserId();
         return ResponseEntity.ok(GlobalResponse.success(HttpStatus.OK.value(), userService.getWatchlist(userId)));
     }
 
     @Operation(summary = "관심종목 삭제")
     @DeleteMapping("/me/watchlist/{stockCode}")
     public ResponseEntity<Void> removeWatchlist(@PathVariable String stockCode) {
-        UUID userId = SecurityUtils.getCurrentUserId();
+        UUID userId = currentUserId();
         userService.removeWatchlist(userId, stockCode);
         return ResponseEntity.noContent().build();
+    }
+
+    private UUID currentUserId() {
+        return SecurityUtil.getCurrentUserId()
+                .orElseThrow(() -> new CustomException(CommonErrorCode.UNAUTHORIZED));
     }
 }
