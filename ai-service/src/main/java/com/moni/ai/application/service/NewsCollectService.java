@@ -6,10 +6,12 @@ import com.moni.ai.infrastructure.client.NaverNewsClient;
 import com.moni.ai.presentation.dto.response.NaverNewsResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +28,20 @@ public class NewsCollectService {
             "실적", "수주", "계약", "M&A", "인수", "소송", "과징금",
             "어닝쇼크", "흑자전환", "적자전환", "구조조정", "유상증자"
     );
+
+    // TODO : DB 또는 외부 파일로 관리 필요
+    private static final Map<String, String> WATCH_LIST = Map.of(
+            "005930", "삼성전자",
+            "000660", "SK하이닉스",
+            "005380", "현대차"
+    );
+
+    @Scheduled(cron = "0 0 8,18 * * MON-FRI") // 평일 오전 8시, 오후 6시
+    public void collectAll() {
+        log.info("뉴스 수집 스케줄러 시작");
+        WATCH_LIST.forEach(this::collectByTicker);
+        log.info("뉴스 수집 스케줄러 완료");
+    }
 
     public void collectByTicker(String ticker, String companyName) {
         IMPACT_KEYWORDS.forEach(keyword -> {
