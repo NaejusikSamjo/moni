@@ -13,7 +13,7 @@ import java.util.UUID;
 
 @Repository
 @RequiredArgsConstructor
-public class PortfolioAnalysisRepositoryAdapter implements PortfolioAnalysisRepository {
+public class PortfolioAnalysisRepositoryImpl implements PortfolioAnalysisRepository {
 
     private final PortfolioAnalysisJpaRepository portfolioAnalysisJpaRepository;
 
