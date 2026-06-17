@@ -5,9 +5,7 @@ dependencies {
     implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'io.micrometer:micrometer-registry-prometheus'
-    implementation 'org.springframework.kafka:spring-kafka'
     implementation project(':common')
     testImplementation testFixtures(project(':common'))
     implementation project(':common-logging')
-    testImplementation 'org.springframework.kafka:spring-kafka-test'
 }
