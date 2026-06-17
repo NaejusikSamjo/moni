@@ -9,6 +9,8 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.util.Optional;
 
+// TODO: 미사용 코드 Spring Security + GatewayHeaderAuthenticationFilter
+//  com.moni.common.security.AuditorAwareImpl(AuditorAware<UUID>) 참고
 @Component
 @Slf4j
 public class AwareUserAudit implements AuditorAware<String> {

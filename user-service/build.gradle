@@ -16,19 +16,18 @@ dependencies {
     // Spring Cloud
     implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
     implementation 'org.springframework.cloud:spring-cloud-config-client'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'io.micrometer:micrometer-registry-prometheus'
 
     // Lombok
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
 
-    // Spring Security Crypto (BCryptPasswordEncoder)
-    implementation 'org.springframework.security:spring-security-crypto'
+    // Spring Security
+    implementation 'org.springframework.boot:spring-boot-starter-security'
 
     // Common
     implementation project(':common')
+    implementation project(':common-logging')
     testImplementation testFixtures(project(':common'))
-
-    testImplementation 'org.mockito:mockito-core'
-    testImplementation 'org.mockito:mockito-junit-jupiter'
-    testImplementation 'org.assertj:assertj-core'
 }

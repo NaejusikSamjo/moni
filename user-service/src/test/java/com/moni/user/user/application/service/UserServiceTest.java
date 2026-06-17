@@ -1,7 +1,7 @@
 package com.moni.user.user.application.service;
 
 import com.moni.common.error.exception.CustomException;
-import com.moni.common.security.SecurityUtils;
+import com.moni.common.security.SecurityUtil;
 import com.moni.user.auth.application.service.TokenService;
 import com.moni.user.user.domain.entity.Tendency;
 import com.moni.user.user.domain.entity.User;
@@ -66,22 +66,22 @@ class UserServiceTest {
 
     private User mockUser;
     private UUID userId;
-    private MockedStatic<SecurityUtils> securityUtilsMock;
+    private MockedStatic<SecurityUtil> securityUtilMock;
 
     @BeforeEach
     void setUp() {
         mockUser = User.create("test@moni.com", "encodedPassword", "홍길동", "귀여운 주니어#a1b2c3", "010-1234-5678");
         userId = mockUser.getId();
 
-        // SecurityUtils는 정적 메서드라 목업 처리 (실제 헤더/요청 컨텍스트 없이 단위 테스트)
-        securityUtilsMock = mockStatic(SecurityUtils.class);
-        securityUtilsMock.when(SecurityUtils::getCurrentUserId).thenReturn(userId);
-        securityUtilsMock.when(SecurityUtils::isAdmin).thenReturn(false);
+        // SecurityUtil은 정적 메서드라 목업 처리 (SecurityContext 없이 단위 테스트)
+        securityUtilMock = mockStatic(SecurityUtil.class);
+        securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(Optional.of(userId));
+        securityUtilMock.when(SecurityUtil::getCurrentUserRole).thenReturn(Optional.of("USER"));
     }
 
     @AfterEach
     void tearDown() {
-        securityUtilsMock.close();
+        securityUtilMock.close();
     }
 
     @Nested
