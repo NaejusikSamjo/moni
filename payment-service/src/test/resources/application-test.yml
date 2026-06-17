@@ -1,0 +1,33 @@
+spring:
+  config:
+    import: ""
+  kafka:
+    # EmbeddedKafka 테스트에서는 @EmbeddedKafka가 spring.embedded.kafka.brokers를 설정함
+    # Kafka를 사용하지 않는 테스트에서는 localhost:9092 fallback으로 빈 연결 시도 없음
+    bootstrap-servers: ${spring.embedded.kafka.brokers:localhost:9092}
+    consumer:
+      group-id: payment-service
+      auto-offset-reset: earliest
+    admin:
+      fail-fast: false
+    listener:
+      # Kafka 없는 테스트(@EmbeddedKafka 미사용)에서 @KafkaListener 자동 시작 방지
+      auto-startup: false
+
+logging:
+  config: classpath:logback-test.xml
+
+eureka:
+  client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
