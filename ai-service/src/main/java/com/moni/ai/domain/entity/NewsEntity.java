@@ -53,14 +53,14 @@ public class NewsEntity extends BaseEntity{
             String content,
             String source,
             String url,
-            LocalDateTime publishedTime
+            LocalDateTime publishedAt
     ){
         this.ticker = ticker;
         this.title = title;
         this.content = content;
         this.source = source;
         this.url = url;
-        this.publishedAt = publishedTime;
+        this.publishedAt = publishedAt;
     }
 
 
