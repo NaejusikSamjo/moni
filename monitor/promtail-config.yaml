@@ -24,3 +24,6 @@ scrape_configs:
       - labels:
           level:
           service:
+      - drop:
+          source: level
+          expression: "(?i)^(info|debug|trace)$"
