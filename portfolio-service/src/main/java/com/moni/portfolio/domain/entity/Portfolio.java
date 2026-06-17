@@ -20,7 +20,7 @@ import java.util.UUID;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(
-        name = "portfolio",
+        name = "p_portfolio",
         uniqueConstraints = {
                 @UniqueConstraint(name = "uk_portfolio_user_id", columnNames = "user_id")
         },

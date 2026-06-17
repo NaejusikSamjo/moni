@@ -28,7 +28,7 @@ import java.util.UUID;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(
-        name = "portfolio_analysis",
+        name = "p_portfolio_analysis",
         indexes = {
                 @Index(
                         name = "idx_analysis_portfolio_analyzedat",
