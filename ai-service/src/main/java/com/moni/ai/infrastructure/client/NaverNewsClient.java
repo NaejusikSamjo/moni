@@ -18,18 +18,11 @@ public class NaverNewsClient {
 
     public List<NaverNewsResponse.NaverNewsItem> fetchNews(String query, int display,String sort) {
 
-        // TODO: 서비스 예외로 변경 필요
-        String encodeQuery;
-        try {
-            encodeQuery = URLEncoder.encode(query, "UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException("검색어 인코딩 실패",e);
-        }
 
         NaverNewsResponse response = naverNewsRestClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/v1/search/news.json")
-                        .queryParam("query", encodeQuery)
+                        .queryParam("query", query)
                         .queryParam("display", display)   // 최대 100
                         .queryParam("sort", sort)       // 최신순
                         .build())
