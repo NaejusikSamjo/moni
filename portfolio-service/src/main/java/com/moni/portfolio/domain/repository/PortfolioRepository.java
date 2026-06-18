@@ -11,7 +11,7 @@ public interface PortfolioRepository {
 
     Optional<Portfolio> findById(UUID id);
 
-    Optional<Portfolio> findByUserId(String userId);
+    Optional<Portfolio> findByUserId(UUID userId);
 
-    boolean existsByUserId(String userId);
+    boolean existsByUserId(UUID userId);
 }

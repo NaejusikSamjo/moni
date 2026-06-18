@@ -13,7 +13,6 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.UuidGenerator;
 
 import java.util.UUID;
 
@@ -35,19 +34,19 @@ public class Portfolio extends BaseEntity {
     @Column(nullable = false, updatable = false)
     private UUID id;
 
-    @Column(name = "user_id", length = 36, nullable = false, unique = true)
-    private String userId;
+    @Column(name = "user_id", nullable = false, unique = true)
+    private UUID userId;
 
     @Column(name = "ai_analysis_count", nullable = false)
     private Long aiAnalysisCount;
 
     @Builder
-    private Portfolio(String userId) {
+    private Portfolio(UUID userId) {
         this.userId = userId;
         this.aiAnalysisCount = 0L;
     }
 
-    public static Portfolio create(String userId) {
+    public static Portfolio create(UUID userId) {
         return Portfolio.builder()
                 .userId(userId)
                 .build();

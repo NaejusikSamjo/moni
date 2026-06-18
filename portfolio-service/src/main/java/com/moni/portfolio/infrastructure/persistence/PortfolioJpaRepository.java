@@ -8,7 +8,7 @@ import java.util.UUID;
 
 interface PortfolioJpaRepository extends JpaRepository<Portfolio, UUID> {
 
-    Optional<Portfolio> findByUserId(String userId);
+    Optional<Portfolio> findByUserId(UUID userId);
 
-    boolean existsByUserId(String userId);
+    boolean existsByUserId(UUID userId);
 }
