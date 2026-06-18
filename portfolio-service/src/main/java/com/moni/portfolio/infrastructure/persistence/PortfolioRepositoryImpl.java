@@ -25,12 +25,12 @@ public class PortfolioRepositoryImpl implements PortfolioRepository {
     }
 
     @Override
-    public Optional<Portfolio> findByUserId(String userId) {
+    public Optional<Portfolio> findByUserId(UUID userId) {
         return portfolioJpaRepository.findByUserId(userId);
     }
 
     @Override
-    public boolean existsByUserId(String userId) {
+    public boolean existsByUserId(UUID userId) {
         return portfolioJpaRepository.existsByUserId(userId);
     }
 }
