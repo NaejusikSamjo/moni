@@ -50,6 +50,7 @@ public class NewsCollectService {
             try {
                 List<NaverNewsResponse.NaverNewsItem> items =
                         naverNewsClient.fetchNews(query, 10,"sim");
+                log.info("가져온 뉴스 개수: {}",items.size());
 
                 items.stream()
                         .filter(item -> !newsRepository.existsByUrl(item.getLink()))
