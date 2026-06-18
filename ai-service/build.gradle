@@ -18,4 +18,8 @@ dependencies {
 
     //test
     testImplementation 'org.springframework.security:spring-security-test'
+
+    //retry
+    implementation 'org.springframework.retry:spring-retry'
+    implementation 'org.springframework.boot:spring-boot-starter-aop'
 }

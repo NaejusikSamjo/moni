@@ -10,6 +10,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -44,13 +45,14 @@ public class NewsCollectService {
     }
 
     public void collectByTicker(String ticker, String companyName) {
+        List<String> failedKeywords = new ArrayList<>();
+
         IMPACT_KEYWORDS.forEach(keyword -> {
             String query = companyName + " " + keyword;
 
             try {
                 List<NaverNewsResponse.NaverNewsItem> items =
                         naverNewsClient.fetchNews(query, 10,"sim");
-                log.info("가져온 뉴스 개수: {}",items.size());
 
                 items.stream()
                         .filter(item -> !newsRepository.existsByUrl(item.getLink()))
@@ -65,8 +67,12 @@ public class NewsCollectService {
 
             } catch (Exception e) {
                 log.error("[{}] {} 키워드 수집 실패: {}", companyName, keyword, e.getMessage());
+                failedKeywords.add(query);
             }
         });
+        if (!failedKeywords.isEmpty()) {
+            log.warn("[{}] 실패한 키워드 목록: {}", companyName, failedKeywords);
+        }
     }
 
     private NewsEntity toEntity(NaverNewsResponse.NaverNewsItem item, String ticker) {
