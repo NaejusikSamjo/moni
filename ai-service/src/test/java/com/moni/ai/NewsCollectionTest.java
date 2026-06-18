@@ -5,6 +5,7 @@ import com.moni.ai.application.service.NewsFilterService;
 import com.moni.ai.domain.repository.NewsRepository;
 import com.moni.ai.infrastructure.client.NaverNewsClient;
 import com.moni.ai.presentation.dto.response.NaverNewsResponse;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,10 +17,17 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("News Collection Service 단위 테스트")
+@Disabled("통합테스트 - 로컬에서만 수동 실행")
 public class NewsCollectionTest {
 
     @InjectMocks

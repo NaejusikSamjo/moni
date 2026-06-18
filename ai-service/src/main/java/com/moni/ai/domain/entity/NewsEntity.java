@@ -2,9 +2,16 @@ package com.moni.ai.domain.entity;
 
 import com.fasterxml.uuid.Generators;
 import com.moni.common.JpaAuditing.baseEntity.BaseEntity;
-import jakarta.persistence.*;
 
-import lombok.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
+import jakarta.persistence.Id;
+import jakarta.persistence.Column;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.UUID;

@@ -6,6 +6,7 @@ import com.moni.ai.domain.repository.NewsRepository;
 import com.moni.ai.infrastructure.client.NaverNewsClient;
 import com.moni.ai.presentation.dto.response.NaverNewsResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ActiveProfiles("test")
 @Slf4j
 @WithMockUser
+@Disabled("통합테스트 - 로컬에서만 수동 실행")
 class NaverNewsClientIntegrationTest {
 
     @Autowired
