@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name="news")
+@Table(name="p_news")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class NewsEntity extends BaseEntity{
