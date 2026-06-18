@@ -53,6 +53,20 @@
 > (AI 피드백과는 반대 방향). `k8s/` 디렉토리가 저장소에 있지만 "k8s로 전환하자"는 제안은
 > 다시 하지 마세요. docker-compose 기반 운영이 기본입니다.
 
+### 소셜 로그인 인증 흐름
+
+| 검증 항목              | AI 프롬프트 (요약)                                                                                                                                                         | AI 피드백 (요약)                                                                                                                    | 수용 여부 | 판단 근거                                                                                          |
+|--------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------|-------|------------------------------------------------------------------------------------------------|
+| 소셜 로그인 방식 선택       | Google/Kakao 소셜 로그인 구현 시 ① 프론트가 ID Token을 백엔드에 전달해 서명 검증하는 방식 ② Authorization Code + PKCE로 백엔드가 직접 토큰 교환하는 방식 ③ 프론트가 access_token을 백엔드에 전달하는 방식 중 무엇이 2026년 기준 권장인가? | OAuth 2.1/RFC 9700 기준으로 ②가 가장 권장됨. client_secret이 백엔드에만 존재하고 PKCE로 code 탈취 공격까지 방어. ①은 ID Token 노출, ③은 access_token 노출로 BCP 위반 | ✅ 수용  | Authorization Code + PKCE + client_secret 조합이 보안/표준 모두 충족. redirect_uri 관리 복잡도가 생기지만 허용 가능한 수준 |
+| Google/Kakao 방식 통일 | 기존 구현(Google: ID Token 검증, Kakao: access_token 전달)의 비일관성을 어떻게 해소할지                                                                                                   | 두 provider 모두 Authorization Code + PKCE 흐름으로 통일 가능. Kakao는 PKCE 지원하므로 동일한 서버 인터페이스(`provider, code, codeVerifier`) 적용 가능       | ✅ 수용  | `OAuthClient` 인터페이스로 추상화하여 provider별 구현 분기, 상위 흐름 통일                                           |
+
+> **→ Claude에게**: user-service의 소셜 로그인은 **Authorization Code + PKCE + client_secret** 방식으로 구현 완료됐습니다.
+> - 백엔드 구현: `feat/user-oauth-social-login` 브랜치에서 완료
+> - **프론트엔드 미구현**: 아직 OAuth 연동 작업을 시작하지 않았습니다. 소셜 로그인 관련 API 변경이나 제안을 할 때 이 점을 반드시 고려하세요.
+> - 흐름 요약: 프론트 → code_verifier/code_challenge/state 생성 → `POST /api/v1/auth/social/login-url`로 로그인 URL 요청 → 리다이렉트 → 콜백에서 code 수신 → `POST /api/v1/auth/social/login`으로 JWT 발급
+> - redirect_uri는 프론트엔드 콜백 URL로 설정 (백엔드 redirect 수신 엔드포인트 없음)
+> - Kakao 개발자 콘솔에서 **인가 코드 요청 시 PKCE 적용** 옵션 활성화 필요
+
 ---
 
 ## 새 검증 항목 작성 템플릿
