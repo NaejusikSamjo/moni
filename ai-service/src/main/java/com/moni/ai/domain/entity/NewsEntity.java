@@ -4,10 +4,7 @@ import com.fasterxml.uuid.Generators;
 import com.moni.common.JpaAuditing.baseEntity.BaseEntity;
 import jakarta.persistence.*;
 
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -15,6 +12,7 @@ import java.util.UUID;
 @Entity
 @Table(name="news")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Getter
 public class NewsEntity extends BaseEntity{
 
     @Id
@@ -29,7 +27,7 @@ public class NewsEntity extends BaseEntity{
     @Column(name = "content", columnDefinition = "TEXT")
     private String content;
 
-    @Column(name="source",length=10,nullable = false)
+    @Column(name="source",length=50,nullable = false)
     private String source;
 
     @Column(name="url",nullable = false)
