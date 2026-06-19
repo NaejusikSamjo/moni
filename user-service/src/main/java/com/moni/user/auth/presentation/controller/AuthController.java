@@ -30,19 +30,6 @@ public class AuthController {
     private final AuthService authService;
     private final NicknameGenerator nicknameGenerator;
 
-    private String extractAccessToken(String accessHeader) {
-        if (accessHeader == null || !accessHeader.startsWith("Bearer ")) {
-            throw new CustomException(TokenErrorCode.INVALID_REFRESH_TOKEN);
-        }
-        return accessHeader.substring(7);
-    }
-
-    private void validateRefreshToken(String refreshToken) {
-        if (refreshToken == null || refreshToken.isBlank()) {
-            throw new CustomException(TokenErrorCode.INVALID_REFRESH_TOKEN);
-        }
-    }
-
     @Operation(summary = "회원가입")
     @PostMapping("/signup")
     public ResponseEntity<GlobalResponse<SignupResponse>> signup(@RequestBody @Valid SignupRequest request) {
@@ -66,7 +53,8 @@ public class AuthController {
             @RequestHeader("X-Refresh-Token") String refreshToken) {
         String accessToken = extractAccessToken(accessHeader);
         validateRefreshToken(refreshToken);
-        return ResponseEntity.ok(GlobalResponse.success(HttpStatus.OK.value(), authService.refresh(accessToken, refreshToken)));
+        return ResponseEntity.ok(
+                GlobalResponse.success(HttpStatus.OK.value(), authService.refresh(accessToken, refreshToken)));
     }
 
     @Operation(summary = "로그아웃")
@@ -78,5 +66,18 @@ public class AuthController {
         validateRefreshToken(refreshToken);
         authService.logout(accessToken, refreshToken);
         return ResponseEntity.noContent().build();
+    }
+
+    private String extractAccessToken(String accessHeader) {
+        if (accessHeader == null || !accessHeader.startsWith("Bearer ")) {
+            throw new CustomException(TokenErrorCode.INVALID_REFRESH_TOKEN);
+        }
+        return accessHeader.substring(7);
+    }
+
+    private void validateRefreshToken(String refreshToken) {
+        if (refreshToken == null || refreshToken.isBlank()) {
+            throw new CustomException(TokenErrorCode.INVALID_REFRESH_TOKEN);
+        }
     }
 }

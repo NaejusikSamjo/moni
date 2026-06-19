@@ -20,9 +20,12 @@ public enum AuthErrorCode implements ErrorCode {
     USER_NOT_FOUND("AUTH-009", "존재하지 않는 사용자입니다.", HttpStatus.NOT_FOUND),
 
     EMAIL_DUPLICATE("AUTH-010", "사용할 수 없는 이메일입니다.", HttpStatus.CONFLICT),
-    OAUTH_PROVIDER_MISMATCH("AUTH-011", "사용할 수 없는 이메일입니다.", HttpStatus.CONFLICT),
+    OAUTH_PROVIDER_MISMATCH("AUTH-011", "소셜 로그인으로 가입할 수 없는 이메일입니다.", HttpStatus.BAD_REQUEST),
 
-    LOGIN_FAILED("AUTH-012", "이메일 또는 비밀번호가 일치하지 않습니다.", HttpStatus.UNAUTHORIZED);
+    LOGIN_FAILED("AUTH-012", "이메일 또는 비밀번호가 일치하지 않습니다.", HttpStatus.UNAUTHORIZED),
+
+    OAUTH_EXCHANGE_FAILED("AUTH-013", "소셜 로그인 처리 중 오류가 발생했습니다.", HttpStatus.BAD_GATEWAY),
+    UNSUPPORTED_OAUTH_PROVIDER("AUTH-014", "지원하지 않는 소셜 로그인 제공자입니다.", HttpStatus.BAD_REQUEST);
 
     private final String code;
     private final String message;
