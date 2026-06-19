@@ -8,23 +8,25 @@
 
 ## 1. USER (user-service, 담당: 동원)
 
-| 기능         | URL                                      | Method | 비고 |
-|------------|------------------------------------------|--------|----|
-| 회원가입       | `/api/v1/auth/signup`                    | POST   |    |
-| 로그인        | `/api/v1/auth/login`                     | POST   |    |
-| 로그아웃       | `/api/v1/auth/logout`                    | POST   |    |
-| 토큰 재발급     | `/api/v1/auth/refresh`                   | POST   |    |
-| 내 정보 수정    | `/api/v1/users/me`                       | PATCH  |    |
-| 내 정보 조회    | `/api/v1/users/me`                       | GET    |    |
-| 투자 성향 등록   | `/api/v1/users/me/tendency`              | POST   |    |
-| 투자 성향 조회   | `/api/v1/users/me/tendency`              | GET    |    |
-| 투자 성향 수정   | `/api/v1/users/me/tendency`              | PUT    |    |
-| 관심사 등록     | `/api/v1/users/me/interests`             | POST   |    |
-| 관심사 조회     | `/api/v1/users/me/interests`             | GET    |    |
-| 관심사 수정     | `/api/v1/users/me/interests`             | PUT    |    |
-| 관심종목 추가    | `/api/v1/users/me/watchlist/{stockCode}` | PUT    |    |
-| 관심종목 삭제    | `/api/v1/users/me/watchlist/{stockCode}` | DELETE |    |
-| 관심종목 목록 조회 | `/api/v1/users/me/watchlist`             | GET    |    |
+| 기능                    | URL                                      | Method | 비고                                                                            |
+|-----------------------|------------------------------------------|--------|-------------------------------------------------------------------------------|
+| 회원가입                  | `/api/v1/auth/signup`                    | POST   |                                                                               |
+| 로그인                   | `/api/v1/auth/login`                     | POST   |                                                                               |
+| 로그아웃                  | `/api/v1/auth/logout`                    | POST   |                                                                               |
+| 토큰 재발급                | `/api/v1/auth/refresh`                   | POST   |                                                                               |
+| 소셜 로그인 URL 생성         | `/api/v1/auth/social/login-url`          | POST   | Body: provider, codeChallenge, state — 프론트가 생성한 PKCE 값을 받아 OAuth URL 반환       |
+| 소셜 로그인 (Google/Kakao) | `/api/v1/auth/social/login`              | POST   | Body: provider, code, codeVerifier — Authorization Code + PKCE 흐름, 서비스 JWT 발급 |
+| 내 정보 수정               | `/api/v1/users/me`                       | PATCH  |                                                                               |
+| 내 정보 조회               | `/api/v1/users/me`                       | GET    |                                                                               |
+| 투자 성향 등록              | `/api/v1/users/me/tendency`              | POST   |                                                                               |
+| 투자 성향 조회              | `/api/v1/users/me/tendency`              | GET    |                                                                               |
+| 투자 성향 수정              | `/api/v1/users/me/tendency`              | PUT    |                                                                               |
+| 관심사 등록                | `/api/v1/users/me/interests`             | POST   |                                                                               |
+| 관심사 조회                | `/api/v1/users/me/interests`             | GET    |                                                                               |
+| 관심사 수정                | `/api/v1/users/me/interests`             | PUT    |                                                                               |
+| 관심종목 추가               | `/api/v1/users/me/watchlist/{stockCode}` | PUT    |                                                                               |
+| 관심종목 삭제               | `/api/v1/users/me/watchlist/{stockCode}` | DELETE |                                                                               |
+| 관심종목 목록 조회            | `/api/v1/users/me/watchlist`             | GET    |                                                                               |
 
 ---
 
