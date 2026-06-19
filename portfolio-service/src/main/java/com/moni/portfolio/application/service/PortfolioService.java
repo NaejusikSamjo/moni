@@ -5,12 +5,15 @@ import com.moni.portfolio.application.calculator.model.AccountInput;
 import com.moni.portfolio.application.calculator.model.HoldingInput;
 import com.moni.portfolio.application.calculator.model.PortfolioAssetResult;
 import com.moni.portfolio.application.calculator.model.PriceInput;
+import com.moni.portfolio.domain.entity.Portfolio;
 import com.moni.portfolio.domain.exception.ExternalServiceException;
+import com.moni.portfolio.domain.exception.PortfolioAlreadyExistsException;
 import com.moni.portfolio.domain.exception.PortfolioNotFoundException;
 import com.moni.portfolio.domain.repository.PortfolioRepository;
 import com.moni.portfolio.infrastructure.client.StockServiceClient;
 import com.moni.portfolio.infrastructure.client.TradeServiceClient;
 import com.moni.portfolio.presentation.dto.response.PortfolioAssetResponseDto;
+import com.moni.portfolio.presentation.dto.response.PortfolioCreateResponseDto;
 import com.moni.portfolio.presentation.dto.response.PortfolioHoldingProfitLossResponseDto;
 import com.moni.portfolio.presentation.dto.response.PortfolioHoldingsResponseDto;
 import com.moni.portfolio.presentation.dto.response.PortfolioReturnsResponseDto;
@@ -36,6 +39,18 @@ public class PortfolioService {
     private final PortfolioCalculator portfolioCalculator;
     private final TradeServiceClient tradeServiceClient;
     private final StockServiceClient stockServiceClient;
+
+    /** 포트폴리오 생성 로직 */
+    @Transactional
+    public PortfolioCreateResponseDto createPortfolio(UUID userId) {
+        if (portfolioRepository.existsByUserId(userId)) {
+            throw new PortfolioAlreadyExistsException();
+        }
+
+        Portfolio portfolio = Portfolio.create(userId);
+
+        return PortfolioCreateResponseDto.from(portfolioRepository.save(portfolio));
+    }
 
     /** 자산 조회 로직 */
     public PortfolioAssetResponseDto getAssets(UUID userId) {

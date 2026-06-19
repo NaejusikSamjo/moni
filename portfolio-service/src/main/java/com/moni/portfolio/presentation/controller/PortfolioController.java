@@ -3,6 +3,7 @@ package com.moni.portfolio.presentation.controller;
 import com.moni.common.response.GlobalResponse;
 import com.moni.portfolio.application.service.PortfolioService;
 import com.moni.portfolio.presentation.dto.response.PortfolioAssetResponseDto;
+import com.moni.portfolio.presentation.dto.response.PortfolioCreateResponseDto;
 import com.moni.portfolio.presentation.dto.response.PortfolioHoldingProfitLossResponseDto;
 import com.moni.portfolio.presentation.dto.response.PortfolioHoldingsResponseDto;
 import com.moni.portfolio.presentation.dto.response.PortfolioReturnsResponseDto;
@@ -13,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -30,6 +32,15 @@ public class PortfolioController {
     private static final String DEFAULT_SORT = "evaluationAmount,desc";
 
     private final PortfolioService portfolioService;
+
+    @Operation(summary = "포트폴리오 생성")
+    @PostMapping
+    public ResponseEntity<GlobalResponse<PortfolioCreateResponseDto>> createPortfolio(
+            @RequestHeader(HEADER_USER_ID) UUID userId
+    ) {
+        PortfolioCreateResponseDto response = portfolioService.createPortfolio(userId);
+        return ResponseEntity.status(HttpStatus.CREATED).body(GlobalResponse.success(HttpStatus.CREATED.value(), response));
+    }
 
     @Operation(summary = "자산 조회")
     @GetMapping("/assets")
