@@ -4,13 +4,12 @@ import org.springframework.data.domain.AuditorAware;
 import org.springframework.lang.NonNull;
 
 import java.util.Optional;
-import java.util.UUID;
 
-public class AuditorAwareImpl implements AuditorAware<UUID> {
+public class AuditorAwareImpl implements AuditorAware<String> {
 
     @Override
     @NonNull
-    public Optional<UUID> getCurrentAuditor() {
-        return SecurityUtil.getCurrentUserId();
+    public Optional<String> getCurrentAuditor() {
+        return SecurityUtil.getCurrentUserId().map(Object::toString);
     }
 }
