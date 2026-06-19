@@ -6,9 +6,9 @@ spring:
 
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: ${AI_DB_URL}
-    username: ${AI_DB_USERNAME}
-    password: ${AI_DB_PASSWORD}
+    url: {AI_TEST_DB_URL:jdbc:postgresql://localhost:5432/moni }
+    username: {AI_TEST_DB_USERNAME:jieunpark}
+    password: {AI_TEST_DB_PASSWORD}
 
   jpa:
     database: postgresql
