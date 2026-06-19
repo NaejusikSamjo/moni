@@ -34,6 +34,10 @@ public class KisWebSocketManager {
     private final Map<String, Boolean> subscribedTickers = new ConcurrentHashMap<>();
 
     public void connect() {
+        if (kisProperties.isMock()) {
+            log.info("KIS mock 모드 — WebSocket 연결 건너뜀");
+            return;
+        }
         kisOAuthClient.resetApprovalKey();
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
         container.setDefaultMaxTextMessageBufferSize(1024 * 1024); // 1MB 메모리 부족 예외 방지

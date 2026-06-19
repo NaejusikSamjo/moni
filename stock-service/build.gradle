@@ -38,6 +38,7 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation testFixtures(project(':common'))
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testRuntimeOnly 'com.h2database:h2'
     //env
     implementation 'me.paulschwarz:spring-dotenv:4.0.0'
     //swagger
