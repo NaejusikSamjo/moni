@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -37,7 +38,7 @@ public class PortfolioService {
     private final StockServiceClient stockServiceClient;
 
     /** 자산 조회 로직 */
-    public PortfolioAssetResponseDto getAssets(String userId) {
+    public PortfolioAssetResponseDto getAssets(UUID userId) {
         findPortfolio(userId);
 
         AccountInput account = getAccount(userId);
@@ -49,7 +50,7 @@ public class PortfolioService {
     }
 
     /** 보유 종목 현황 조회 로직 */
-    public PortfolioHoldingsResponseDto getHoldings(String userId, int page, int size, String sort) {
+    public PortfolioHoldingsResponseDto getHoldings(UUID userId, int page, int size, String sort) {
         findPortfolio(userId);
 
         Pageable pageable = PageRequest.of(resolvePage(page), resolveSize(size));
@@ -59,7 +60,7 @@ public class PortfolioService {
     }
 
     /** 종목별 손익 조회 로직 */
-    public PortfolioHoldingProfitLossResponseDto getHoldingProfitLoss(String userId, String ticker) {
+    public PortfolioHoldingProfitLossResponseDto getHoldingProfitLoss(UUID userId, String ticker) {
         findPortfolio(userId);
 
         // TODO: trade-service 단일 보유 종목/실현손익과 stock-service 현재가를 조회한 뒤 손익 계산
@@ -67,24 +68,24 @@ public class PortfolioService {
     }
 
     /** 수익률 조회 로직 */
-    public PortfolioReturnsResponseDto getReturns(String userId) {
+    public PortfolioReturnsResponseDto getReturns(UUID userId) {
         findPortfolio(userId);
 
         // TODO: trade-service 보유 수량 변화와 stock-service 가격 시계열을 조회한 뒤 수익률 계산
         throw new ExternalServiceException();
     }
 
-    private void findPortfolio(String userId) {
+    private void findPortfolio(UUID userId) {
         portfolioRepository.findByUserId(userId)
                 .orElseThrow(PortfolioNotFoundException::new);
     }
 
-    private AccountInput getAccount(String userId) {
+    private AccountInput getAccount(UUID userId) {
         // TODO: trade-service 계좌 조회 API 확정 후 TradeServiceClient 호출로 구현
         throw new ExternalServiceException();
     }
 
-    private List<HoldingInput> getHoldings(String userId) {
+    private List<HoldingInput> getHoldings(UUID userId) {
         // TODO: trade-service 보유 종목 조회 API 확정 후 TradeServiceClient 호출로 구현
         throw new ExternalServiceException();
     }

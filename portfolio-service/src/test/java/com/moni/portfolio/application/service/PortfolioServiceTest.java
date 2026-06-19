@@ -17,6 +17,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -26,6 +27,8 @@ import static org.mockito.Mockito.verifyNoInteractions;
 @DisplayName("PortfolioService 테스트")
 @ExtendWith(MockitoExtension.class)
 class PortfolioServiceTest {
+
+    private static final UUID USER_ID = UUID.fromString("00000000-0000-0000-0000-000000000000");
 
     @Mock
     private PortfolioRepository portfolioRepository;
@@ -50,7 +53,7 @@ class PortfolioServiceTest {
         @DisplayName("실패 - 포트폴리오가 없으면 예외가 발생한다")
         void fail_portfolio_not_found() {
             // given
-            String userId = "USER-ID-1";
+            UUID userId = USER_ID;
             given(portfolioRepository.findByUserId(userId)).willReturn(Optional.empty());
 
             // when & then
@@ -65,7 +68,7 @@ class PortfolioServiceTest {
         @DisplayName("실패 - 외부 서비스 연동이 구현되지 않았으면 예외가 발생한다")
         void fail_external_service_not_implemented() {
             // given
-            String userId = "USER-ID-1";
+            UUID userId = USER_ID;
             Portfolio portfolio = Portfolio.create(userId);
             given(portfolioRepository.findByUserId(userId)).willReturn(Optional.of(portfolio));
 
@@ -86,7 +89,7 @@ class PortfolioServiceTest {
         @DisplayName("실패 - 포트폴리오가 없으면 예외가 발생한다")
         void fail_portfolio_not_found() {
             // given
-            String userId = "USER-ID-1";
+            UUID userId = USER_ID;
             int page = 0;
             int size = 10;
             String sort = "evaluationAmount,desc";
@@ -104,7 +107,7 @@ class PortfolioServiceTest {
         @DisplayName("실패 - 외부 서비스 연동이 구현되지 않았으면 예외가 발생한다")
         void fail_external_service_not_implemented() {
             // given
-            String userId = "USER-ID-1";
+            UUID userId = USER_ID;
             int page = 0;
             int size = 10;
             String sort = "evaluationAmount,desc";
@@ -128,7 +131,7 @@ class PortfolioServiceTest {
         @DisplayName("실패 - 포트폴리오가 없으면 예외가 발생한다")
         void fail_portfolio_not_found() {
             // given
-            String userId = "USER-ID-1";
+            UUID userId = USER_ID;
             String ticker = "TICKER-1";
             given(portfolioRepository.findByUserId(userId)).willReturn(Optional.empty());
 
@@ -144,7 +147,7 @@ class PortfolioServiceTest {
         @DisplayName("실패 - 외부 서비스 연동이 구현되지 않았으면 예외가 발생한다")
         void fail_external_service_not_implemented() {
             // given
-            String userId = "USER-ID-1";
+            UUID userId = USER_ID;
             String ticker = "TICKER-1";
             Portfolio portfolio = Portfolio.create(userId);
             given(portfolioRepository.findByUserId(userId)).willReturn(Optional.of(portfolio));
@@ -166,7 +169,7 @@ class PortfolioServiceTest {
         @DisplayName("실패 - 포트폴리오가 없으면 예외가 발생한다")
         void fail_portfolio_not_found() {
             // given
-            String userId = "USER-ID-1";
+            UUID userId = USER_ID;
             given(portfolioRepository.findByUserId(userId)).willReturn(Optional.empty());
 
             // when & then
@@ -181,7 +184,7 @@ class PortfolioServiceTest {
         @DisplayName("실패 - 외부 서비스 연동이 구현되지 않았으면 예외가 발생한다")
         void fail_external_service_not_implemented() {
             // given
-            String userId = "USER-ID-1";
+            UUID userId = USER_ID;
             Portfolio portfolio = Portfolio.create(userId);
             given(portfolioRepository.findByUserId(userId)).willReturn(Optional.of(portfolio));
 
