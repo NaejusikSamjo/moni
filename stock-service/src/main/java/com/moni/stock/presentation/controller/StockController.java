@@ -3,6 +3,9 @@ package com.moni.stock.presentation.controller;
 import com.moni.common.response.paging.PageRes;
 import com.moni.stock.application.masterFile.StockMasterService;
 import com.moni.stock.application.port.in.StockQueryUseCase;
+import com.moni.stock.domain.entity.Stock;
+import com.moni.stock.domain.repository.StockRepository;
+import com.moni.stock.domain.type.MarketType;
 import com.moni.stock.presentation.dto.response.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -18,6 +21,12 @@ public class StockController {
 
     private final StockQueryUseCase stockQueryUseCase;
     private final StockMasterService stockMasterService;
+    private final StockRepository stockRepository;
+
+    @PostMapping("/exSave")
+    public void exSave () {
+        stockRepository.save(Stock.builder().name("예시").ticker("0001").market(MarketType.KOSPI).build());
+    }
 
     @PostMapping("/download/stocks")
     public Map<String, String> downloadStocks() {

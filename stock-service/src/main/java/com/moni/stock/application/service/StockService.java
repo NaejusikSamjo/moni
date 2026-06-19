@@ -8,6 +8,7 @@ import com.moni.stock.domain.entity.Stock;
 import com.moni.stock.domain.entity.StockPrice;
 import com.moni.stock.domain.exception.StockErrorCode;
 import com.moni.stock.domain.repository.StockRepository;
+import com.moni.stock.domain.type.MarketType;
 import com.moni.stock.infrastructure.redis.StockPriceRedisAdapter;
 import com.moni.stock.presentation.dto.response.StockResDto;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor

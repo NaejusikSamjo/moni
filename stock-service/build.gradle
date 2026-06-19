@@ -35,7 +35,6 @@ dependencies {
     implementation project(':common-logging')
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
-    runtimeOnly 'com.mysql:mysql-connector-j'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation testFixtures(project(':common'))
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
