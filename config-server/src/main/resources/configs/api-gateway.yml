@@ -10,37 +10,37 @@ spring:
             - id: user-service
               uri: lb://user-service
               predicates:
-                - Path=/api/users/**
+                - Path=/api/v1/auth/**, /api/v1/users/**
 
             - id: trade-service
               uri: lb://trade-service
               predicates:
-                - Path=/api/trades/**
+                - Path=/api/v1/trades/**, /api/v1/holdings/**, /api/v1/accounts/**, /api/v1/auto-orders/**, /api/v1/saving-plans/**, /api/v1/rankings/**
 
             - id: stock-service
               uri: lb://stock-service
               predicates:
-                - Path=/api/stocks/**
+                - Path=/api/v1/stocks/**, /api/v1/themes/**
 
             - id: portfolio-service
               uri: lb://portfolio-service
               predicates:
-                - Path=/api/portfolios/**
+                - Path=/api/v1/portfolio/**
 
             - id: notification-service
               uri: lb://notification-service
               predicates:
-                - Path=/api/notifications/**
+                - Path=/api/v1/notifications/**
 
             - id: payment-service
               uri: lb://payment-service
               predicates:
-                - Path=/api/payments/**
+                - Path=/api/v1/payment/**, /api/v1/payments/**
 
             - id: ai-service
               uri: lb://ai-service
               predicates:
-                - Path=/api/ai/**
+                - Path=/api/v1/ai/**
 
             - id: user-service-docs
               uri: lb://user-service
@@ -115,3 +115,9 @@ springdoc:
         url: /payment-service/v3/api-docs
       - name: ai-service
         url: /ai-service/v3/api-docs
+
+jwt:
+  secret-key: ${JWT_SECRET_KEY}
+
+gateway:
+  secret: ${GATEWAY_SECRET}

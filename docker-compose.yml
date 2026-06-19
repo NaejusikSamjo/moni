@@ -1,3 +1,8 @@
+# TODO: 운영 배포 시 제거 - 외부 직접 접근 차단 (게이트웨이 8080만 오픈)
+networks:
+  default:
+    name: moni-network
+
 name: moni
 services:
 
@@ -34,6 +39,9 @@ services:
       dockerfile: api-gateway/Dockerfile
     ports:
       - "8080:8080"
+    environment:
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      GATEWAY_SECRET: ${GATEWAY_SECRET}
     depends_on:
       eureka-server:
         condition: service_healthy
@@ -51,6 +59,27 @@ services:
       REDIS_HOST: ${REDIS_HOST}
       REDIS_PORT: ${REDIS_PORT}
       REDIS_PASSWORD: ${REDIS_PASSWORD}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      JWT_ACCESS_TOKEN_EXPIRATION: ${JWT_ACCESS_TOKEN_EXPIRATION}
+      JWT_REFRESH_TOKEN_EXPIRATION: ${JWT_REFRESH_TOKEN_EXPIRATION}
+      GATEWAY_SECRET: ${GATEWAY_SECRET}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI}
+      KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID}
+      KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET}
+      KAKAO_REDIRECT_URI: ${KAKAO_REDIRECT_URI}
+      SPRING_PROFILES_ACTIVE: prod
+      OTEL_SERVICE_NAME: user-service
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
+      OTEL_INSTRUMENTATION_LOGBACK_MDC_ENABLED: "true"
+      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=local"
+    volumes:
+      - ./logs/user-service:/app/logs
     depends_on:
       eureka-server:
         condition: service_healthy
@@ -68,6 +97,17 @@ services:
       REDIS_HOST: ${REDIS_HOST}
       REDIS_PORT: ${REDIS_PORT}
       REDIS_PASSWORD: ${REDIS_PASSWORD}
+      SPRING_PROFILES_ACTIVE: prod
+      OTEL_SERVICE_NAME: trade-service
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
+      OTEL_INSTRUMENTATION_LOGBACK_MDC_ENABLED: "true"
+      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=local"
+    volumes:
+      - ./logs/trade-service:/app/logs
     depends_on:
       eureka-server:
         condition: service_healthy
@@ -85,11 +125,25 @@ services:
       REDIS_HOST: ${REDIS_HOST}
       REDIS_PORT: ${REDIS_PORT}
       REDIS_PASSWORD: ${REDIS_PASSWORD}
+      SPRING_PROFILES_ACTIVE: prod
+      OTEL_SERVICE_NAME: stock-service
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
+      OTEL_INSTRUMENTATION_LOGBACK_MDC_ENABLED: "true"
+      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=local"
+    volumes:
+      - ./logs/stock-service:/app/logs
     depends_on:
       eureka-server:
         condition: service_healthy
 
   portfolio-service:
+    read_only: true
+    tmpfs:
+      - /tmp
     build:
       context: .
       dockerfile: portfolio-service/Dockerfile
@@ -102,6 +156,17 @@ services:
       REDIS_HOST: ${REDIS_HOST}
       REDIS_PORT: ${REDIS_PORT}
       REDIS_PASSWORD: ${REDIS_PASSWORD}
+      SPRING_PROFILES_ACTIVE: prod
+      OTEL_SERVICE_NAME: portfolio-service
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
+      OTEL_INSTRUMENTATION_LOGBACK_MDC_ENABLED: "true"
+      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=local"
+    volumes:
+      - ./logs/portfolio-service:/app/logs
     depends_on:
       eureka-server:
         condition: service_healthy
@@ -119,6 +184,17 @@ services:
       REDIS_HOST: ${REDIS_HOST}
       REDIS_PORT: ${REDIS_PORT}
       REDIS_PASSWORD: ${REDIS_PASSWORD}
+      SPRING_PROFILES_ACTIVE: prod
+      OTEL_SERVICE_NAME: notification-service
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
+      OTEL_INSTRUMENTATION_LOGBACK_MDC_ENABLED: "true"
+      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=local"
+    volumes:
+      - ./logs/notification-service:/app/logs
     depends_on:
       eureka-server:
         condition: service_healthy
@@ -136,6 +212,17 @@ services:
       REDIS_HOST: ${REDIS_HOST}
       REDIS_PORT: ${REDIS_PORT}
       REDIS_PASSWORD: ${REDIS_PASSWORD}
+      SPRING_PROFILES_ACTIVE: prod
+      OTEL_SERVICE_NAME: payment-service
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
+      OTEL_INSTRUMENTATION_LOGBACK_MDC_ENABLED: "true"
+      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=local"
+    volumes:
+      - ./logs/payment-service:/app/logs
     depends_on:
       eureka-server:
         condition: service_healthy
@@ -153,6 +240,20 @@ services:
       REDIS_HOST: ${REDIS_HOST}
       REDIS_PORT: ${REDIS_PORT}
       REDIS_PASSWORD: ${REDIS_PASSWORD}
+      NAVER_CLIENT_ID: ${NAVER_CLIENT_ID}
+      NAVER_CLIENT_SECRET: ${NAVER_CLIENT_SECRET}
+      NAVER_BASE_URL: ${NAVER_BASE_URL}
+      SPRING_PROFILES_ACTIVE: prod
+      OTEL_SERVICE_NAME: ai-service
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
+      OTEL_INSTRUMENTATION_LOGBACK_MDC_ENABLED: "true"
+      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=local"
+    volumes:
+      - ./logs/ai-service:/app/logs
     depends_on:
       eureka-server:
         condition: service_healthy

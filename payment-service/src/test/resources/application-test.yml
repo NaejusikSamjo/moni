@@ -1,0 +1,21 @@
+spring:
+  config:
+    import: ""
+
+logging:
+  config: classpath:logback-test.xml
+
+eureka:
+  client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
