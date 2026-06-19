@@ -1,14 +1,13 @@
 package com.moni.portfolio.application.service;
 
+import com.moni.common.error.exception.CustomException;
 import com.moni.portfolio.application.calculator.PortfolioCalculator;
 import com.moni.portfolio.application.calculator.model.AccountInput;
 import com.moni.portfolio.application.calculator.model.HoldingInput;
 import com.moni.portfolio.application.calculator.model.PortfolioAssetResult;
 import com.moni.portfolio.application.calculator.model.PriceInput;
 import com.moni.portfolio.domain.entity.Portfolio;
-import com.moni.portfolio.domain.exception.ExternalServiceException;
-import com.moni.portfolio.domain.exception.PortfolioAlreadyExistsException;
-import com.moni.portfolio.domain.exception.PortfolioNotFoundException;
+import com.moni.portfolio.domain.exception.PortfolioErrorCode;
 import com.moni.portfolio.domain.repository.PortfolioRepository;
 import com.moni.portfolio.infrastructure.client.StockServiceClient;
 import com.moni.portfolio.infrastructure.client.TradeServiceClient;
@@ -44,7 +43,7 @@ public class PortfolioService {
     @Transactional
     public PortfolioCreateResponseDto createPortfolio(UUID userId) {
         if (portfolioRepository.existsByUserId(userId)) {
-            throw new PortfolioAlreadyExistsException();
+            throw new CustomException(PortfolioErrorCode.PORTFOLIO_ALREADY_EXISTS);
         }
 
         Portfolio portfolio = Portfolio.create(userId);
@@ -71,7 +70,7 @@ public class PortfolioService {
         Pageable pageable = PageRequest.of(resolvePage(page), resolveSize(size));
 
         // TODO: trade-service 보유 종목과 stock-service 현재가/종목 정보를 조회한 뒤 페이징/정렬 적용
-        throw new ExternalServiceException();
+        throw new CustomException(PortfolioErrorCode.EXTERNAL_SERVICE_ERROR);
     }
 
     /** 종목별 손익 조회 로직 */
@@ -79,7 +78,7 @@ public class PortfolioService {
         findPortfolio(userId);
 
         // TODO: trade-service 단일 보유 종목/실현손익과 stock-service 현재가를 조회한 뒤 손익 계산
-        throw new ExternalServiceException();
+        throw new CustomException(PortfolioErrorCode.EXTERNAL_SERVICE_ERROR);
     }
 
     /** 수익률 조회 로직 */
@@ -87,27 +86,27 @@ public class PortfolioService {
         findPortfolio(userId);
 
         // TODO: trade-service 보유 수량 변화와 stock-service 가격 시계열을 조회한 뒤 수익률 계산
-        throw new ExternalServiceException();
+        throw new CustomException(PortfolioErrorCode.EXTERNAL_SERVICE_ERROR);
     }
 
     private void findPortfolio(UUID userId) {
         portfolioRepository.findByUserId(userId)
-                .orElseThrow(PortfolioNotFoundException::new);
+                .orElseThrow(() -> new CustomException(PortfolioErrorCode.PORTFOLIO_NOT_FOUND));
     }
 
     private AccountInput getAccount(UUID userId) {
         // TODO: trade-service 계좌 조회 API 확정 후 TradeServiceClient 호출로 구현
-        throw new ExternalServiceException();
+        throw new CustomException(PortfolioErrorCode.EXTERNAL_SERVICE_ERROR);
     }
 
     private List<HoldingInput> getHoldings(UUID userId) {
         // TODO: trade-service 보유 종목 조회 API 확정 후 TradeServiceClient 호출로 구현
-        throw new ExternalServiceException();
+        throw new CustomException(PortfolioErrorCode.EXTERNAL_SERVICE_ERROR);
     }
 
     private List<PriceInput> getPrices(List<HoldingInput> holdings) {
         // TODO: stock-service 현재가 조회 API 확정 후 StockServiceClient 호출로 구현
-        throw new ExternalServiceException();
+        throw new CustomException(PortfolioErrorCode.EXTERNAL_SERVICE_ERROR);
     }
 
     /** page는 음수일 경우 기본 페이지로 보정 */

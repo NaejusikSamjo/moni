@@ -1,11 +1,9 @@
 package com.moni.portfolio.application.service;
 
+import com.moni.common.error.exception.CustomException;
 import com.moni.portfolio.application.calculator.PortfolioCalculator;
 import com.moni.portfolio.domain.entity.Portfolio;
-import com.moni.portfolio.domain.exception.ExternalServiceException;
-import com.moni.portfolio.domain.exception.PortfolioAlreadyExistsException;
 import com.moni.portfolio.domain.exception.PortfolioErrorCode;
-import com.moni.portfolio.domain.exception.PortfolioNotFoundException;
 import com.moni.portfolio.domain.repository.PortfolioRepository;
 import com.moni.portfolio.infrastructure.client.StockServiceClient;
 import com.moni.portfolio.infrastructure.client.TradeServiceClient;
@@ -80,7 +78,7 @@ class PortfolioServiceTest {
 
             // when & then
             assertThatThrownBy(() -> portfolioService.createPortfolio(userId))
-                    .isInstanceOfSatisfying(PortfolioAlreadyExistsException.class, exception ->
+                    .isInstanceOfSatisfying(CustomException.class, exception ->
                             assertThat(exception.getErrorCode()).isEqualTo(PortfolioErrorCode.PORTFOLIO_ALREADY_EXISTS));
 
             then(portfolioRepository).should().existsByUserId(userId);
@@ -102,7 +100,7 @@ class PortfolioServiceTest {
 
             // when & then
             assertThatThrownBy(() -> portfolioService.getAssets(userId))
-                    .isInstanceOfSatisfying(PortfolioNotFoundException.class, exception ->
+                    .isInstanceOfSatisfying(CustomException.class, exception ->
                             assertThat(exception.getErrorCode()).isEqualTo(PortfolioErrorCode.PORTFOLIO_NOT_FOUND));
 
             verifyNoInteractions(tradeServiceClient, stockServiceClient, portfolioCalculator);
@@ -118,7 +116,7 @@ class PortfolioServiceTest {
 
             // when & then
             assertThatThrownBy(() -> portfolioService.getAssets(userId))
-                    .isInstanceOfSatisfying(ExternalServiceException.class, exception ->
+                    .isInstanceOfSatisfying(CustomException.class, exception ->
                             assertThat(exception.getErrorCode()).isEqualTo(PortfolioErrorCode.EXTERNAL_SERVICE_ERROR));
 
             verifyNoInteractions(tradeServiceClient, stockServiceClient, portfolioCalculator);
@@ -141,7 +139,7 @@ class PortfolioServiceTest {
 
             // when & then
             assertThatThrownBy(() -> portfolioService.getHoldings(userId, page, size, sort))
-                    .isInstanceOfSatisfying(PortfolioNotFoundException.class, exception ->
+                    .isInstanceOfSatisfying(CustomException.class, exception ->
                             assertThat(exception.getErrorCode()).isEqualTo(PortfolioErrorCode.PORTFOLIO_NOT_FOUND));
 
             verifyNoInteractions(tradeServiceClient, stockServiceClient, portfolioCalculator);
@@ -160,7 +158,7 @@ class PortfolioServiceTest {
 
             // when & then
             assertThatThrownBy(() -> portfolioService.getHoldings(userId, page, size, sort))
-                    .isInstanceOfSatisfying(ExternalServiceException.class, exception ->
+                    .isInstanceOfSatisfying(CustomException.class, exception ->
                             assertThat(exception.getErrorCode()).isEqualTo(PortfolioErrorCode.EXTERNAL_SERVICE_ERROR));
 
             verifyNoInteractions(tradeServiceClient, stockServiceClient, portfolioCalculator);
@@ -181,7 +179,7 @@ class PortfolioServiceTest {
 
             // when & then
             assertThatThrownBy(() -> portfolioService.getHoldingProfitLoss(userId, ticker))
-                    .isInstanceOfSatisfying(PortfolioNotFoundException.class, exception ->
+                    .isInstanceOfSatisfying(CustomException.class, exception ->
                             assertThat(exception.getErrorCode()).isEqualTo(PortfolioErrorCode.PORTFOLIO_NOT_FOUND));
 
             verifyNoInteractions(tradeServiceClient, stockServiceClient, portfolioCalculator);
@@ -198,7 +196,7 @@ class PortfolioServiceTest {
 
             // when & then
             assertThatThrownBy(() -> portfolioService.getHoldingProfitLoss(userId, ticker))
-                    .isInstanceOfSatisfying(ExternalServiceException.class, exception ->
+                    .isInstanceOfSatisfying(CustomException.class, exception ->
                             assertThat(exception.getErrorCode()).isEqualTo(PortfolioErrorCode.EXTERNAL_SERVICE_ERROR));
 
             verifyNoInteractions(tradeServiceClient, stockServiceClient, portfolioCalculator);
@@ -218,7 +216,7 @@ class PortfolioServiceTest {
 
             // when & then
             assertThatThrownBy(() -> portfolioService.getReturns(userId))
-                    .isInstanceOfSatisfying(PortfolioNotFoundException.class, exception ->
+                    .isInstanceOfSatisfying(CustomException.class, exception ->
                             assertThat(exception.getErrorCode()).isEqualTo(PortfolioErrorCode.PORTFOLIO_NOT_FOUND));
 
             verifyNoInteractions(tradeServiceClient, stockServiceClient, portfolioCalculator);
@@ -234,7 +232,7 @@ class PortfolioServiceTest {
 
             // when & then
             assertThatThrownBy(() -> portfolioService.getReturns(userId))
-                    .isInstanceOfSatisfying(ExternalServiceException.class, exception ->
+                    .isInstanceOfSatisfying(CustomException.class, exception ->
                             assertThat(exception.getErrorCode()).isEqualTo(PortfolioErrorCode.EXTERNAL_SERVICE_ERROR));
 
             verifyNoInteractions(tradeServiceClient, stockServiceClient, portfolioCalculator);

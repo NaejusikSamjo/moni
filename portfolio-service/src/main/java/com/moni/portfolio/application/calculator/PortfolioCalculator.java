@@ -1,11 +1,12 @@
 package com.moni.portfolio.application.calculator;
 
+import com.moni.common.error.exception.CustomException;
 import com.moni.portfolio.application.calculator.model.AccountInput;
 import com.moni.portfolio.application.calculator.model.HoldingInput;
 import com.moni.portfolio.application.calculator.model.HoldingResult;
 import com.moni.portfolio.application.calculator.model.PortfolioAssetResult;
 import com.moni.portfolio.application.calculator.model.PriceInput;
-import com.moni.portfolio.domain.exception.StockPriceNotFoundException;
+import com.moni.portfolio.domain.exception.PortfolioErrorCode;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -69,7 +70,7 @@ public class PortfolioCalculator {
         PriceInput price = priceMap.get(holding.ticker());
 
         if (price == null) {
-            throw new StockPriceNotFoundException();
+            throw new CustomException(PortfolioErrorCode.STOCK_PRICE_NOT_FOUND);
         }
 
         BigDecimal quantity = BigDecimal.valueOf(holding.quantity());
