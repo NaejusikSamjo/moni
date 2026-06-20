@@ -13,5 +13,5 @@ public interface LoadPaymentPort {
 
     Optional<Payment> findByMerchantId(MerchantId merchantId);
 
-    List<Payment> findByUserId(UUID userId);
+    List<Payment> findByUserId(UUID userId, int page, int size);
 }

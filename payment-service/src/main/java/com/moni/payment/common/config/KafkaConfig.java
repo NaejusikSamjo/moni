@@ -18,9 +18,9 @@ import java.util.Map;
 @Configuration
 public class KafkaConfig {
 
-    static final String TOPIC_SUBSCRIPTION_SUCCEEDED = "payment.subscription.succeeded";
-    static final String TOPIC_SUBSCRIPTION_CANCELLED = "payment.subscription.cancelled";
-    static final String TOPIC_BILLING_FAILED = "payment.billing.failed";
+    public static final String TOPIC_SUBSCRIPTION_SUCCEEDED = "payment.subscription.succeeded";
+    public static final String TOPIC_SUBSCRIPTION_CANCELLED = "payment.subscription.cancelled";
+    public static final String TOPIC_BILLING_FAILED = "payment.billing.failed";
 
     private static final int TOPIC_PARTITIONS = 3;
     private static final int TOPIC_REPLICAS = 1;

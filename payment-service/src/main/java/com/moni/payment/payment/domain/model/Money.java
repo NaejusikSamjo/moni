@@ -41,12 +41,12 @@ public final class Money {
         if (!(o instanceof Money money)) {
             return false;
         }
-        return Objects.equals(amount, money.amount);
+        return amount.compareTo(money.amount) == 0;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(amount);
+        return Objects.hash(amount.stripTrailingZeros());
     }
 
     @Override

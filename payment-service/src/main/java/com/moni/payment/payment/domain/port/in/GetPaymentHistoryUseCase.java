@@ -7,5 +7,7 @@ import java.util.UUID;
 
 public interface GetPaymentHistoryUseCase {
 
-    List<Payment> getHistory(UUID userId);
+    record GetPaymentHistoryQuery(UUID userId, int page, int size) {}
+
+    List<Payment> getHistory(GetPaymentHistoryQuery query);
 }
