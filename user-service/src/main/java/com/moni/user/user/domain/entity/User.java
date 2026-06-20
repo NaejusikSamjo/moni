@@ -87,13 +87,14 @@ public class User extends BaseEntity implements Persistable<UUID> {
     }
 
     public static User createOAuth(String email, String name, String nickname,
-                                   OAuthProvider oauthProvider, String oauthId) {
+                                   OAuthProvider oauthProvider, String oauthId, String phone) {
         User user = new User();
         user.id = UUID.randomUUID();
         user.isNew = true;
         user.email = email;
         user.name = name;
         user.nickname = nickname;
+        user.phone = phone;
         user.oauthProvider = oauthProvider;
         user.oauthId = oauthId;
         user.role = UserRole.USER;
@@ -114,6 +115,15 @@ public class User extends BaseEntity implements Persistable<UUID> {
     public void suspend(String reason) {
         this.status = UserStatus.SUSPENDED;
         this.suspendedReason = reason;
+    }
+
+    public void unsuspend() {
+        this.status = UserStatus.ACTIVE;
+        this.suspendedReason = null;
+    }
+
+    public void changeRole(UserRole newRole) {
+        this.role = newRole;
     }
 
     public void withdraw(String reason, String deletedBy) {
