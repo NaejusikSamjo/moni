@@ -4,3 +4,13 @@ spring:
       - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
       - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
       - org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration
+  cloud:
+    config:
+      enabled: false
+    discovery:
+      enabled: false
+  config:
+    import: "optional:configserver:"
+eureka:
+  client:
+    enabled: false
