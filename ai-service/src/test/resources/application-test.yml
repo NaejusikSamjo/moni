@@ -6,9 +6,9 @@ spring:
 
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: {AI_TEST_DB_URL:jdbc:postgresql://localhost:5432/moni }
-    username: {AI_TEST_DB_USERNAME:jieunpark}
-    password: {AI_TEST_DB_PASSWORD}
+    url: ${AI_TEST_DB_URL:jdbc:postgresql://localhost:5432/moni }
+    username: ${AI_TEST_DB_USERNAME:jieunpark}
+    password: ${AI_TEST_DB_PASSWORD}
 
   jpa:
     database: postgresql
@@ -22,6 +22,19 @@ spring:
       hibernate:
         format_sql: true
     defer-datasource-initialization: true
+
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY}
+      embedding:
+        model: text-embedding-3-small
+    vectorstore:
+      pgvector:
+        index-type: HNSW
+        distance-type: COSINE_DISTANCE
+        dimensions: 1536
+        max-document-batch-size: 10000
+        initialize-schema: true
 
 
 naver:
