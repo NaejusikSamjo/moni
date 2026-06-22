@@ -69,14 +69,15 @@ environment:
 public class JpaConfig {
 
     @Bean
-    public AuditorAware<UUID> auditorProvider() {
+    public AuditorAware<String> auditorProvider() {
         return new AuditorAwareImpl();
     }
 }
 ```
 
-> `BaseEntity`의 `createdBy` / `updatedBy` 필드는 `String` 타입이며,
-> UUID는 Spring의 타입 변환을 통해 문자열로 자동 저장됩니다.
+> `BaseEntity`의 `createdBy` / `updatedBy` 필드는 `String` 타입입니다.
+> `AuditorAwareImpl`은 내부적으로 UUID를 `toString()`으로 변환해 반환하므로 반드시 `AuditorAware<String>`으로 선언해야 합니다.
+> `AuditorAware<UUID>`로 선언하면 `ClassCastException`이 발생합니다.
 
 ---
 

@@ -10,14 +10,12 @@ import com.moni.user.auth.presentation.dto.response.SignupResponse;
 import com.moni.user.user.domain.entity.User;
 import com.moni.user.user.domain.enums.UserStatus;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -28,13 +26,11 @@ public class AuthService {
 
     @Transactional
     public SignupResponse signup(SignupRequest request, String generatedNickname) {
-
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new CustomException(AuthErrorCode.EMAIL_DUPLICATE);
         }
 
         String encodedPassword = passwordEncoder.encode(request.getPassword());
-
         User user = User.create(
                 request.getEmail(),
                 encodedPassword,
@@ -42,19 +38,13 @@ public class AuthService {
                 generatedNickname,
                 request.getPhone()
         );
-
         User savedUser = userRepository.save(user);
 
-        return new SignupResponse(
-                savedUser.getId(),
-                savedUser.getEmail(),
-                savedUser.getNickname()
-        );
+        return new SignupResponse(savedUser.getId(), savedUser.getEmail(), savedUser.getNickname());
     }
 
     @Transactional(readOnly = true)
     public LoginResponse login(LoginRequest request) {
-
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new CustomException(AuthErrorCode.LOGIN_FAILED));
 
@@ -64,7 +54,6 @@ public class AuthService {
         if (user.getStatus() == UserStatus.DELETED) {
             throw new CustomException(AuthErrorCode.USER_DELETED);
         }
-
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new CustomException(AuthErrorCode.LOGIN_FAILED);
         }
@@ -74,10 +63,7 @@ public class AuthService {
 
     @Transactional
     public LoginResponse refresh(String accessToken, String refreshToken) {
-
         UUID userId = tokenService.validateAndGetUserId(refreshToken);
-
-        // 기존 Access Token 블랙리스트 등록
         tokenService.blacklistAccessToken(accessToken, "refresh");
 
         User user = userRepository.findById(userId)

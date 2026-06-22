@@ -1,6 +1,7 @@
 package com.moni.user.user.domain.repository;
 
 import com.moni.user.user.domain.entity.User;
+import com.moni.user.user.domain.enums.OAuthProvider;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
@@ -11,6 +12,8 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     Optional<User> findByIdAndDeletedAtIsNull(UUID id);
 
     Optional<User> findByEmail(String email);
+
+    Optional<User> findByOauthProviderAndOauthId(OAuthProvider oauthProvider, String oauthId);
 
     boolean existsByEmail(String email);
 
