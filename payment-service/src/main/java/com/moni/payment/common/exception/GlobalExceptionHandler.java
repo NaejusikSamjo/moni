@@ -6,6 +6,7 @@ import com.moni.payment.common.response.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -27,6 +28,14 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleCustomException(CustomException e) {
         ErrorCode errorCode = e.getErrorCode();
         log.warn("CustomException: code={}, message={}", errorCode.getCode(), errorCode.getMessage());
+        return ResponseEntity.status(errorCode.getStatus())
+                .body(ApiResponse.failure(errorCode.getStatus(), errorCode.getCode(), errorCode.getMessage()));
+    }
+
+    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+    public ResponseEntity<ApiResponse<Void>> handleOptimisticLockingFailure(ObjectOptimisticLockingFailureException e) {
+        PaymentErrorCode errorCode = PaymentErrorCode.CONCURRENT_MODIFICATION;
+        log.warn("동시 접근 충돌: {}", e.getMessage());
         return ResponseEntity.status(errorCode.getStatus())
                 .body(ApiResponse.failure(errorCode.getStatus(), errorCode.getCode(), errorCode.getMessage()));
     }
