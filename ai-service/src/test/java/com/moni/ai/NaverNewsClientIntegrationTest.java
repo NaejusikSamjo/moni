@@ -9,6 +9,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.document.Document;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -33,6 +36,9 @@ class NaverNewsClientIntegrationTest {
 
     @Autowired
     private NewsRepository newsRepository;
+
+    @Autowired
+    private VectorStore vectorStore;
 
     @Test
     @DisplayName("DB저장 확인")
@@ -65,6 +71,26 @@ class NaverNewsClientIntegrationTest {
             assertThat(item.getCleanTitle()).doesNotContain("<b>", "</b>");
             assertThat(item.getCleanDescription()).doesNotContain("<b>", "</b>");
             assertThat(item.getCleanTitle()).doesNotContain("&quot;", "&amp;");
+        });
+    }
+
+    @Test
+    @DisplayName("삼성전자 관련 뉴스 벡터 검색")
+    void 삼성전자_벡터_검색() {
+        // when
+        List<Document> results = vectorStore.similaritySearch(
+                SearchRequest.builder()
+                        .query("삼성전자 실적 전망")
+                        .topK(5)
+                        .filterExpression("ticker == '005930'")
+                        .build()
+        );
+
+        // then
+        assertThat(results).isNotEmpty();
+        results.forEach(doc -> {
+            log.info("유사도 검색 결과 - 내용: {}", doc.getText());
+            log.info("메타데이터: {}", doc.getMetadata());
         });
     }
 }
