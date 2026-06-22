@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: moni-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: moni_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: always
+
+  redis-cluster:
+    image: grokzen/redis-cluster:latest
+    container_name: moni-redis-cluster
+    ports:
+      - "7000:7000"
+      - "7001:7001"
+      - "7002:7002"
+      - "7003:7003"
+      - "7004:7004"
+      - "7005:7005"
+    environment:
+      - INITIAL_PORT=7000
+      - MASTERS=3
+      - SLAVES_PER_MASTER=1
+      - IP=127.0.0.1
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    restart: always
+
+volumes:
+  pgdata:
