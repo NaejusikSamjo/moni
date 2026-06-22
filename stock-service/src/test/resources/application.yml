@@ -1,0 +1,64 @@
+server:
+  port: 19092
+
+spring:
+  cloud:
+    config:
+      fail-fast: false
+      enabled: false
+  application:
+    name: stock-service
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    open-in-view: false
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
+
+kis:
+  app-key: test-key
+  app-secret: test-secret
+  ws-url: ws://ops.koreainvestment.com:31000
+  rest-url: https://openapi.koreainvestment.com:9443
+  mock: false
+
+eureka:
+  client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    tags:
+      application: ${spring.application.name}
+  zipkin:
+    tracing:
+      endpoint: http://localhost:9411/api/v2/spans
+  tracing:
+    sampling:
+      probability: 0.0
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+
+kospiUrl: https://new.real.download.dws.co.kr/common/master/kospi_code.mst.zip
+kosdaqUrl: https://new.real.download.dws.co.kr/common/master/kosdaq_code.mst.zip
+themeUrl: https://new.real.download.dws.co.kr/common/master/idxcode.mst.zip
