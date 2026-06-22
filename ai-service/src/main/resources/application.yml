@@ -27,7 +27,7 @@ spring:
     openai:
       api-key: ${OPENAI_API_KEY}
       embedding:
-        model: text-embedding-3-small
+        model: ${OPENAI_EMBEDDING_MODEL}
     vectorstore:
       pgvector:
         index-type: HNSW
