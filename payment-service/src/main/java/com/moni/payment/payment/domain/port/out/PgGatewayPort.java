@@ -9,6 +9,7 @@ import java.util.UUID;
 public interface PgGatewayPort {
 
     record PgPaymentRequest(
+            String authKey,
             MerchantId merchantId,
             UUID userId,
             Money amount,

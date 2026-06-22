@@ -17,7 +17,9 @@ public enum PaymentErrorCode implements ErrorCode {
     INVALID_BILLING_KEY("SUB_004", "유효하지 않은 BillingKey입니다.", HttpStatus.BAD_REQUEST),
 
     PG_COMMUNICATION_ERROR("PG_001", "PG사와 통신 중 오류가 발생했습니다.", HttpStatus.BAD_GATEWAY),
-    PG_PAYMENT_FAILED("PG_002", "PG사에서 결제를 거절하였습니다.", HttpStatus.UNPROCESSABLE_ENTITY);
+    PG_PAYMENT_FAILED("PG_002", "PG사에서 결제를 거절하였습니다.", HttpStatus.UNPROCESSABLE_ENTITY),
+    PG_CONNECTION_TIMEOUT("PG_003", "PG사 연결 시간이 초과되었습니다.", HttpStatus.GATEWAY_TIMEOUT),
+    KAFKA_PUBLISH_FAILED("MSG_001", "메시지 발행에 실패하였습니다.", HttpStatus.INTERNAL_SERVER_ERROR);
 
     private final String code;
     private final String message;
