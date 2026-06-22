@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.moni.common.error.exception.CustomException;
-import com.moni.user.auth.application.OAuthUserInfo;
+import com.moni.user.auth.application.oauth.OAuthUserInfo;
 import com.moni.user.auth.domain.exception.AuthErrorCode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -84,11 +84,18 @@ public class KakaoOAuthClient extends AbstractOAuthClient {
             }
 
             String name = account.profile() != null ? account.profile().nickname() : null;
-            return new OAuthUserInfo(String.valueOf(response.id()), account.email(), name);
+            String phone = normalizePhone(account.phoneNumber());
+            return new OAuthUserInfo(String.valueOf(response.id()), account.email(), name, phone);
         } catch (RestClientException e) {
             log.warn("[OAUTH] 카카오 사용자 정보 조회 실패 - {}", e.getMessage());
             throw new CustomException(AuthErrorCode.OAUTH_EXCHANGE_FAILED);
         }
+    }
+
+    // 카카오 전화번호 형식 변환: +82 10-1234-5678 → 010-1234-5678
+    private String normalizePhone(String phone) {
+        if (phone == null || phone.isBlank()) return null;
+        return phone.replaceFirst("^\\+82\\s*", "0").trim();
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -106,6 +113,7 @@ public class KakaoOAuthClient extends AbstractOAuthClient {
                 Boolean isEmailValid,
                 Boolean isEmailVerified,
                 Boolean emailNeedsAgreement,
+                String phoneNumber,
                 Profile profile) {
 
             @JsonIgnoreProperties(ignoreUnknown = true)

@@ -9,6 +9,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class UserUpdateRequest {
 
+    @Size(min = 2, max = 50, message = "이름은 2자 이상 50자 이하여야 합니다.")
+    private String name;
+
     @Size(min = 2, max = 50, message = "닉네임은 2자 이상 50자 이하여야 합니다.")
     private String nickname;
 

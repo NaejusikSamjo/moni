@@ -1,4 +1,4 @@
-package com.moni.user.global.config;
+package com.moni.user.global.config.redis;
 
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
