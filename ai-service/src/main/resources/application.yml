@@ -23,6 +23,18 @@ spring:
         format_sql: true
     defer-datasource-initialization: true
 
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY}
+      embedding:
+        model: ${OPENAI_EMBEDDING_MODEL}
+    vectorstore:
+      pgvector:
+        index-type: HNSW
+        distance-type: COSINE_DISTANCE
+        dimensions: 1536
+        max-document-batch-size: 10000
+
 
 naver:
   news:

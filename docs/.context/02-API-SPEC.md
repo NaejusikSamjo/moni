@@ -30,6 +30,18 @@
 
 ---
 
+### 1-2. admin ( ADMIN 권한 전용 )
+
+| 기능          | URL                                      | Method | 비고                                 |
+|-------------|------------------------------------------|--------|------------------------------------|
+| 유저 목록 조회    | `/api/v1/ad min/users`                   | GET    | Pageable (size=20, createdAt DESC) |
+| 유저 계정 정지    | `/api/v1/admin/users/{userId}/suspend`   | PATCH  | Body: reason                       |
+| 유저 계정 정지 해지 | `/api/v1/admin/users/{userId}/unsuspend` | PATCH  |                                    |
+| 유저 계정 삭제    | `/api/v1/admin/users/{userId}`           | DELETE | 소프트 삭제                             |
+| 유저 권한 변경    | `/api/v1/admin/users/{userId}/role`      | PATCH  | Body: role (USER \| ADMIN)         |
+
+---
+
 ## 2. 모의 투자 서비스 (trade-service, 담당: 동민)
 
 | 기능              | URL                                 | Method | 비고               |
