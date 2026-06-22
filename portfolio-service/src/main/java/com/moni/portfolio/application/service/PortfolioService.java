@@ -11,6 +11,7 @@ import com.moni.portfolio.domain.exception.PortfolioErrorCode;
 import com.moni.portfolio.domain.repository.PortfolioRepository;
 import com.moni.portfolio.infrastructure.client.StockServiceClient;
 import com.moni.portfolio.infrastructure.client.TradeServiceClient;
+import com.moni.portfolio.infrastructure.client.dto.response.StockResponseDto;
 import com.moni.portfolio.infrastructure.client.dto.response.TradeAccountResponseDto;
 import com.moni.portfolio.infrastructure.client.dto.response.TradeHoldingResponseDto;
 import com.moni.portfolio.infrastructure.client.dto.response.TradePageResponseDto;
@@ -133,8 +134,12 @@ public class PortfolioService {
     }
 
     private List<PriceInput> getPrices(List<HoldingInput> holdings) {
-        // TODO: stock-service GET /api/v1/stocks/search 호출로 현재가 다건 조회(페이징)
-        throw new CustomException(PortfolioErrorCode.EXTERNAL_SERVICE_ERROR);
+        return holdings.stream()
+                .map(holding -> {
+                    StockResponseDto stock = stockServiceClient.getStockDetail(holding.ticker()).data();
+                    return new PriceInput(stock.ticker(), stock.price());
+                })
+                .toList();
     }
 
     /** page는 음수일 경우 기본 페이지로 보정 */
