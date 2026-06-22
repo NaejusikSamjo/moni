@@ -121,3 +121,6 @@ jwt:
 
 gateway:
   secret: ${GATEWAY_SECRET}
+
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}

@@ -1,6 +1,6 @@
 package com.moni.user.auth.infrastructure.oauth;
 
-import com.moni.user.auth.application.OAuthClient;
+import com.moni.user.auth.application.oauth.OAuthClient;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
