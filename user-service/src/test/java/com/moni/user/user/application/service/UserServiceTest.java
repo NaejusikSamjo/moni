@@ -142,8 +142,7 @@ class UserServiceTest {
         void createTendency_success() {
             // given
             TendencyRequest request = new TendencyRequest();
-            ReflectionTestUtils.setField(request, "score", 80);
-            ReflectionTestUtils.setField(request, "type", TendencyType.AGGRESSIVE);
+            ReflectionTestUtils.setField(request, "score", 85);
             given(tendencyRepository.existsByUserIdAndDeletedAtIsNull(userId)).willReturn(false);
             given(userRepository.findByIdAndDeletedAtIsNull(userId)).willReturn(Optional.of(mockUser));
             given(tendencyRepository.save(any(Tendency.class)))
@@ -153,7 +152,7 @@ class UserServiceTest {
             TendencyResponse response = userService.createTendency(userId, request);
 
             // then
-            assertThat(response.getScore()).isEqualTo(80);
+            assertThat(response.getScore()).isEqualTo(85);
             assertThat(response.getType()).isEqualTo(TendencyType.AGGRESSIVE);
         }
 
@@ -163,7 +162,6 @@ class UserServiceTest {
             // given
             TendencyRequest request = new TendencyRequest();
             ReflectionTestUtils.setField(request, "score", 80);
-            ReflectionTestUtils.setField(request, "type", TendencyType.AGGRESSIVE);
             given(tendencyRepository.existsByUserIdAndDeletedAtIsNull(userId)).willReturn(true);
 
             // when & then

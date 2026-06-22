@@ -17,7 +17,10 @@ public enum UserErrorCode implements ErrorCode {
 
     PASSWORD_SAME_AS_CURRENT("USER-007", "현재 비밀번호와 동일합니다.", HttpStatus.BAD_REQUEST),
 
-    FORBIDDEN("USER-008", "접근 권한이 없습니다.", HttpStatus.FORBIDDEN);
+    FORBIDDEN("USER-008", "접근 권한이 없습니다.", HttpStatus.FORBIDDEN),
+
+    USER_ALREADY_SUSPENDED("USER-009", "이미 정지된 계정입니다.", HttpStatus.CONFLICT),
+    USER_NOT_SUSPENDED("USER-010", "정지 상태가 아닌 계정입니다.", HttpStatus.BAD_REQUEST);
 
     private final String code;
     private final String message;

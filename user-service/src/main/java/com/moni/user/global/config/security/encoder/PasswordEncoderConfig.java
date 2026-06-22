@@ -1,4 +1,4 @@
-package com.moni.user.global.config;
+package com.moni.user.global.config.security.encoder;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

@@ -48,18 +48,18 @@ public class Tendency extends BaseEntity implements Persistable<UUID> {
         return isNew;
     }
 
-    public static Tendency create(User user, int score, TendencyType type) {
+    public static Tendency create(User user, int score) {
         Tendency tendency = new Tendency();
         tendency.id = UUID.randomUUID();
         tendency.isNew = true;
         tendency.user = user;
         tendency.score = score;
-        tendency.type = type;
+        tendency.type = TendencyType.fromScore(score);
         return tendency;
     }
 
-    public void update(int score, TendencyType type) {
+    public void update(int score) {
         this.score = score;
-        this.type = type;
+        this.type = TendencyType.fromScore(score);
     }
 }
