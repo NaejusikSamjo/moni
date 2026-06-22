@@ -1,40 +1,78 @@
 server:
   port: 19092
 
+spring:
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: ${DB_URL}?currentSchema=stock_service
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  jpa:
+    database: postgresql
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    generate-ddl: true
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+  data:
+    redis:
+      cluster:
+        nodes: ${REDIS_NODES:127.0.0.1:7000,127.0.0.1:7001,127.0.0.1:7002}
+      password: ${REDIS_PASSWORD}
+
+kis:
+  app-key: ${KIS_APP_KEY:}
+  app-secret: ${KIS_APP_SECRET:}
+  ws-url: ws://ops.koreainvestment.com:31000
+  rest-url: https://openapi.koreainvestment.com:9443
+  mock: false
+
 eureka:
   client:
     service-url:
-      defaultZone: http://eureka-server:8761/eureka/
+      defaultZone: ${EUREKA_URL:http://eureka-server:8761/eureka/}
+    register-with-eureka: true
+    fetch-registry: true
   instance:
     prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}
+    lease-renewal-interval-in-seconds: 30
+    lease-expiration-duration-in-seconds: 90
     metadata-map:
       prometheus.scrape: "true"
       prometheus.path: "/actuator/prometheus"
-      prometheus.port: "${serer.port}"
-
-spring:
-  datasource:
-    url: ${DB_URL}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
-  data:
-    redis:
-      host: ${REDIS_HOST}
-      port: ${REDIS_PORT}
-      password: ${REDIS_PASSWORD}
-
-springdoc:
-  api-docs:
-    path: /v3/api-docs
+      prometheus.port: "${server.port}"
 
 management:
   endpoints:
     web:
       exposure:
-        include: health, prometheus, metrics
+        include: "*"
   endpoint:
     health:
       show-details: always
   metrics:
     tags:
       application: ${spring.application.name}
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+  zipkin:
+    tracing:
+      endpoint: ${ZIPKIN_URL:http://localhost:9411/api/v2/spans}
+  tracing:
+    sampling:
+      probability: 1.0
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+
+kospiUrl: https://new.real.download.dws.co.kr/common/master/kospi_code.mst.zip
+kosdaqUrl: https://new.real.download.dws.co.kr/common/master/kosdaq_code.mst.zip
+themeUrl: https://new.real.download.dws.co.kr/common/master/idxcode.mst.zip
