@@ -73,7 +73,7 @@ services:
       - ./.docker-volumes/payment-db:/var/lib/postgresql/data
 
   ai-db:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg17
     container_name: ai_db
     environment:
       POSTGRES_DB: ai_db

@@ -1,4 +1,4 @@
-package com.moni.user.auth.application;
+package com.moni.user.auth.application.oauth;
 
 public interface OAuthClient {
 
