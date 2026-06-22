@@ -89,7 +89,8 @@ public class TossPaymentsAdapter implements PgGatewayPort {
         try {
             return tossPaymentsClient.issueBillingKey(request);
         } catch (FeignException.FeignClientException e) {
-            log.warn("BillingKey 발급 실패: authKey={}, status={}", request.authKey(), e.status());
+            log.warn("BillingKey 발급 실패: authKey={}, status={}, body={}",
+                    request.authKey(), e.status(), e.contentUTF8());
             throw new PaymentException(PaymentErrorCode.PG_PAYMENT_FAILED);
         } catch (RetryableException e) {
             log.error("TossPayments 연결 타임아웃 (BillingKey 발급)", e);
@@ -104,7 +105,8 @@ public class TossPaymentsAdapter implements PgGatewayPort {
         try {
             return tossPaymentsClient.chargeBillingKey(billingKey, request);
         } catch (FeignException.FeignClientException e) {
-            log.warn("BillingKey 결제 실패: billingKey={}, status={}", billingKey, e.status());
+            log.warn("BillingKey 결제 실패: billingKey={}, status={}, body={}",
+                    billingKey, e.status(), e.contentUTF8());
             throw new PaymentException(PaymentErrorCode.PG_PAYMENT_FAILED);
         } catch (RetryableException e) {
             log.error("TossPayments 연결 타임아웃 (BillingKey 결제)", e);

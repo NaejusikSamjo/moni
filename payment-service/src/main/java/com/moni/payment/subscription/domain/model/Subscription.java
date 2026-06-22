@@ -50,7 +50,7 @@ public class Subscription {
         return new Subscription(
                 UUID.randomUUID(), userId, null,
                 SubscriptionStatus.PENDING_ACTIVATION, nextBillingDate,
-                now, now, 0L,
+                now, now, null,
                 Collections.emptyList());
     }
 
