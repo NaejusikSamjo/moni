@@ -66,7 +66,7 @@ public class UserService {
             user.updatePassword(passwordEncoder.encode(request.getPassword()));
         }
 
-        user.updateProfile(request.getNickname(), request.getNickname(), request.getPhone());
+        user.updateProfile(request.getName(), request.getNickname(), request.getPhone());
 
         return UserResponse.from(user);
     }
@@ -90,7 +90,7 @@ public class UserService {
         }
 
         User user = getUserById(userId);
-        Tendency tendency = Tendency.create(user, request.getScore(), request.getType());
+        Tendency tendency = Tendency.create(user, request.getScore());
         return TendencyResponse.from(tendencyRepository.save(tendency));
     }
 
@@ -107,7 +107,7 @@ public class UserService {
         validateOwnership(userId);
         Tendency tendency = tendencyRepository.findByUserIdAndDeletedAtIsNull(userId)
                 .orElseThrow(() -> new CustomException(UserErrorCode.TENDENCY_NOT_FOUND));
-        tendency.update(request.getScore(), request.getType());
+        tendency.update(request.getScore());
         return TendencyResponse.from(tendency);
     }
 

@@ -1,9 +1,9 @@
 package com.moni.user.auth.application.service;
 
 import com.moni.common.error.exception.CustomException;
-import com.moni.user.auth.application.OAuthUserInfo;
+import com.moni.user.auth.application.oauth.OAuthUserInfo;
 import com.moni.user.auth.domain.exception.AuthErrorCode;
-import com.moni.user.auth.application.OAuthClient;
+import com.moni.user.auth.application.oauth.OAuthClient;
 import com.moni.user.auth.presentation.dto.response.LoginResponse;
 import com.moni.user.global.util.NicknameGenerator;
 import com.moni.user.user.domain.entity.User;
@@ -63,7 +63,8 @@ public class SocialLoginService {
                 name,
                 nicknameGenerator.generate(),
                 provider,
-                userInfo.oauthId()
+                userInfo.oauthId(),
+                userInfo.phone()
         );
         return userRepository.save(user);
     }

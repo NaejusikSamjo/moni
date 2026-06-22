@@ -1,4 +1,4 @@
-package com.moni.user.global.config;
+package com.moni.user.global.config.security.config;
 
 import com.moni.common.security.GatewayHeaderAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
