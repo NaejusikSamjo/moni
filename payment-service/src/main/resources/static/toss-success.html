@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>빌링키 발급 성공</title>
+  <style>
+    body { font-family: sans-serif; max-width: 620px; margin: 40px auto; padding: 0 20px; }
+    h2 { color: #1a7f4e; }
+    .card { border: 1px solid #d1fae5; background: #f0fdf4; border-radius: 10px; padding: 20px 24px; margin-bottom: 20px; }
+    .field-label { font-size: 12px; font-weight: bold; color: #6b7280; text-transform: uppercase; margin-bottom: 4px; }
+    .field-value { font-family: monospace; font-size: 14px; word-break: break-all; background: #fff; border: 1px solid #d1d5db; border-radius: 6px; padding: 10px 12px; margin-bottom: 12px; }
+    .copy-btn { padding: 6px 14px; font-size: 13px; border: 1px solid #3182f6; background: #fff; color: #3182f6; border-radius: 6px; cursor: pointer; margin-left: 8px; }
+    .copy-btn:hover { background: #eff6ff; }
+    .next-step { background: #fffbeb; border-left: 4px solid #f59e0b; padding: 14px 16px; font-size: 13px; line-height: 1.7; border-radius: 0 6px 6px 0; }
+    .next-step code { background: #fef3c7; padding: 1px 5px; border-radius: 3px; font-family: monospace; font-size: 13px; }
+    .error-card { border: 1px solid #fecaca; background: #fff5f5; border-radius: 10px; padding: 20px 24px; }
+    .error-card h2 { color: #dc2626; }
+  </style>
+</head>
+<body>
+
+<div id="content"></div>
+
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const authKey = params.get('authKey');
+  const customerKey = params.get('customerKey');
+
+  function copyToClipboard(text, btn) {
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = '복사됨 ✓';
+      btn.style.color = '#1a7f4e';
+      setTimeout(() => { btn.textContent = '복사'; btn.style.color = '#3182f6'; }, 2000);
+    });
+  }
+
+  if (!authKey) {
+    document.getElementById('content').innerHTML = `
+      <div class="error-card">
+        <h2>⚠️ authKey를 찾을 수 없습니다</h2>
+        <p>올바른 콜백 URL이 아닙니다. <a href="/toss-billing-test.html">테스트 페이지</a>에서 다시 시작하세요.</p>
+      </div>`;
+  } else {
+    document.getElementById('content').innerHTML = `
+      <h2>✅ 빌링키 발급 성공</h2>
+      <div class="card">
+        <div class="field-label">authKey <button class="copy-btn" onclick="copyToClipboard('${authKey}', this)">복사</button></div>
+        <div class="field-value">${authKey}</div>
+        <div class="field-label">customerKey <button class="copy-btn" onclick="copyToClipboard('${customerKey}', this)">복사</button></div>
+        <div class="field-value">${customerKey || '—'}</div>
+      </div>
+      <div class="next-step">
+        <strong>다음 단계 — 구독 결제 API 호출</strong><br><br>
+        아래 값을 Postman 요청 바디에 입력하세요:<br>
+        <code>"authKey": "${authKey}"</code><br>
+        <code>"customerKey": "${customerKey || ''}"</code><br><br>
+        직접 접근 예시 (payment-service :19095):
+        <pre style="background:#fff;border:1px solid #d1d5db;padding:10px;border-radius:6px;overflow-x:auto;font-size:12px;">POST http://localhost:19095/api/v1/payments/subscription
+X-User-Id: ${customerKey || 'YOUR_UUID'}
+X-Gateway-Secret: local-secret
+Content-Type: application/json
+
+{
+  "authKey": "${authKey}",
+  "customerKey": "${customerKey || 'YOUR_UUID'}",
+  "amount": 9900,
+  "orderName": "모니 AI 구독"
+}</pre>
+      </div>`;
+  }
+</script>
+
+</body>
+</html>
