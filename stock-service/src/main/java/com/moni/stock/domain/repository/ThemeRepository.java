@@ -1,10 +1,11 @@
 package com.moni.stock.domain.repository;
 
 import com.moni.stock.domain.entity.Theme;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import java.util.List;
 
 public interface ThemeRepository {
 
-    Page<Theme> findAll(Pageable pageable);
+    void saveAll(List<Theme> themes);
+
+    List<Theme> findAll();
 }

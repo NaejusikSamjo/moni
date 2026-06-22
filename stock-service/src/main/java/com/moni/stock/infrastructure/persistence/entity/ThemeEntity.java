@@ -34,8 +34,6 @@ public class ThemeEntity extends BaseEntity {
     @Column(nullable = false, length = 100)
     private String themeName;
 
-    @OneToMany(mappedBy = "theme", fetch = FetchType.LAZY)
-    private List<StockThemeEntity> stockThemes;
 
     @Builder
     private ThemeEntity(String themeCode, String themeName) {
@@ -43,16 +41,4 @@ public class ThemeEntity extends BaseEntity {
         this.themeName = themeName;
     }
 
-    public Theme toDomain() {
-        List<String> stockNames = stockThemes == null ? List.of() :
-                stockThemes.stream()
-                        .map(st -> st.getStock().getName())
-                        .toList();
-        return Theme.builder()
-                .id(id)
-                .themeCode(themeCode)
-                .themeName(themeName)
-                .stockNames(stockNames)
-                .build();
-    }
 }

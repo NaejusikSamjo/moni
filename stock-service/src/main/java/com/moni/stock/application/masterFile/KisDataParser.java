@@ -1,7 +1,9 @@
 package com.moni.stock.application.masterFile;
 
 import com.moni.stock.domain.entity.Stock;
+import com.moni.stock.domain.entity.Theme;
 import com.moni.stock.domain.type.MarketType;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.io.BufferedReader;
@@ -13,6 +15,7 @@ import java.util.UUID;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+@Slf4j
 @Component
 public class KisDataParser {
 
@@ -45,5 +48,35 @@ public class KisDataParser {
             }
         }
         return stocks;
+    }
+
+    public List<Theme> parseThemeMasterFile (String url) throws Exception {
+        List<Theme> themes = new ArrayList<>();
+
+        try(ZipInputStream zis = new ZipInputStream(new URL(url).openStream())){
+            ZipEntry zipEntry = zis.getNextEntry();
+
+            if(zipEntry != null) {
+                BufferedReader reader = new BufferedReader(new InputStreamReader(zis, "MS949"));
+                String line;
+
+                while((line = reader.readLine()) != null) {
+                    if(line.length()<=5) continue;
+
+                    String themeCode = line.substring(1,5).trim();
+                    String themeName = line.substring(5).trim();
+
+//                    log.info("테마코드 : {}", themeCode);
+//                    log.info("테마이름 : {}", themeName);
+
+                    themes.add(Theme.builder()
+                                    .id(UUID.randomUUID())
+                                    .themeCode(themeCode)
+                                    .themeName(themeName)
+                            .build());
+                }
+            }
+        }
+        return themes;
     }
 }

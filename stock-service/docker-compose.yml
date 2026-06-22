@@ -29,7 +29,7 @@ services:
       - MASTERS=3
       - SLAVES_PER_MASTER=1
       - IP=127.0.0.1
-      - REDIS_PASSWORD= ${REDIS_PASSWORD}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
     restart: always
 
 volumes:

@@ -13,6 +13,4 @@ public class Theme {
     private UUID id;
     private String themeCode;
     private String themeName;
-    private List<String> stockNames;
-    private Double change;
 }

@@ -3,7 +3,13 @@ package com.moni.stock.presentation.controller;
 import com.moni.common.response.paging.PageRes;
 import com.moni.stock.application.masterFile.StockMasterService;
 import com.moni.stock.application.port.in.StockQueryUseCase;
+import com.moni.stock.domain.type.ChartIndex;
+import com.moni.stock.presentation.dto.response.StockChartResponse;
 import com.moni.stock.presentation.dto.response.StockResDto;
+import com.moni.stock.presentation.dto.response.ThemeRankingResponse;
+import com.moni.stock.presentation.dto.response.TopVolumeResponse;
+
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -28,6 +34,7 @@ public class StockController {
     public Map<String, String> downloadStocks() {
         stockMasterService.runOnceOnStartupKosdaq();
         stockMasterService.runOnceOnStartupKospi();
+        stockMasterService.updateThemeMasters();
 
         return Map.of("message", "success download stocks");
     }
@@ -42,6 +49,21 @@ public class StockController {
     @GetMapping("/{ticker}")
     public StockResDto getStockDetail(@PathVariable String ticker) {
         return stockQueryUseCase.getStockDetail(ticker);
+    }
+
+    @GetMapping("/{ticker}/chart")
+    public StockChartResponse getStockCandle(@PathVariable String ticker, @RequestParam("index") ChartIndex index) {
+        return stockQueryUseCase.getChart(ticker, index);
+    }
+
+    @GetMapping("/themes")
+    public List<ThemeRankingResponse> getThemes() {
+        return stockQueryUseCase.getThemes();
+    }
+
+    @GetMapping("/top-volume")
+    public TopVolumeResponse getTopVolume() {
+        return stockQueryUseCase.getTopVolume();
     }
 
 }
