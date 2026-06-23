@@ -46,10 +46,6 @@ dependencies {
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0'
     //postgres
     runtimeOnly 'org.postgresql:postgresql'
-    //zipkin
-    implementation 'io.zipkin.reporter2:zipkin-reporter-brave'
-    //traceId
-    implementation 'io.micrometer:micrometer-tracing-bridge-brave'
 
 
 }
