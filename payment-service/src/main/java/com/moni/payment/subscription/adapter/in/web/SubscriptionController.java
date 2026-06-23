@@ -3,7 +3,7 @@ package com.moni.payment.subscription.adapter.in.web;
 import com.moni.payment.common.response.ApiResponse;
 import com.moni.payment.subscription.adapter.in.web.dto.SubscriptionStatusResponse;
 import com.moni.payment.domain.model.Subscription;
-import com.moni.payment.subscription.domain.port.in.GetSubscriptionStatusUseCase;
+import com.moni.payment.application.usecase.GetSubscriptionStatusUseCase;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;

@@ -7,7 +7,7 @@ import com.moni.payment.common.exception.PaymentException;
 import com.moni.payment.domain.model.BillingKey;
 import com.moni.payment.domain.model.Subscription;
 import com.moni.payment.domain.model.SubscriptionStatus;
-import com.moni.payment.subscription.domain.port.in.GetSubscriptionStatusUseCase;
+import com.moni.payment.application.usecase.GetSubscriptionStatusUseCase;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

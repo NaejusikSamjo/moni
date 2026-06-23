@@ -1,4 +1,4 @@
-package com.moni.payment.subscription.domain.port.in;
+package com.moni.payment.application.usecase;
 
 import java.util.UUID;
 
