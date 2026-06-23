@@ -1,4 +1,4 @@
-package com.moni.payment.subscription.adapter.in.web.dto;
+package com.moni.payment.presentation.dto;
 
 import com.moni.payment.domain.model.Subscription;
 import com.moni.payment.domain.model.SubscriptionStatus;

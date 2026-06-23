@@ -1,8 +1,8 @@
-package com.moni.payment.payment.adapter.in.web;
+package com.moni.payment.presentation.controller;
 
 import com.moni.payment.common.response.ApiResponse;
-import com.moni.payment.payment.adapter.in.web.dto.SubscribeRequest;
-import com.moni.payment.payment.adapter.in.web.dto.SubscribeResponse;
+import com.moni.payment.presentation.dto.SubscribeRequest;
+import com.moni.payment.presentation.dto.SubscribeResponse;
 import com.moni.payment.application.command.SubscribeCommand;
 import com.moni.payment.application.command.SubscribeResult;
 import com.moni.payment.application.usecase.InitiatePaymentUseCase;

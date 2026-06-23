@@ -1,7 +1,7 @@
-package com.moni.payment.subscription.adapter.in.web;
+package com.moni.payment.presentation.controller;
 
 import com.moni.payment.common.response.ApiResponse;
-import com.moni.payment.subscription.adapter.in.web.dto.SubscriptionStatusResponse;
+import com.moni.payment.presentation.dto.SubscriptionStatusResponse;
 import com.moni.payment.domain.model.Subscription;
 import com.moni.payment.application.usecase.GetSubscriptionStatusUseCase;
 import lombok.RequiredArgsConstructor;
