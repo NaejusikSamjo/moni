@@ -32,8 +32,8 @@ class PortfolioCalculatorTest {
             // given
             AccountInput account = new AccountInput(money("40000"), money("90000"));
             List<HoldingInput> holdings = List.of(
-                    new HoldingInput("TICKER-1", 3L, money("10000")),
-                    new HoldingInput("TICKER-2", 2L, money("15000"))
+                    new HoldingInput("TICKER-1", 3L, money("10000"), money("30000")),
+                    new HoldingInput("TICKER-2", 2L, money("15000"), money("30000"))
             );
             List<PriceInput> prices = List.of(
                     new PriceInput("TICKER-1", money("20000")),
@@ -109,7 +109,7 @@ class PortfolioCalculatorTest {
             // given
             AccountInput account = new AccountInput(BigDecimal.ZERO, BigDecimal.ZERO);
             List<HoldingInput> holdings = List.of(
-                    new HoldingInput("TICKER-1", 10L, BigDecimal.ZERO)
+                    new HoldingInput("TICKER-1", 10L, BigDecimal.ZERO, BigDecimal.ZERO)
             );
             List<PriceInput> prices = List.of(
                     new PriceInput("TICKER-1", money("100"))
@@ -132,7 +132,7 @@ class PortfolioCalculatorTest {
             // given
             AccountInput account = new AccountInput(money("10000"), money("10000"));
             List<HoldingInput> holdings = List.of(
-                    new HoldingInput("TICKER-1", 1L, money("10000"))
+                    new HoldingInput("TICKER-1", 1L, money("10000"), money("10000"))
             );
             List<PriceInput> prices = List.of();
 
@@ -152,8 +152,8 @@ class PortfolioCalculatorTest {
         void success() {
             // given
             List<HoldingInput> holdings = List.of(
-                    new HoldingInput("TICKER-1", 3L, money("10000")),
-                    new HoldingInput("TICKER-2", 2L, money("15000"))
+                    new HoldingInput("TICKER-1", 3L, money("10000"), money("30000")),
+                    new HoldingInput("TICKER-2", 2L, money("15000"), money("30000"))
             );
             List<PriceInput> prices = List.of(
                     new PriceInput("TICKER-1", money("20000")),
@@ -182,6 +182,50 @@ class PortfolioCalculatorTest {
         }
 
         @Test
+        @DisplayName("성공 - 반올림된 평균 매수가 대신 누적 매수 금액으로 손익을 계산한다")
+        void success_calculate_with_total_purchase_amount() {
+            // given
+            List<HoldingInput> holdings = List.of(
+                    new HoldingInput("TICKER-1", 3L, money("10.01"), money("30.02"))
+            );
+            List<PriceInput> prices = List.of(
+                    new PriceInput("TICKER-1", money("11.00"))
+            );
+
+            // when
+            List<HoldingResult> result = portfolioCalculator.calculateHoldings(holdings, prices);
+
+            // then
+            HoldingResult holding = result.getFirst();
+            assertThat(holding.evaluationAmount()).isEqualByComparingTo("33.00");
+            assertThat(holding.profitLoss()).isEqualByComparingTo("2.98");
+            assertThat(holding.profitRate()).isEqualByComparingTo("9.9267");
+        }
+
+        @Test
+        @DisplayName("성공 - 모든 종목의 평가금액이 0이면 비중을 0으로 계산한다")
+        void success_zero_evaluation_amount() {
+            // given
+            List<HoldingInput> holdings = List.of(
+                    new HoldingInput("TICKER-1", 1L, money("10000"), money("10000")),
+                    new HoldingInput("TICKER-2", 2L, money("5000"), money("10000"))
+            );
+            List<PriceInput> prices = List.of(
+                    new PriceInput("TICKER-1", BigDecimal.ZERO),
+                    new PriceInput("TICKER-2", BigDecimal.ZERO)
+            );
+
+            // when
+            List<HoldingResult> result = portfolioCalculator.calculateHoldings(holdings, prices);
+
+            // then
+            assertThat(result).allSatisfy(holding -> {
+                assertThat(holding.evaluationAmount()).isEqualByComparingTo("0.00");
+                assertThat(holding.weight()).isEqualByComparingTo("0.0000");
+            });
+        }
+
+        @Test
         @DisplayName("성공 - 보유 종목이 없으면 빈 목록을 반환한다")
         void success_empty_holdings() {
             // given
@@ -200,7 +244,7 @@ class PortfolioCalculatorTest {
         void fail_stock_price_not_found() {
             // given
             List<HoldingInput> holdings = List.of(
-                    new HoldingInput("TICKER-1", 1L, money("10000"))
+                    new HoldingInput("TICKER-1", 1L, money("10000"), money("10000"))
             );
             List<PriceInput> prices = List.of();
 
