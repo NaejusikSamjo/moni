@@ -20,6 +20,7 @@ import com.moni.portfolio.infrastructure.client.dto.response.TradePageResponseDt
 import com.moni.portfolio.presentation.dto.response.PortfolioAssetResponseDto;
 import com.moni.portfolio.presentation.dto.response.PortfolioCreateResponseDto;
 import com.moni.portfolio.presentation.dto.response.PortfolioHoldingsResponseDto;
+import feign.FeignException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -38,6 +39,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -222,6 +224,57 @@ class PortfolioServiceTest {
 
             verifyNoInteractions(tradeServiceClient, stockServiceClient, portfolioCalculator);
         }
+
+        @Test
+        @DisplayName("실패 - Trade 계좌 조회 중 Feign 예외가 발생하면 외부 서비스 오류로 변환한다")
+        void fail_trade_account_feign_error() {
+            // given
+            givenPortfolioExists();
+            given(tradeServiceClient.getAccount(USER_ID)).willThrow(mock(FeignException.class));
+
+            // when & then
+            assertThatThrownBy(() -> portfolioService.getAssets(USER_ID))
+                    .isInstanceOfSatisfying(CustomException.class, exception ->
+                            assertThat(exception.getErrorCode())
+                                    .isEqualTo(PortfolioErrorCode.EXTERNAL_SERVICE_ERROR));
+
+            verifyNoInteractions(stockServiceClient, portfolioCalculator);
+        }
+
+        @Test
+        @DisplayName("실패 - Trade 계좌 응답 데이터가 없으면 외부 서비스 오류가 발생한다")
+        void fail_trade_account_data_missing() {
+            // given
+            givenPortfolioExists();
+            given(tradeServiceClient.getAccount(USER_ID)).willReturn(success(null));
+
+            // when & then
+            assertThatThrownBy(() -> portfolioService.getAssets(USER_ID))
+                    .isInstanceOfSatisfying(CustomException.class, exception ->
+                            assertThat(exception.getErrorCode())
+                                    .isEqualTo(PortfolioErrorCode.EXTERNAL_SERVICE_ERROR));
+
+            verifyNoInteractions(stockServiceClient, portfolioCalculator);
+        }
+
+        @Test
+        @DisplayName("실패 - Trade 계좌 잔액이 없으면 외부 서비스 오류가 발생한다")
+        void fail_trade_account_balance_missing() {
+            // given
+            givenPortfolioExists();
+            TradeAccountResponseDto account = new TradeAccountResponseDto(
+                    ACCOUNT_ID, USER_ID, null, BigDecimal.ZERO
+            );
+            given(tradeServiceClient.getAccount(USER_ID)).willReturn(success(account));
+
+            // when & then
+            assertThatThrownBy(() -> portfolioService.getAssets(USER_ID))
+                    .isInstanceOfSatisfying(CustomException.class, exception ->
+                            assertThat(exception.getErrorCode())
+                                    .isEqualTo(PortfolioErrorCode.EXTERNAL_SERVICE_ERROR));
+
+            verifyNoInteractions(stockServiceClient, portfolioCalculator);
+        }
     }
 
     @Nested
@@ -381,6 +434,70 @@ class PortfolioServiceTest {
                     assertThat(exception.getErrorCode()).isEqualTo(PortfolioErrorCode.PORTFOLIO_NOT_FOUND));
 
             verifyNoInteractions(tradeServiceClient, stockServiceClient, portfolioCalculator);
+        }
+
+        @Test
+        @DisplayName("실패 - Trade 보유 종목의 필수값이 없으면 외부 서비스 오류가 발생한다")
+        void fail_trade_holding_field_missing() {
+            // given
+            givenPortfolioExists();
+            TradeHoldingResponseDto holding = new TradeHoldingResponseDto(
+                    HOLDING_ID_1, null, 1, money("10000"), money("10000")
+            );
+            given(tradeServiceClient.getHoldings(USER_ID, 0, 10))
+                    .willReturn(success(page(List.of(holding), 0, 1, true)));
+
+            // when & then
+            assertThatThrownBy(() -> portfolioService.getHoldings(
+                    USER_ID, 0, 10, "evaluationAmount,desc"
+            )).isInstanceOfSatisfying(CustomException.class, exception ->
+                    assertThat(exception.getErrorCode()).isEqualTo(PortfolioErrorCode.EXTERNAL_SERVICE_ERROR));
+
+            verifyNoInteractions(stockServiceClient, portfolioCalculator);
+        }
+
+        @Test
+        @DisplayName("실패 - Stock 조회 중 Feign 예외가 발생하면 외부 서비스 오류로 변환한다")
+        void fail_stock_feign_error() {
+            // given
+            givenPortfolioExists();
+            TradeHoldingResponseDto holding = tradeHolding(
+                    HOLDING_ID_1, "TICKER-1", 1, "10000", "10000"
+            );
+            given(tradeServiceClient.getHoldings(USER_ID, 0, 10))
+                    .willReturn(success(page(List.of(holding), 0, 1, true)));
+            given(stockServiceClient.getStockDetail("TICKER-1"))
+                    .willThrow(mock(FeignException.class));
+
+            // when & then
+            assertThatThrownBy(() -> portfolioService.getHoldings(
+                    USER_ID, 0, 10, "evaluationAmount,desc"
+            )).isInstanceOfSatisfying(CustomException.class, exception ->
+                    assertThat(exception.getErrorCode()).isEqualTo(PortfolioErrorCode.EXTERNAL_SERVICE_ERROR));
+
+            verifyNoInteractions(portfolioCalculator);
+        }
+
+        @Test
+        @DisplayName("실패 - Stock 현재가가 없으면 현재가 조회 오류가 발생한다")
+        void fail_stock_price_missing() {
+            // given
+            givenPortfolioExists();
+            TradeHoldingResponseDto holding = tradeHolding(
+                    HOLDING_ID_1, "TICKER-1", 1, "10000", "10000"
+            );
+            given(tradeServiceClient.getHoldings(USER_ID, 0, 10))
+                    .willReturn(success(page(List.of(holding), 0, 1, true)));
+            given(stockServiceClient.getStockDetail("TICKER-1"))
+                    .willReturn(success(new StockResponseDto("TICKER-1", "종목 1", null)));
+
+            // when & then
+            assertThatThrownBy(() -> portfolioService.getHoldings(
+                    USER_ID, 0, 10, "evaluationAmount,desc"
+            )).isInstanceOfSatisfying(CustomException.class, exception ->
+                    assertThat(exception.getErrorCode()).isEqualTo(PortfolioErrorCode.STOCK_PRICE_NOT_FOUND));
+
+            verifyNoInteractions(portfolioCalculator);
         }
     }
 
