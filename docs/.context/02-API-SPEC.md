@@ -30,15 +30,39 @@
 
 ---
 
-### 1-2. admin ( ADMIN 권한 전용 )
+### 1-2. admin ( **admin-service Feign Client 전용** )
 
-| 기능          | URL                                      | Method | 비고                                 |
-|-------------|------------------------------------------|--------|------------------------------------|
-| 유저 목록 조회    | `/api/v1/ad min/users`                   | GET    | Pageable (size=20, createdAt DESC) |
-| 유저 계정 정지    | `/api/v1/admin/users/{userId}/suspend`   | PATCH  | Body: reason                       |
-| 유저 계정 정지 해지 | `/api/v1/admin/users/{userId}/unsuspend` | PATCH  |                                    |
-| 유저 계정 삭제    | `/api/v1/admin/users/{userId}`           | DELETE | 소프트 삭제                             |
-| 유저 권한 변경    | `/api/v1/admin/users/{userId}/role`      | PATCH  | Body: role (USER \| ADMIN)         |
+> 이 엔드포인트들은 외부에서 직접 호출하지 않습니다. admin-service의 `UserAdminClient`(Feign)가
+> `X-Gateway-Secret` 헤더를 포함해 호출하는 내부 전용 API입니다.
+
+| 기능           | URL                                      | Method | 비고                                 |
+|--------------|------------------------------------------|--------|------------------------------------|
+| 유저 목록 조회     | `/api/v1/admin/users`                    | GET    | Pageable (size=10, createdAt DESC) |
+| 삭제된 유저 목록 조회 | `/api/v1/admin/users/deleted`            | GET    | Pageable (size=10, deletedAt DESC) |
+| 유저 계정 정지     | `/api/v1/admin/users/{userId}/suspend`   | PATCH  | Body: reason                       |
+| 유저 계정 정지 해지  | `/api/v1/admin/users/{userId}/unsuspend` | PATCH  |                                    |
+| 유저 계정 삭제     | `/api/v1/admin/users/{userId}`           | DELETE | 소프트 삭제                             |
+
+---
+
+## 1-3. admin-service (관리자 웹 UI, 포트: 19097, 담당: 동원)
+
+> Thymeleaf SSR 기반 관리자 웹 페이지. api-gateway를 **거치지 않고** 직접 접근합니다.
+> Okta OIDC(OAuth2 Login)로 인증하며, Okta에서 초대받은 계정만 로그인 가능합니다.
+> 로그아웃 시 `OidcClientInitiatedLogoutSuccessHandler`로 Okta 세션까지 함께 종료합니다.
+> 향후 `admin.000.com` 서브도메인으로 분리 예정.
+
+| 기능          | URL                               | Method | 비고                                                 |
+|-------------|-----------------------------------|--------|----------------------------------------------------|
+| Okta 로그인 시작 | `/oauth2/authorization/okta`      | GET    | Spring Security 자동 생성. Okta 로그인 페이지로 리다이렉트         |
+| Okta 콜백     | `/login/oauth2/code/okta`         | GET    | Spring Security 자동 처리. 성공 시 `/admin/dashboard`로 이동 |
+| 로그아웃        | `/admin/logout`                   | POST   | 세션 무효화, JSESSIONID 삭제, Okta 세션까지 종료                |
+| 대시보드        | `/admin/dashboard`                | GET    | 총 유저 수 표시                                          |
+| 유저 목록       | `/admin/users`                    | GET    | Pageable (size=10, createdAt DESC)                 |
+| 삭제된 유저 목록   | `/admin/users/deleted`            | GET    | Pageable (size=10, deletedAt DESC)                 |
+| 유저 계정 정지    | `/admin/users/{userId}/suspend`   | POST   | Form: reason. user-service Feign 호출                |
+| 유저 계정 정지 해지 | `/admin/users/{userId}/unsuspend` | POST   | user-service Feign 호출                              |
+| 유저 계정 삭제    | `/admin/users/{userId}/delete`    | POST   | 소프트 삭제. user-service Feign 호출                      |
 
 ---
 

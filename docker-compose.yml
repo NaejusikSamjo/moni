@@ -275,3 +275,29 @@ services:
     depends_on:
       eureka-server:
         condition: service_healthy
+
+  admin-service:
+    build:
+      context: .
+      dockerfile: admin-service/Dockerfile
+    ports:
+      - "19097:19097"
+    environment:
+      GATEWAY_SECRET: ${GATEWAY_SECRET}
+      OKTA_CLIENT_ID: ${OKTA_CLIENT_ID}
+      OKTA_CLIENT_SECRET: ${OKTA_CLIENT_SECRET}
+      OKTA_ISSUER_URI: ${OKTA_ISSUER_URI}
+      SPRING_PROFILES_ACTIVE: prod
+      OTEL_SERVICE_NAME: admin-service
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
+      OTEL_INSTRUMENTATION_LOGBACK_MDC_ENABLED: "true"
+      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=local"
+    volumes:
+      - ./logs/admin-service:/app/logs
+    depends_on:
+      eureka-server:
+        condition: service_healthy

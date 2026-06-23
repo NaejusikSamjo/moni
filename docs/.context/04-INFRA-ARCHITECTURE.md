@@ -45,7 +45,7 @@
 | Service Discovery | Spring Cloud Eureka                                                           |
 | Config            | Spring Cloud Config Server (`config-server/src/main/resources/configs/*.yml`) |
 | DB                | PostgreSQL (서비스별 분리)                                                          |
-| 인증                | OAuth + JWT                                                                   |
+| 인증                | OAuth + JWT (사용자), Okta OIDC (관리자)                                            |
 | 인프라               | Docker / Docker Compose                                                       |
 | 비동기 메시징           | Kafka                                                                         |
 | 캐시                | Redis                                                                         |
@@ -60,18 +60,19 @@
 
 ### 애플리케이션 서비스
 
-| 서비스                  | 포트    | 설명           |
-|----------------------|-------|--------------|
-| config-server        | 8888  | 설정 서버        |
-| eureka-server        | 8761  | 서비스 디스커버리    |
-| api-gateway          | 8080  | API 게이트웨이    |
-| user-service         | 19090 | 회원/인증        |
-| trade-service        | 19091 | 매수/매도/체결     |
-| stock-service        | 19092 | 실시간 시세/종목 조회 |
-| portfolio-service    | 19093 | 포트폴리오        |
-| notification-service | 19094 | 알림           |
-| payment-service      | 19095 | 구독/결제        |
-| ai-service           | 19096 | AI 분석/뉴스 요약  |
+| 서비스                  | 포트    | 설명                                   |
+|----------------------|-------|--------------------------------------|
+| config-server        | 8888  | 설정 서버                                |
+| eureka-server        | 8761  | 서비스 디스커버리                            |
+| api-gateway          | 8080  | API 게이트웨이                            |
+| user-service         | 19090 | 회원/인증                                |
+| trade-service        | 19091 | 매수/매도/체결                             |
+| stock-service        | 19092 | 실시간 시세/종목 조회                         |
+| portfolio-service    | 19093 | 포트폴리오                                |
+| notification-service | 19094 | 알림                                   |
+| payment-service      | 19095 | 구독/결제                                |
+| ai-service           | 19096 | AI 분석/뉴스 요약                          |
+| admin-service        | 19097 | 관리자 웹 UI (Okta OIDC, api-gateway 우회) |
 
 ### 인프라
 
