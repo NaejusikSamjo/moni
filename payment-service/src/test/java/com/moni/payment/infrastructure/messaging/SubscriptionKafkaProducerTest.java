@@ -1,4 +1,4 @@
-package com.moni.payment.subscription.adapter.out.messaging;
+package com.moni.payment.infrastructure.messaging;
 
 import com.moni.payment.common.config.KafkaConfig;
 import com.moni.payment.common.exception.PaymentErrorCode;

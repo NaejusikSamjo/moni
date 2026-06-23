@@ -1,4 +1,4 @@
-package com.moni.payment.payment.adapter.out.pg.toss;
+package com.moni.payment.infrastructure.client.toss;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.moni.payment.common.exception.PaymentErrorCode;
