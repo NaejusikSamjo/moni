@@ -16,6 +16,7 @@ import com.moni.payment.infrastructure.client.toss.dto.TossBillingAuthRequest;
 import com.moni.payment.infrastructure.client.toss.dto.TossBillingChargeRequest;
 import com.moni.payment.infrastructure.client.toss.dto.TossPaymentResponse;
 import feign.FeignException;
+import feign.RetryableException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -131,6 +132,66 @@ class TossPaymentsAdapterTest {
 
             assertThat(result.success()).isFalse();
         }
+
+        @Test
+        @DisplayName("네트워크 타임아웃(BillingKey 발급) → PG_CONNECTION_TIMEOUT 예외 발생")
+        void billingKeyTimeoutThrowsConnectionTimeout() {
+            given(tossPaymentsClient.issueBillingKey(any()))
+                    .willThrow(RetryableException.class);
+
+            PgPaymentRequest request = new PgPaymentRequest(
+                    AUTH_KEY,
+                    MerchantId.of("order-001"),
+                    USER_ID,
+                    Money.of(9900),
+                    PaymentType.SUBSCRIPTION_INITIAL);
+
+            assertThatThrownBy(() -> adapter.requestPayment(request))
+                    .isInstanceOf(PaymentException.class)
+                    .extracting(e -> ((PaymentException) e).getErrorCode())
+                    .isEqualTo(PaymentErrorCode.PG_CONNECTION_TIMEOUT);
+        }
+
+        @Test
+        @DisplayName("서버 오류(5xx, BillingKey 발급) → PG_COMMUNICATION_ERROR 예외 발생")
+        void billingKeyServerErrorThrowsCommunicationError() {
+            given(tossPaymentsClient.issueBillingKey(any()))
+                    .willThrow(FeignException.FeignServerException.class);
+
+            PgPaymentRequest request = new PgPaymentRequest(
+                    AUTH_KEY,
+                    MerchantId.of("order-001"),
+                    USER_ID,
+                    Money.of(9900),
+                    PaymentType.SUBSCRIPTION_INITIAL);
+
+            assertThatThrownBy(() -> adapter.requestPayment(request))
+                    .isInstanceOf(PaymentException.class)
+                    .extracting(e -> ((PaymentException) e).getErrorCode())
+                    .isEqualTo(PaymentErrorCode.PG_COMMUNICATION_ERROR);
+        }
+
+        @Test
+        @DisplayName("네트워크 타임아웃(BillingKey 결제) → PG_CONNECTION_TIMEOUT 예외 발생")
+        void chargeTimeoutThrowsConnectionTimeout() {
+            TossPaymentResponse billingKeyResponse = new TossPaymentResponse(
+                    null, BILLING_KEY, "ISSUED", null, null, null, null, null, null);
+            given(tossPaymentsClient.issueBillingKey(any())).willReturn(billingKeyResponse);
+            given(tossPaymentsClient.chargeBillingKey(anyString(), any()))
+                    .willThrow(RetryableException.class);
+
+            PgPaymentRequest request = new PgPaymentRequest(
+                    AUTH_KEY,
+                    MerchantId.of("order-001"),
+                    USER_ID,
+                    Money.of(9900),
+                    PaymentType.SUBSCRIPTION_INITIAL);
+
+            assertThatThrownBy(() -> adapter.requestPayment(request))
+                    .isInstanceOf(PaymentException.class)
+                    .extracting(e -> ((PaymentException) e).getErrorCode())
+                    .isEqualTo(PaymentErrorCode.PG_CONNECTION_TIMEOUT);
+        }
     }
 
     @Nested
@@ -164,6 +225,19 @@ class TossPaymentsAdapterTest {
                     .isInstanceOf(PaymentException.class)
                     .extracting(e -> ((PaymentException) e).getErrorCode())
                     .isEqualTo(PaymentErrorCode.PG_PAYMENT_FAILED);
+        }
+
+        @Test
+        @DisplayName("정기결제 타임아웃 → PG_CONNECTION_TIMEOUT 예외 발생")
+        void billingChargeTimeout() {
+            given(tossPaymentsClient.chargeBillingKey(anyString(), any()))
+                    .willThrow(RetryableException.class);
+
+            assertThatThrownBy(() ->
+                    adapter.requestBillingPayment(BILLING_KEY, Money.of(9900), MerchantId.of("order-002")))
+                    .isInstanceOf(PaymentException.class)
+                    .extracting(e -> ((PaymentException) e).getErrorCode())
+                    .isEqualTo(PaymentErrorCode.PG_CONNECTION_TIMEOUT);
         }
     }
 
@@ -205,6 +279,66 @@ class TossPaymentsAdapterTest {
                     .isInstanceOf(PaymentException.class)
                     .extracting(e -> ((PaymentException) e).getErrorCode())
                     .isEqualTo(PaymentErrorCode.PG_PAYMENT_FAILED);
+        }
+
+        @Test
+        @DisplayName("PG사 에러코드 매핑: WAITING_FOR_DEPOSIT → WAITING_FOR_DEPOSIT")
+        void waitingForDepositMapped() {
+            TossPaymentResponse response = new TossPaymentResponse(
+                    PAYMENT_KEY, null, "WAITING_FOR_DEPOSIT", null, null, null, null, null, null);
+            given(tossPaymentsClient.getPayment(PAYMENT_KEY)).willReturn(response);
+
+            PgPaymentStatus status = adapter.inquirePayment(PAYMENT_KEY);
+
+            assertThat(status).isEqualTo(PgPaymentStatus.WAITING_FOR_DEPOSIT);
+        }
+
+        @Test
+        @DisplayName("PG사 에러코드 매핑: 미지원 상태 → FAILED")
+        void unknownStatusMappedToFailed() {
+            TossPaymentResponse response = new TossPaymentResponse(
+                    PAYMENT_KEY, null, "PARTIAL_CANCELED", null, null, null, null, null, null);
+            given(tossPaymentsClient.getPayment(PAYMENT_KEY)).willReturn(response);
+
+            PgPaymentStatus status = adapter.inquirePayment(PAYMENT_KEY);
+
+            assertThat(status).isEqualTo(PgPaymentStatus.FAILED);
+        }
+
+        @Test
+        @DisplayName("PG사 에러코드 매핑: null 상태 → FAILED")
+        void nullStatusMappedToFailed() {
+            TossPaymentResponse response = new TossPaymentResponse(
+                    PAYMENT_KEY, null, null, null, null, null, null, null, null);
+            given(tossPaymentsClient.getPayment(PAYMENT_KEY)).willReturn(response);
+
+            PgPaymentStatus status = adapter.inquirePayment(PAYMENT_KEY);
+
+            assertThat(status).isEqualTo(PgPaymentStatus.FAILED);
+        }
+
+        @Test
+        @DisplayName("서버 오류(5xx) 시 PG_COMMUNICATION_ERROR 예외 발생")
+        void inquireServerError() {
+            given(tossPaymentsClient.getPayment(PAYMENT_KEY))
+                    .willThrow(FeignException.FeignServerException.class);
+
+            assertThatThrownBy(() -> adapter.inquirePayment(PAYMENT_KEY))
+                    .isInstanceOf(PaymentException.class)
+                    .extracting(e -> ((PaymentException) e).getErrorCode())
+                    .isEqualTo(PaymentErrorCode.PG_COMMUNICATION_ERROR);
+        }
+
+        @Test
+        @DisplayName("조회 타임아웃 → PG_CONNECTION_TIMEOUT 예외 발생")
+        void inquireTimeout() {
+            given(tossPaymentsClient.getPayment(PAYMENT_KEY))
+                    .willThrow(RetryableException.class);
+
+            assertThatThrownBy(() -> adapter.inquirePayment(PAYMENT_KEY))
+                    .isInstanceOf(PaymentException.class)
+                    .extracting(e -> ((PaymentException) e).getErrorCode())
+                    .isEqualTo(PaymentErrorCode.PG_CONNECTION_TIMEOUT);
         }
     }
 }
