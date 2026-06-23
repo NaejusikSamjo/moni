@@ -181,8 +181,7 @@ public class UserService {
     private void validateOwnership(UUID resourceUserId) {
         UUID currentUserId = SecurityUtil.getCurrentUserId()
                 .orElseThrow(() -> new CustomException(CommonErrorCode.UNAUTHORIZED));
-        boolean isAdmin = SecurityUtil.getCurrentUserRole().map("ADMIN"::equals).orElse(false);
-        if (!isAdmin && !resourceUserId.equals(currentUserId)) {
+        if (!resourceUserId.equals(currentUserId)) {
             throw new CustomException(UserErrorCode.FORBIDDEN);
         }
     }

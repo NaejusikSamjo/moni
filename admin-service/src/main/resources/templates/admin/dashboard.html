@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8"/>
+    <title>대시보드 - moni 관리자</title>
+    <link rel="stylesheet" th:href="@{/css/admin.css}"/>
+</head>
+<body>
+
+<header class="header">
+    <span class="logo">moni 관리자</span>
+    <nav>
+        <a th:href="@{/admin/dashboard}" class="active">대시보드</a>
+        <a th:href="@{/admin/users}">사용자 관리</a>
+        <a th:href="@{/admin/users/deleted}">삭제된 사용자</a>
+    </nav>
+    <form id="logout-form" class="logout-form" th:action="@{/admin/logout}" method="post">
+        <span class="nav-username" sec:authentication="name"></span>
+        <button type="submit" class="logout-btn">로그아웃</button>
+    </form>
+</header>
+
+<main class="main">
+    <h2 class="page-title">대시보드</h2>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <p class="label">전체 사용자</p>
+            <p class="value" th:text="${totalUsers}">0</p>
+        </div>
+    </div>
+
+    <a th:href="@{/admin/users}" class="btn btn-primary">
+        사용자 관리 바로가기 →
+    </a>
+</main>
+
+<script th:src="@{/js/inactivity.js}"></script>
+</body>
+</html>

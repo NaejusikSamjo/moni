@@ -15,6 +15,9 @@
 API Gateway에서 주입한 `X-Gateway-Secret` 헤더를 검증하고,
 `X-User-Id` / `X-User-Role` 헤더를 `SecurityContextHolder`에 등록하는 필터입니다.
 
+- `X-User-Id` : 있으면 인증 세팅 (필수 조건)
+- `X-User-Role` : 선택. 없으면 빈 authorities로 인증 — 서비스 간 Feign 호출처럼 role이 없는 경우에도 `.anyRequest().authenticated()` 통과 가능
+
 **각 서비스 `SecurityConfig`에서 등록:**
 
 ```java

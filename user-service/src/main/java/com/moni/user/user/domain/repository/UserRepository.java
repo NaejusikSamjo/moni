@@ -22,4 +22,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     boolean existsByNickname(String nickname);
 
     Page<User> findAllByDeletedAtIsNull(Pageable pageable);
+
+    Page<User> findAllByDeletedAtIsNotNull(Pageable pageable);
 }

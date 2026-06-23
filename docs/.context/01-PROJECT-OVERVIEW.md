@@ -93,6 +93,7 @@
 | 구독/결제 서비스 / payment-service   | 혜수  |
 | AI 서비스 / ai-service           | 지은  |
 | 알림 서비스 / notification-service | 혜수  |
+| 관리자 서비스 / admin-service       | 동원  |
 
 ### 그 외 역할 분담
 - Dev 팀: 인프라 구축(동원, 영욱), 모니터링 구축(혜수), CI/CD(동원)
