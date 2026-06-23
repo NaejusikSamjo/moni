@@ -1,9 +1,9 @@
 package com.moni.payment.subscription.adapter.out.messaging;
 
-import com.moni.payment.subscription.domain.event.BillingFailedEvent;
-import com.moni.payment.subscription.domain.event.SubscriptionActivatedEvent;
-import com.moni.payment.subscription.domain.event.SubscriptionCancelledEvent;
-import com.moni.payment.subscription.domain.port.out.SubscriptionEventPublisherPort;
+import com.moni.payment.domain.event.BillingFailedEvent;
+import com.moni.payment.domain.event.SubscriptionActivatedEvent;
+import com.moni.payment.domain.event.SubscriptionCancelledEvent;
+import com.moni.payment.domain.port.SubscriptionEventPublisherPort;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;

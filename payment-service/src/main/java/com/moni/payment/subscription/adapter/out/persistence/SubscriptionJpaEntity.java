@@ -1,9 +1,9 @@
 package com.moni.payment.subscription.adapter.out.persistence;
 
-import com.moni.payment.subscription.domain.model.BillingKey;
-import com.moni.payment.subscription.domain.model.Subscription;
-import com.moni.payment.subscription.domain.model.SubscriptionHistory;
-import com.moni.payment.subscription.domain.model.SubscriptionStatus;
+import com.moni.payment.domain.model.BillingKey;
+import com.moni.payment.domain.model.Subscription;
+import com.moni.payment.domain.model.SubscriptionHistory;
+import com.moni.payment.domain.model.SubscriptionStatus;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

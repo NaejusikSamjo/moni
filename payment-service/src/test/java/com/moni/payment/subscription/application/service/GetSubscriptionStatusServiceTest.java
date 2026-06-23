@@ -2,10 +2,10 @@ package com.moni.payment.subscription.application.service;
 
 import com.moni.payment.common.exception.PaymentErrorCode;
 import com.moni.payment.common.exception.PaymentException;
-import com.moni.payment.subscription.domain.model.BillingKey;
-import com.moni.payment.subscription.domain.model.Subscription;
-import com.moni.payment.subscription.domain.model.SubscriptionStatus;
-import com.moni.payment.subscription.domain.port.out.LoadSubscriptionPort;
+import com.moni.payment.domain.model.BillingKey;
+import com.moni.payment.domain.model.Subscription;
+import com.moni.payment.domain.model.SubscriptionStatus;
+import com.moni.payment.domain.port.LoadSubscriptionPort;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
