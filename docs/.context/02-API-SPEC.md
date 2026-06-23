@@ -16,16 +16,18 @@
 | 토큰 재발급                | `/api/v1/auth/refresh`                   | POST   |                                                                               |
 | 소셜 로그인 URL 생성         | `/api/v1/auth/social/login-url`          | POST   | Body: provider, codeChallenge, state — 프론트가 생성한 PKCE 값을 받아 OAuth URL 반환       |
 | 소셜 로그인 (Google/Kakao) | `/api/v1/auth/social/login`              | POST   | Body: provider, code, codeVerifier — Authorization Code + PKCE 흐름, 서비스 JWT 발급 |
-| 내 정보 수정               | `/api/v1/users/me`                       | PATCH  |                                                                               |
 | 내 정보 조회               | `/api/v1/users/me`                       | GET    |                                                                               |
+| 내 정보 수정               | `/api/v1/users/me`                       | PATCH  | name, nickname, phone만 수정 가능. 비밀번호 변경은 별도 엔드포인트 사용                            |
+| 비밀번호 변경               | `/api/v1/users/me/password`              | POST   | Body: currentPassword, newPassword. 현재 비밀번호 확인 후 변경                           |
+| 회원 탈퇴                 | `/api/v1/users/me`                       | DELETE |                                                                               |
 | 투자 성향 등록              | `/api/v1/users/me/tendency`              | POST   |                                                                               |
 | 투자 성향 조회              | `/api/v1/users/me/tendency`              | GET    |                                                                               |
 | 투자 성향 수정              | `/api/v1/users/me/tendency`              | PUT    |                                                                               |
 | 관심사 등록                | `/api/v1/users/me/interests`             | POST   |                                                                               |
 | 관심사 조회                | `/api/v1/users/me/interests`             | GET    |                                                                               |
 | 관심사 수정                | `/api/v1/users/me/interests`             | PUT    |                                                                               |
-| 관심종목 추가               | `/api/v1/users/me/watchlist/{stockCode}` | PUT    |                                                                               |
-| 관심종목 삭제               | `/api/v1/users/me/watchlist/{stockCode}` | DELETE |                                                                               |
+| 관심종목 추가               | `/api/v1/users/me/watchlist/{stockCode}` | PUT    | stockCode: 6자리 숫자 (국내 주식 한정)                                                  |
+| 관심종목 삭제               | `/api/v1/users/me/watchlist/{stockCode}` | DELETE | stockCode: 6자리 숫자 (국내 주식 한정)                                                  |
 | 관심종목 목록 조회            | `/api/v1/users/me/watchlist`             | GET    |                                                                               |
 
 ---
