@@ -1,7 +1,7 @@
 package com.moni.payment.subscription.adapter.in.web.dto;
 
-import com.moni.payment.subscription.domain.model.Subscription;
-import com.moni.payment.subscription.domain.model.SubscriptionStatus;
+import com.moni.payment.domain.model.Subscription;
+import com.moni.payment.domain.model.SubscriptionStatus;
 
 import java.time.LocalDate;
 import java.util.UUID;

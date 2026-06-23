@@ -1,11 +1,11 @@
 package com.moni.payment.payment.adapter.out.persistence;
 
-import com.moni.payment.payment.domain.model.MerchantId;
-import com.moni.payment.payment.domain.model.Payment;
-import com.moni.payment.payment.domain.model.PaymentHistory;
-import com.moni.payment.payment.domain.port.out.LoadPaymentPort;
-import com.moni.payment.payment.domain.port.out.SavePaymentHistoryPort;
-import com.moni.payment.payment.domain.port.out.SavePaymentPort;
+import com.moni.payment.domain.model.MerchantId;
+import com.moni.payment.domain.model.Payment;
+import com.moni.payment.domain.model.PaymentHistory;
+import com.moni.payment.domain.port.LoadPaymentPort;
+import com.moni.payment.domain.port.SavePaymentHistoryPort;
+import com.moni.payment.domain.port.SavePaymentPort;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;

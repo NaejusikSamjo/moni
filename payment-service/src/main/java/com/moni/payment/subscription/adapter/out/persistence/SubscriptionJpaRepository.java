@@ -1,6 +1,6 @@
 package com.moni.payment.subscription.adapter.out.persistence;
 
-import com.moni.payment.subscription.domain.model.SubscriptionStatus;
+import com.moni.payment.domain.model.SubscriptionStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

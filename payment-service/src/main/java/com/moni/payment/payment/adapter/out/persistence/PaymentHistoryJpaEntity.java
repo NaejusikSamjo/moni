@@ -1,7 +1,7 @@
 package com.moni.payment.payment.adapter.out.persistence;
 
-import com.moni.payment.payment.domain.model.PaymentHistory;
-import com.moni.payment.payment.domain.model.PaymentStatus;
+import com.moni.payment.domain.model.PaymentHistory;
+import com.moni.payment.domain.model.PaymentStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

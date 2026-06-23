@@ -1,14 +1,14 @@
 package com.moni.payment.subscription.application.service;
 
-import com.moni.payment.subscription.domain.event.SubscriptionActivatedEvent;
-import com.moni.payment.subscription.domain.model.Subscription;
-import com.moni.payment.subscription.domain.model.SubscriptionHistory;
-import com.moni.payment.subscription.domain.model.SubscriptionStatus;
+import com.moni.payment.domain.event.SubscriptionActivatedEvent;
+import com.moni.payment.domain.model.Subscription;
+import com.moni.payment.domain.model.SubscriptionHistory;
+import com.moni.payment.domain.model.SubscriptionStatus;
+import com.moni.payment.domain.port.LoadSubscriptionPort;
+import com.moni.payment.domain.port.SaveSubscriptionHistoryPort;
+import com.moni.payment.domain.port.SaveSubscriptionPort;
+import com.moni.payment.domain.port.SubscriptionEventPublisherPort;
 import com.moni.payment.subscription.domain.port.in.ActivateSubscriptionUseCase;
-import com.moni.payment.subscription.domain.port.out.LoadSubscriptionPort;
-import com.moni.payment.subscription.domain.port.out.SaveSubscriptionHistoryPort;
-import com.moni.payment.subscription.domain.port.out.SaveSubscriptionPort;
-import com.moni.payment.subscription.domain.port.out.SubscriptionEventPublisherPort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

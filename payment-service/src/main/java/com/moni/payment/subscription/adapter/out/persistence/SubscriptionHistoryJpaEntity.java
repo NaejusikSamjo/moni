@@ -1,7 +1,7 @@
 package com.moni.payment.subscription.adapter.out.persistence;
 
-import com.moni.payment.subscription.domain.model.SubscriptionHistory;
-import com.moni.payment.subscription.domain.model.SubscriptionStatus;
+import com.moni.payment.domain.model.SubscriptionHistory;
+import com.moni.payment.domain.model.SubscriptionStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
