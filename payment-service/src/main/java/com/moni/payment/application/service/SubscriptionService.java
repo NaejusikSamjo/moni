@@ -1,5 +1,7 @@
-package com.moni.payment.subscription.application.service;
+package com.moni.payment.application.service;
 
+import com.moni.payment.application.usecase.ActivateSubscriptionUseCase;
+import com.moni.payment.application.usecase.GetSubscriptionStatusUseCase;
 import com.moni.payment.common.exception.PaymentErrorCode;
 import com.moni.payment.common.exception.PaymentException;
 import com.moni.payment.domain.event.SubscriptionActivatedEvent;
@@ -9,8 +11,6 @@ import com.moni.payment.domain.port.LoadSubscriptionPort;
 import com.moni.payment.domain.port.SaveSubscriptionHistoryPort;
 import com.moni.payment.domain.port.SaveSubscriptionPort;
 import com.moni.payment.domain.port.SubscriptionEventPublisherPort;
-import com.moni.payment.subscription.domain.port.in.ActivateSubscriptionUseCase;
-import com.moni.payment.subscription.domain.port.in.GetSubscriptionStatusUseCase;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
