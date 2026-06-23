@@ -13,7 +13,7 @@ public record PortfolioHoldingsResponseDto(
         @Schema(description = "현재 페이지 번호", example = "0")
         int page,
 
-        @Schema(description = "페이지 크기", example = "20")
+        @Schema(description = "페이지 크기", example = "10")
         int size,
 
         @Schema(description = "전체 요소 수", example = "2")

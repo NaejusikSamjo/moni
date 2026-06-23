@@ -4,6 +4,7 @@ import com.moni.common.error.exception.CustomException;
 import com.moni.portfolio.application.calculator.PortfolioCalculator;
 import com.moni.portfolio.application.calculator.model.AccountInput;
 import com.moni.portfolio.application.calculator.model.HoldingInput;
+import com.moni.portfolio.application.calculator.model.HoldingResult;
 import com.moni.portfolio.application.calculator.model.PortfolioAssetResult;
 import com.moni.portfolio.application.calculator.model.PriceInput;
 import com.moni.portfolio.domain.entity.Portfolio;
@@ -18,15 +19,15 @@ import com.moni.portfolio.infrastructure.client.dto.response.TradePageResponseDt
 import com.moni.portfolio.presentation.dto.response.PortfolioAssetResponseDto;
 import com.moni.portfolio.presentation.dto.response.PortfolioCreateResponseDto;
 import com.moni.portfolio.presentation.dto.response.PortfolioHoldingProfitLossResponseDto;
+import com.moni.portfolio.presentation.dto.response.PortfolioHoldingResponseDto;
 import com.moni.portfolio.presentation.dto.response.PortfolioHoldingsResponseDto;
 import com.moni.portfolio.presentation.dto.response.PortfolioReturnsResponseDto;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
@@ -38,6 +39,8 @@ public class PortfolioService {
     private static final int DEFAULT_PAGE = 0;
     private static final int DEFAULT_SIZE = 10;
     private static final int MAX_SIZE = 50;
+    private static final String DEFAULT_SORT = "evaluationAmount,desc";
+    private static final String EVALUATION_AMOUNT_ASC = "evaluationAmount,asc";
 
     private final PortfolioRepository portfolioRepository;
     private final PortfolioCalculator portfolioCalculator;
@@ -72,11 +75,51 @@ public class PortfolioService {
     public PortfolioHoldingsResponseDto getHoldings(UUID userId, int page, int size, String sort) {
         findPortfolio(userId);
 
-        Pageable pageable = PageRequest.of(resolvePage(page), resolveSize(size));
+        int resolvedPage = resolvePage(page);
+        int resolvedSize = resolveSize(size);
+        String resolvedSort = resolveSort(sort);
 
-        // TODO: trade-service GET /api/holdings 호출 후 보유 종목 목록 조회
-        // TODO: stock-service GET /api/v1/stocks/search 호출 후 현재가/종목 정보 다건 조회(페이징)
-        throw new CustomException(PortfolioErrorCode.EXTERNAL_SERVICE_ERROR);
+        // Trade 보유 종목 전체를 조회한 뒤 각 ticker의 현재가를 Stock에서 조회
+        List<HoldingInput> holdings = getHoldings(userId);
+        List<PriceInput> prices = getPrices(holdings);
+
+        // 평가금액, 평가손익, 수익률과 비중은 페이지를 나누기 전에 전체 종목 기준으로 계산
+        List<HoldingResult> holdingResults = portfolioCalculator.calculateHoldings(holdings, prices);
+
+        // 계산 결과의 평가금액을 기준으로 오름차순 또는 기본 내림차순 정렬
+        Comparator<HoldingResult> comparator = Comparator.comparing(HoldingResult::evaluationAmount);
+        if (DEFAULT_SORT.equals(resolvedSort)) {
+            comparator = comparator.reversed();
+        }
+
+        List<HoldingResult> sortedHoldings = holdingResults.stream()
+                .sorted(comparator)
+                .toList();
+
+        long totalElements = sortedHoldings.size();
+        int totalPages = calculateTotalPages(totalElements, resolvedSize);
+        long fromIndex = (long) resolvedPage * resolvedSize;
+
+        // 전체 결과의 정렬이 끝난 뒤 요청한 페이지 범위만 응답 DTO로 변환
+        List<PortfolioHoldingResponseDto> content;
+        if (fromIndex >= totalElements) {
+            content = List.of();
+        } else {
+            int from = (int) fromIndex;
+            int to = Math.min(from + resolvedSize, sortedHoldings.size());
+            content = sortedHoldings.subList(from, to).stream()
+                    .map(PortfolioHoldingResponseDto::from)
+                    .toList();
+        }
+
+        return new PortfolioHoldingsResponseDto(
+                content,
+                resolvedPage,
+                resolvedSize,
+                totalElements,
+                totalPages,
+                resolvedSort
+        );
     }
 
     /** 종목별 손익 조회 로직 */
@@ -156,5 +199,20 @@ public class PortfolioService {
             return DEFAULT_SIZE;
         }
         return size;
+    }
+
+    /** 지원하지 않는 정렬 조건은 기본 정렬로 보정 */
+    private String resolveSort(String sort) {
+        if (EVALUATION_AMOUNT_ASC.equalsIgnoreCase(sort)) {
+            return EVALUATION_AMOUNT_ASC;
+        }
+        return DEFAULT_SORT;
+    }
+
+    private int calculateTotalPages(long totalElements, int size) {
+        if (totalElements == 0) {
+            return 0;
+        }
+        return (int) ((totalElements + size - 1) / size);
     }
 }
