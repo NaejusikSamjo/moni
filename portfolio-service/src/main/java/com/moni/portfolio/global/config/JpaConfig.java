@@ -1,4 +1,4 @@
-package com.moni.portfolio.config;
+package com.moni.portfolio.global.config;
 
 import com.moni.common.security.AuditorAwareImpl;
 import org.springframework.context.annotation.Bean;

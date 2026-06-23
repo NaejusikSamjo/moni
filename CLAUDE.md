@@ -27,18 +27,19 @@
 
 ## 3. 서비스 구성 (포트/책임/담당자)
 
-| 서비스                  | 패키지                     | 포트    | 책임                                         | 기획상 담당자 |
-|----------------------|-------------------------|-------|--------------------------------------------|---------|
-| config-server        | `com.moni.config`       | 8888  | 중앙 설정 서버                                   | 동원      |
-| eureka-server        | `com.moni.eureka`       | 8761  | 서비스 디스커버리                                  | -       |
-| api-gateway          | `com.moni.gateway`      | 8080  | API 게이트웨이(Spring Cloud Gateway), 외부 단일 진입점 | 동원      |
-| user-service         | `com.moni.user`         | 19090 | 회원가입/로그인/인증(JWT, OAuth), 투자 성향·관심사·관심종목    | 동원      |
-| trade-service        | `com.moni.trade`        | 19091 | 모의 매수/매도, 거래 내역, 모의 계좌(balance)            | 동민      |
-| stock-service        | `com.moni.stock`        | 19092 | 실시간 시세/종목 정보, 테마, 인기 종목                    | 영욱      |
-| portfolio-service    | `com.moni.portfolio`    | 19093 | 포트폴리오 대시보드, 수익률 계산, AI 포트폴리오 분석 연동         | 설아      |
-| notification-service | `com.moni.notification` | 19094 | 사용자 맞춤 알림                                  | 혜수      |
-| payment-service      | `com.moni.payment`      | 19095 | AI 분석 구독/결제(아임포트)                          | 혜수      |
-| ai-service           | `com.moni.ai`           | 19096 | RAG 기반 기업 이슈 분석, 뉴스 요약/수집, 포트폴리오 AI 분석     | 지은      |
+| 서비스                  | 패키지                     | 포트    | 책임                                                                      | 기획상 담당자 |
+|----------------------|-------------------------|-------|-------------------------------------------------------------------------|---------|
+| config-server        | `com.moni.config`       | 8888  | 중앙 설정 서버                                                                | 동원      |
+| eureka-server        | `com.moni.eureka`       | 8761  | 서비스 디스커버리                                                               | -       |
+| api-gateway          | `com.moni.gateway`      | 8080  | API 게이트웨이(Spring Cloud Gateway), 외부 단일 진입점                              | 동원      |
+| user-service         | `com.moni.user`         | 19090 | 회원가입/로그인/인증(JWT, OAuth), 투자 성향·관심사·관심종목                                 | 동원      |
+| trade-service        | `com.moni.trade`        | 19091 | 모의 매수/매도, 거래 내역, 모의 계좌(balance)                                         | 동민      |
+| stock-service        | `com.moni.stock`        | 19092 | 실시간 시세/종목 정보, 테마, 인기 종목                                                 | 영욱      |
+| portfolio-service    | `com.moni.portfolio`    | 19093 | 포트폴리오 대시보드, 수익률 계산, AI 포트폴리오 분석 연동                                      | 설아      |
+| notification-service | `com.moni.notification` | 19094 | 사용자 맞춤 알림                                                               | 혜수      |
+| payment-service      | `com.moni.payment`      | 19095 | AI 분석 구독/결제(아임포트)                                                       | 혜수      |
+| ai-service           | `com.moni.ai`           | 19096 | RAG 기반 기업 이슈 분석, 뉴스 요약/수집, 포트폴리오 AI 분석                                  | 지은      |
+| admin-service        | `com.moni.admin`        | 19097 | 관리자 웹 UI (Thymeleaf SSR), 유저 조회/정지/삭제. api-gateway 우회, Okta OIDC(세션 인증) | 동원      |
 
 > ⚠️ trade-service와 portfolio-service 모두 `account`/`holding` 개념을 갖고 있습니다.
 > ERD 상 trade-service가 "모의투자 계좌(현금/보유종목, 거래 처리)"의 **소스 오브 트루스**이고,
