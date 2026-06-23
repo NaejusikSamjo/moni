@@ -1,6 +1,6 @@
 package com.moni.ai.application.service;
 
-import com.moni.ai.presentation.dto.response.NaverNewsResponse;
+import com.moni.ai.presentation.dto.response.NaverNewsResDto;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -9,13 +9,13 @@ import java.time.LocalDateTime;
 public class NewsFilterService {
 
     // 3일이내 작성된 기사인지 확인
-    public boolean isWithinDays(NaverNewsResponse.NaverNewsItem item) {
+    public boolean isWithinDays(NaverNewsResDto.NaverNewsItem item) {
         return item.getParsedPubDate()
                 .isAfter(LocalDateTime.now().minusDays(3));
     }
 
     // 제목에 기업명 포함 여부
-    public boolean isRelevant(NaverNewsResponse.NaverNewsItem item, String companyName) {
+    public boolean isRelevant(NaverNewsResDto.NaverNewsItem item, String companyName) {
         String title = item.getCleanTitle();
         String description = item.getCleanDescription();
 

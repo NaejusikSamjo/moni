@@ -4,7 +4,7 @@ import com.moni.ai.application.service.NewsCollectService;
 import com.moni.ai.application.service.NewsFilterService;
 import com.moni.ai.domain.repository.NewsRepository;
 import com.moni.ai.infrastructure.client.NaverNewsClient;
-import com.moni.ai.presentation.dto.response.NaverNewsResponse;
+import com.moni.ai.presentation.dto.response.NaverNewsResDto;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -46,7 +46,7 @@ public class NewsCollectionTest {
     @DisplayName("필터를 모두 통과한 기사는 저장된다")
     void filterSuccessSaveTest() {
         // given
-        NaverNewsResponse.NaverNewsItem item = mockItem(
+        NaverNewsResDto.NaverNewsItem item = mockItem(
                 "삼성전자 실적 발표",
                 "삼성전자가 역대 최대 실적을 기록했다.",
                 "https://news.naver.com/article/001",
@@ -71,7 +71,7 @@ public class NewsCollectionTest {
     @DisplayName("필터에서 걸린 기사는 저장되지 않는다")
     void filterFailSaveTest() {
         // given
-        NaverNewsResponse.NaverNewsItem item = mockItem(
+        NaverNewsResDto.NaverNewsItem item = mockItem(
                 "쿠팡 과징금 부과, 삼성전자 다음으로 고용 큰 기업",
                 "공정위가 쿠팡에 과징금을 부과했다. 삼성전자 다음으로...",
                 "https://news.naver.com/article/002",
@@ -92,10 +92,10 @@ public class NewsCollectionTest {
     }
 
     // NaverNewsResponse.NaverNewsItem mock 생성 헬퍼
-    private NaverNewsResponse.NaverNewsItem mockItem(
+    private NaverNewsResDto.NaverNewsItem mockItem(
             String title, String description, String link, LocalDateTime pubDate) {
 
-        NaverNewsResponse.NaverNewsItem item = mock(NaverNewsResponse.NaverNewsItem.class);
+        NaverNewsResDto.NaverNewsItem item = mock(NaverNewsResDto.NaverNewsItem.class);
         when(item.getCleanTitle()).thenReturn(title);
         when(item.getCleanDescription()).thenReturn(description);
         when(item.getLink()).thenReturn(link);
