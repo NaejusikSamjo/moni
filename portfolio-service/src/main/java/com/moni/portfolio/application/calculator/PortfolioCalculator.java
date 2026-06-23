@@ -30,24 +30,12 @@ public class PortfolioCalculator {
             List<HoldingInput> holdings,
             List<PriceInput> prices
     ) {
-        // 현재가는 ticker 기준으로 빠르게 찾을 수 있도록 Map으로 변환
-        Map<String, PriceInput> priceMap = prices.stream()
-                .collect(Collectors.toMap(PriceInput::ticker, Function.identity()));
-
-        // 각 보유 종목의 평가금액, 평가손익, 수익률을 먼저 계산
-        List<HoldingResult> holdingResults = holdings.stream()
-                .map(holding -> calculateHolding(holding, priceMap))
-                .toList();
+        List<HoldingResult> holdingResults = calculateHoldings(holdings, prices);
 
         // 주식 평가금액은 모든 보유 종목 평가금액의 합계
         BigDecimal stockEvaluationAmount = holdingResults.stream()
                 .map(HoldingResult::evaluationAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        // 전체 주식 평가금액을 기준으로 종목별 포트폴리오 비중을 계산
-        List<HoldingResult> weightedHoldings = holdingResults.stream()
-                .map(result -> result.withWeight(calculateRate(result.evaluationAmount(), stockEvaluationAmount)))
-                .toList();
 
         // 총 평가자산과 전체 손익은 계좌 예수금, 주식 평가금액, 투자 원금을 기준으로 계산
         BigDecimal totalAsset = account.cashBalance().add(stockEvaluationAmount);
@@ -61,8 +49,30 @@ public class PortfolioCalculator {
                 account.principalAmount(),
                 totalProfitLoss.setScale(MONEY_SCALE, RoundingMode.HALF_UP),
                 totalReturnRate,
-                weightedHoldings
+                holdingResults
         );
+    }
+
+    /** 계좌 정보 없이 보유 종목별 평가금액, 평가손익, 수익률, 비중을 계산 */
+    public List<HoldingResult> calculateHoldings(
+            List<HoldingInput> holdings,
+            List<PriceInput> prices
+    ) {
+        // 현재가는 ticker 기준으로 빠르게 찾을 수 있도록 Map으로 변환
+        Map<String, PriceInput> priceMap = prices.stream()
+                .collect(Collectors.toMap(PriceInput::ticker, Function.identity()));
+
+        List<HoldingResult> holdingResults = holdings.stream()
+                .map(holding -> calculateHolding(holding, priceMap))
+                .toList();
+
+        BigDecimal stockEvaluationAmount = holdingResults.stream()
+                .map(HoldingResult::evaluationAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return holdingResults.stream()
+                .map(result -> result.withWeight(calculateRate(result.evaluationAmount(), stockEvaluationAmount)))
+                .toList();
     }
 
     /** 단일 보유 종목의 평가금액, 평가손익, 수익률을 계산 */

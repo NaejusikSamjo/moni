@@ -143,6 +143,74 @@ class PortfolioCalculatorTest {
         }
     }
 
+    @Nested
+    @DisplayName("calculateHoldings()")
+    class CalculateHoldings {
+
+        @Test
+        @DisplayName("성공 - 보유 종목별 평가값과 전체 평가금액 기준 비중을 계산한다")
+        void success() {
+            // given
+            List<HoldingInput> holdings = List.of(
+                    new HoldingInput("TICKER-1", 3L, money("10000")),
+                    new HoldingInput("TICKER-2", 2L, money("15000"))
+            );
+            List<PriceInput> prices = List.of(
+                    new PriceInput("TICKER-1", money("20000")),
+                    new PriceInput("TICKER-2", money("10000"))
+            );
+
+            // when
+            List<HoldingResult> result = portfolioCalculator.calculateHoldings(holdings, prices);
+
+            // then
+            assertThat(result).hasSize(2);
+
+            HoldingResult firstHolding = result.get(0);
+            assertThat(firstHolding.ticker()).isEqualTo("TICKER-1");
+            assertThat(firstHolding.evaluationAmount()).isEqualByComparingTo("60000.00");
+            assertThat(firstHolding.profitLoss()).isEqualByComparingTo("30000.00");
+            assertThat(firstHolding.profitRate()).isEqualByComparingTo("100.0000");
+            assertThat(firstHolding.weight()).isEqualByComparingTo("75.0000");
+
+            HoldingResult secondHolding = result.get(1);
+            assertThat(secondHolding.ticker()).isEqualTo("TICKER-2");
+            assertThat(secondHolding.evaluationAmount()).isEqualByComparingTo("20000.00");
+            assertThat(secondHolding.profitLoss()).isEqualByComparingTo("-10000.00");
+            assertThat(secondHolding.profitRate()).isEqualByComparingTo("-33.3333");
+            assertThat(secondHolding.weight()).isEqualByComparingTo("25.0000");
+        }
+
+        @Test
+        @DisplayName("성공 - 보유 종목이 없으면 빈 목록을 반환한다")
+        void success_empty_holdings() {
+            // given
+            List<HoldingInput> holdings = List.of();
+            List<PriceInput> prices = List.of();
+
+            // when
+            List<HoldingResult> result = portfolioCalculator.calculateHoldings(holdings, prices);
+
+            // then
+            assertThat(result).isEmpty();
+        }
+
+        @Test
+        @DisplayName("실패 - 보유 종목의 현재가가 없으면 예외가 발생한다")
+        void fail_stock_price_not_found() {
+            // given
+            List<HoldingInput> holdings = List.of(
+                    new HoldingInput("TICKER-1", 1L, money("10000"))
+            );
+            List<PriceInput> prices = List.of();
+
+            // when & then
+            assertThatThrownBy(() -> portfolioCalculator.calculateHoldings(holdings, prices))
+                    .isInstanceOfSatisfying(CustomException.class, exception ->
+                            assertThat(exception.getErrorCode()).isEqualTo(PortfolioErrorCode.STOCK_PRICE_NOT_FOUND));
+        }
+    }
+
     private BigDecimal money(String value) {
         return new BigDecimal(value);
     }
