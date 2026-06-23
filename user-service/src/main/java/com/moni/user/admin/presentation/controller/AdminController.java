@@ -1,9 +1,9 @@
 package com.moni.user.admin.presentation.controller;
 
 import com.moni.user.admin.application.service.AdminService;
-import com.moni.user.admin.presentation.dto.request.RoleChangeRequest;
 import com.moni.user.admin.presentation.dto.request.SuspendRequest;
 import com.moni.user.admin.presentation.dto.response.AdminUserResponse;
+import com.moni.user.admin.presentation.dto.response.DeletedUserResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
 
-@Tag(name = "Admin User API", description = "관리자 유저 관리 API")
+@Tag(name = "Admin User API", description = "admin-service Feign 전용 내부 API (X-Gateway-Secret 필수)")
 @RestController
 @RequestMapping("/api/v1/admin/users")
 @RequiredArgsConstructor
@@ -32,12 +32,20 @@ public class AdminController {
 
     private final AdminService adminService;
 
-    @Operation(summary = "유저 목록 조회")
+    @Operation(summary = "유저 목록 조회", description = "가입일 내림차순 페이징")
     @GetMapping
     public ResponseEntity<Page<AdminUserResponse>> getUsers(
-            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
+            @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC)
             Pageable pageable) {
         return ResponseEntity.ok(adminService.getUsers(pageable));
+    }
+
+    @Operation(summary = "삭제된 유저 목록 조회")
+    @GetMapping("/deleted")
+    public ResponseEntity<Page<DeletedUserResponse>> getDeletedUsers(
+            @PageableDefault(sort = "deletedAt", direction = Sort.Direction.DESC)
+            Pageable pageable) {
+        return ResponseEntity.ok(adminService.getDeletedUsers(pageable));
     }
 
     @Operation(summary = "유저 계정 정지")
@@ -49,14 +57,14 @@ public class AdminController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "유저 계정 정지 해지")
+    @Operation(summary = "유저 계정 정지 해제")
     @PatchMapping("/{userId}/unsuspend")
     public ResponseEntity<Void> unsuspend(@PathVariable UUID userId) {
         adminService.unsuspendUser(userId);
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "유저 계정 삭제 (소프트)")
+    @Operation(summary = "유저 계정 삭제", description = "소프트 삭제")
     @DeleteMapping("/{userId}")
     public ResponseEntity<Void> delete(
             @PathVariable UUID userId,
@@ -65,12 +73,4 @@ public class AdminController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "유저 권한 변경")
-    @PatchMapping("/{userId}/role")
-    public ResponseEntity<Void> changeRole(
-            @PathVariable UUID userId,
-            @RequestBody @Valid RoleChangeRequest request) {
-        adminService.changeRole(userId, request.getRole());
-        return ResponseEntity.noContent().build();
-    }
 }

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8"/>
+    <title>사용자 관리 - moni 관리자</title>
+    <link rel="stylesheet" th:href="@{/css/admin.css}"/>
+</head>
+<body>
+
+<header class="header">
+    <span class="logo">moni 관리자</span>
+    <nav>
+        <a th:href="@{/admin/dashboard}">대시보드</a>
+        <a th:href="@{/admin/users}" class="active">사용자 관리</a>
+        <a th:href="@{/admin/users/deleted}">삭제된 사용자</a>
+    </nav>
+    <form id="logout-form" class="logout-form" th:action="@{/admin/logout}" method="post">
+        <span class="nav-username" sec:authentication="name"></span>
+        <button type="submit" class="logout-btn">로그아웃</button>
+    </form>
+</header>
+
+<main class="main">
+    <h2 class="page-title">사용자 관리</h2>
+
+    <div th:if="${successMsg}" class="alert alert-success" th:text="${successMsg}"></div>
+    <div th:if="${errorMsg}" class="alert alert-error" th:text="${errorMsg}"></div>
+
+    <div class="table-wrapper">
+        <table>
+            <thead>
+            <tr>
+                <th>이름</th>
+                <th>이메일</th>
+                <th>닉네임</th>
+                <th>역할</th>
+                <th>상태</th>
+                <th>로그인 방식</th>
+                <th>가입일</th>
+                <th>액션</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="user : ${page.content}">
+                <td th:text="${user.name}">-</td>
+                <td th:text="${user.email}">-</td>
+                <td th:text="${user.nickname}">-</td>
+
+                <td>
+                    <span class="badge"
+                          th:classappend="${user.role == 'ADMIN'} ? 'badge-suspended' : 'badge-active'"
+                          th:text="${user.role}">USER</span>
+                </td>
+
+                <td>
+                    <span class="badge"
+                          th:classappend="${user.status == 'ACTIVE'} ? 'badge-active' :
+                                          (${user.status == 'SUSPENDED'} ? 'badge-suspended' : 'badge-deleted')"
+                          th:text="${user.status}">ACTIVE</span>
+                </td>
+
+                <td th:text="${user.oauthProvider != null} ? ${user.oauthProvider} : '이메일'">이메일</td>
+                <td th:text="${#temporals.format(user.createdAt, 'yyyy-MM-dd')}">-</td>
+
+                <td>
+                    <div class="action-row">
+                        <form th:if="${user.status == 'ACTIVE'}"
+                              th:action="@{/admin/users/{id}/suspend(id=${user.id})}"
+                              method="post" class="inline-form">
+                            <input type="text" name="reason" placeholder="정지 사유" required aria-label="정지 사유"/>
+                            <button type="submit" class="btn btn-sm btn-warning">정지</button>
+                        </form>
+
+                        <form th:if="${user.status == 'SUSPENDED'}"
+                              th:action="@{/admin/users/{id}/unsuspend(id=${user.id})}"
+                              method="post" class="inline-form">
+                            <span class="suspend-reason"
+                                  th:text="${'사유: ' + user.suspendedReason}"></span>
+                            <button type="submit" class="btn btn-sm btn-success">해제</button>
+                        </form>
+
+                        <form th:action="@{/admin/users/{id}/delete(id=${user.id})}"
+                              method="post" class="inline-form"
+                              onsubmit="return confirm('정말 삭제하시겠습니까?')">
+                            <button type="submit" class="btn btn-sm btn-danger">삭제</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+
+            <tr th:if="${page.content.isEmpty()}">
+                <td colspan="8" class="empty-state">
+                    등록된 사용자가 없습니다.
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="pagination">
+        <a th:if="${page.hasPrevious()}" th:href="@{/admin/users(page=${page.number - 1})}">← 이전</a>
+        <span th:unless="${page.hasPrevious()}" class="disabled">← 이전</span>
+
+        <span class="current" th:text="${page.number + 1} + ' / ' + ${page.totalPages}">1 / 1</span>
+
+        <a th:if="${page.hasNext()}" th:href="@{/admin/users(page=${page.number + 1})}">다음 →</a>
+        <span th:unless="${page.hasNext()}" class="disabled">다음 →</span>
+    </div>
+</main>
+
+<script th:src="@{/js/inactivity.js}"></script>
+</body>
+</html>
