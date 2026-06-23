@@ -42,7 +42,7 @@ class SubscriptionControllerTest {
     private static final UUID USER_ID = UUID.randomUUID();
     private static final LocalDate NEXT_BILLING = LocalDate.of(2026, 7, 19);
 
-    private static final String GATEWAY_SECRET = "local-secret";
+    private static final String GATEWAY_SECRET = System.getenv().getOrDefault("GATEWAY_SECRET", "local-secret");
 
     private Subscription activeSubscription() {
         Instant now = Instant.now();
@@ -87,7 +87,7 @@ class SubscriptionControllerTest {
                             .header("X-User-Id", USER_ID.toString())
                             .header("X-User-Role", "USER"))
                     .andExpect(status().isNotFound())
-                    .andExpect(jsonPath("$.error.errorClassName").value("SUB_002"));
+                    .andExpect(jsonPath("$.errors.errorClassName").value("SUB_002"));
         }
     }
 }

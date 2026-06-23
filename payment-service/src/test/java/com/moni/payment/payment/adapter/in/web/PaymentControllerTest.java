@@ -44,7 +44,7 @@ class PaymentControllerTest {
     private static final UUID USER_ID = UUID.randomUUID();
     private static final UUID PAYMENT_ID = UUID.randomUUID();
     private static final LocalDate NEXT_BILLING = LocalDate.of(2026, 7, 19);
-    private static final String GATEWAY_SECRET = "local-secret";
+    private static final String GATEWAY_SECRET = System.getenv().getOrDefault("GATEWAY_SECRET", "local-secret");
 
     private SubscribeRequest validRequest() {
         return new SubscribeRequest("toss-auth-key-001", "customer-uuid-001", 9900L, "모니 AI 구독");
@@ -90,7 +90,7 @@ class PaymentControllerTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(validRequest())))
                     .andExpect(status().isConflict())
-                    .andExpect(jsonPath("$.error.errorClassName").value("SUB_003"));
+                    .andExpect(jsonPath("$.errors.errorClassName").value("SUB_003"));
         }
 
         @Test
@@ -106,7 +106,7 @@ class PaymentControllerTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(validRequest())))
                     .andExpect(status().isUnprocessableEntity())
-                    .andExpect(jsonPath("$.error.errorClassName").value("PG_002"));
+                    .andExpect(jsonPath("$.errors.errorClassName").value("PG_002"));
         }
 
         @Test

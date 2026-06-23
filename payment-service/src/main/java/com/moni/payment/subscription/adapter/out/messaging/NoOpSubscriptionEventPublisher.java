@@ -5,7 +5,7 @@ import com.moni.payment.subscription.domain.event.SubscriptionActivatedEvent;
 import com.moni.payment.subscription.domain.event.SubscriptionCancelledEvent;
 import com.moni.payment.subscription.domain.port.out.SubscriptionEventPublisherPort;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 /**
@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
  */
 @Slf4j
 @Component
-@ConditionalOnMissingBean(SubscriptionEventPublisherPort.class)
+@ConditionalOnProperty(name = "kafka.enabled", havingValue = "false", matchIfMissing = true)
 public class NoOpSubscriptionEventPublisher implements SubscriptionEventPublisherPort {
 
     @Override
