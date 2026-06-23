@@ -6,7 +6,6 @@ import com.moni.portfolio.infrastructure.client.dto.response.TradeHoldingRespons
 import com.moni.portfolio.infrastructure.client.dto.response.TradePageResponseDto;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -25,11 +24,5 @@ public interface TradeServiceClient {
             @RequestHeader("X-User-Id") UUID userId,
             @RequestParam("page") int page,
             @RequestParam("size") int size
-    );
-
-    @GetMapping("/api/holdings/{ticker}")
-    ExternalApiResponseDto<TradeHoldingResponseDto> getHolding(
-            @RequestHeader("X-User-Id") UUID userId,
-            @PathVariable("ticker") String ticker
     );
 }

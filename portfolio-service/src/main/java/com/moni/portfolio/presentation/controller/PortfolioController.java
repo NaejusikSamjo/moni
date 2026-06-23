@@ -4,9 +4,7 @@ import com.moni.common.response.GlobalResponse;
 import com.moni.portfolio.application.service.PortfolioService;
 import com.moni.portfolio.presentation.dto.response.PortfolioAssetResponseDto;
 import com.moni.portfolio.presentation.dto.response.PortfolioCreateResponseDto;
-import com.moni.portfolio.presentation.dto.response.PortfolioHoldingProfitLossResponseDto;
 import com.moni.portfolio.presentation.dto.response.PortfolioHoldingsResponseDto;
-import com.moni.portfolio.presentation.dto.response.PortfolioReturnsResponseDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -15,7 +13,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
 
-@Tag(name = "Portfolio", description = "포트폴리오 생성, 자산, 보유 종목, 손익 및 수익률 API")
+@Tag(name = "Portfolio", description = "포트폴리오 생성, 자산 및 보유 종목 API")
 @RestController
 @RequestMapping("/api/v1/portfolio")
 @RequiredArgsConstructor
@@ -68,28 +65,6 @@ public class PortfolioController {
             @RequestParam(defaultValue = DEFAULT_SORT) String sort
     ) {
         PortfolioHoldingsResponseDto response = portfolioService.getHoldings(userId, page, size, sort);
-        return ResponseEntity.ok(GlobalResponse.success(HttpStatus.OK.value(), response));
-    }
-
-    @Operation(summary = "종목별 손익 조회", description = "특정 보유 종목의 평가손익, 수익률과 실현손익을 조회합니다.")
-    @GetMapping("/holdings/{ticker}/profit-loss")
-    public ResponseEntity<GlobalResponse<PortfolioHoldingProfitLossResponseDto>> getHoldingProfitLoss(
-            @Parameter(description = "Gateway에서 검증한 사용자 ID", required = true)
-            @RequestHeader(HEADER_USER_ID) UUID userId,
-            @Parameter(description = "조회할 종목 코드", required = true)
-            @PathVariable String ticker
-    ) {
-        PortfolioHoldingProfitLossResponseDto response = portfolioService.getHoldingProfitLoss(userId, ticker);
-        return ResponseEntity.ok(GlobalResponse.success(HttpStatus.OK.value(), response));
-    }
-
-    @Operation(summary = "수익률 계산 및 조회", description = "누적 수익률과 기간별 평가금액 및 일간 수익률을 조회합니다.")
-    @GetMapping("/returns")
-    public ResponseEntity<GlobalResponse<PortfolioReturnsResponseDto>> getReturns(
-            @Parameter(description = "Gateway에서 검증한 사용자 ID", required = true)
-            @RequestHeader(HEADER_USER_ID) UUID userId
-    ) {
-        PortfolioReturnsResponseDto response = portfolioService.getReturns(userId);
         return ResponseEntity.ok(GlobalResponse.success(HttpStatus.OK.value(), response));
     }
 }
