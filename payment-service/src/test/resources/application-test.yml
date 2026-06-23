@@ -1,6 +1,20 @@
 spring:
   config:
     import: ""
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  flyway:
+    enabled: false
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+  data:
+    redis:
+      host: localhost
+      port: 6379
 
 logging:
   config: classpath:logback-test.xml
@@ -19,3 +33,8 @@ management:
   endpoint:
     health:
       show-details: always
+  health:
+    redis:
+      enabled: false
+    db:
+      enabled: false
