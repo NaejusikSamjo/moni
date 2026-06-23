@@ -1,4 +1,4 @@
-package com.moni.payment.payment.adapter.out.pg.toss.dto;
+package com.moni.payment.infrastructure.client.toss.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 

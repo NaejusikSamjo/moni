@@ -1,4 +1,4 @@
-package com.moni.payment.subscription.adapter.out.persistence;
+package com.moni.payment.infrastructure.persistence;
 
 import com.moni.payment.domain.model.Subscription;
 import com.moni.payment.domain.model.SubscriptionHistory;
@@ -6,6 +6,8 @@ import com.moni.payment.domain.model.SubscriptionStatus;
 import com.moni.payment.domain.port.LoadSubscriptionPort;
 import com.moni.payment.domain.port.SaveSubscriptionHistoryPort;
 import com.moni.payment.domain.port.SaveSubscriptionPort;
+import com.moni.payment.infrastructure.repository.SubscriptionHistoryJpaRepository;
+import com.moni.payment.infrastructure.repository.SubscriptionJpaRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 

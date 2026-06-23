@@ -1,8 +1,8 @@
-package com.moni.payment.payment.adapter.out.pg.toss;
+package com.moni.payment.infrastructure.client.toss;
 
-import com.moni.payment.payment.adapter.out.pg.toss.dto.TossBillingAuthRequest;
-import com.moni.payment.payment.adapter.out.pg.toss.dto.TossBillingChargeRequest;
-import com.moni.payment.payment.adapter.out.pg.toss.dto.TossPaymentResponse;
+import com.moni.payment.infrastructure.client.toss.dto.TossBillingAuthRequest;
+import com.moni.payment.infrastructure.client.toss.dto.TossBillingChargeRequest;
+import com.moni.payment.infrastructure.client.toss.dto.TossPaymentResponse;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;

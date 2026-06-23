@@ -8,6 +8,7 @@ import com.moni.payment.domain.event.SubscriptionActivatedEvent;
 import com.moni.payment.domain.event.SubscriptionCancelledEvent;
 import com.moni.payment.domain.model.BillingKey;
 import com.moni.payment.domain.model.Money;
+import com.moni.payment.infrastructure.messaging.SubscriptionKafkaProducer;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

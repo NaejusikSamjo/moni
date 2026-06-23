@@ -1,4 +1,4 @@
-package com.moni.payment.payment.adapter.out.persistence;
+package com.moni.payment.infrastructure.persistence;
 
 import com.moni.payment.domain.model.PaymentHistory;
 import com.moni.payment.domain.model.PaymentStatus;

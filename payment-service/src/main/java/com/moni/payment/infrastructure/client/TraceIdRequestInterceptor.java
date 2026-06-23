@@ -1,4 +1,4 @@
-package com.moni.payment.client;
+package com.moni.payment.infrastructure.client;
 
 import feign.RequestInterceptor;
 import feign.RequestTemplate;
@@ -12,8 +12,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class TraceIdRequestInterceptor implements RequestInterceptor {
 
-    static final String HEADER_TRACE_ID = "X-Trace-Id";
-    static final String HEADER_SPAN_ID = "X-Span-Id";
+    public static final String HEADER_TRACE_ID = "X-Trace-Id";
+    public static final String HEADER_SPAN_ID = "X-Span-Id";
 
     @Override
     public void apply(RequestTemplate template) {
