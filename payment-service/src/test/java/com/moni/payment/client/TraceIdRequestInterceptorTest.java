@@ -1,5 +1,6 @@
 package com.moni.payment.client;
 
+import com.moni.payment.infrastructure.client.TraceIdRequestInterceptor;
 import feign.RequestTemplate;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -78,7 +79,6 @@ class TraceIdRequestInterceptorTest {
     @Test
     @DisplayName("OTel Agent가 주입한 trace_id가 그대로 다운스트림 헤더로 전파된다")
     void shouldPropagateOtelInjectedTraceId() {
-        // OTel Agent가 MDC에 trace_id를 주입한 상황을 시뮬레이션
         String otelTraceId = "0af7651916cd43dd8448eb211c80319c";
         MDC.put("trace_id", otelTraceId);
         MDC.put("span_id", "b7ad6b7169203331");

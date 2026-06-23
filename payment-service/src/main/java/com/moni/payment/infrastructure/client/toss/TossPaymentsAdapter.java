@@ -1,15 +1,15 @@
-package com.moni.payment.payment.adapter.out.pg.toss;
+package com.moni.payment.infrastructure.client.toss;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.moni.payment.common.exception.PaymentErrorCode;
 import com.moni.payment.common.exception.PaymentException;
-import com.moni.payment.payment.adapter.out.pg.toss.dto.TossBillingAuthRequest;
-import com.moni.payment.payment.adapter.out.pg.toss.dto.TossBillingChargeRequest;
-import com.moni.payment.payment.adapter.out.pg.toss.dto.TossPaymentResponse;
 import com.moni.payment.domain.model.MerchantId;
 import com.moni.payment.domain.model.Money;
 import com.moni.payment.domain.port.PgGatewayPort;
+import com.moni.payment.infrastructure.client.toss.dto.TossBillingAuthRequest;
+import com.moni.payment.infrastructure.client.toss.dto.TossBillingChargeRequest;
+import com.moni.payment.infrastructure.client.toss.dto.TossPaymentResponse;
 import feign.FeignException;
 import feign.RetryableException;
 import lombok.RequiredArgsConstructor;

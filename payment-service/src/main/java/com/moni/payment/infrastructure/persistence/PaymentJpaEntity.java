@@ -1,4 +1,4 @@
-package com.moni.payment.payment.adapter.out.persistence;
+package com.moni.payment.infrastructure.persistence;
 
 import com.moni.payment.domain.model.MerchantId;
 import com.moni.payment.domain.model.Money;

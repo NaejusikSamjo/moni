@@ -1,4 +1,4 @@
-package com.moni.payment.subscription.adapter.out.persistence;
+package com.moni.payment.infrastructure.persistence;
 
 import com.moni.payment.domain.model.BillingKey;
 import com.moni.payment.domain.model.Subscription;

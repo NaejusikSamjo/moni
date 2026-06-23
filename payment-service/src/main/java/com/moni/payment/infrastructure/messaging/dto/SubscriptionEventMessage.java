@@ -1,4 +1,4 @@
-package com.moni.payment.subscription.adapter.out.messaging.dto;
+package com.moni.payment.infrastructure.messaging.dto;
 
 import java.time.Instant;
 import java.util.UUID;
