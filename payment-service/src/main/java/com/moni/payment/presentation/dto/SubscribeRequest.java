@@ -1,4 +1,4 @@
-package com.moni.payment.payment.adapter.in.web.dto;
+package com.moni.payment.presentation.dto;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;

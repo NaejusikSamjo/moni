@@ -1,4 +1,4 @@
-package com.moni.payment.subscription.adapter.in.web;
+package com.moni.payment.presentation.controller;
 
 import com.moni.payment.common.config.SecurityConfig;
 import com.moni.payment.common.exception.GlobalExceptionHandler;

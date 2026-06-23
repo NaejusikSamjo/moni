@@ -1,11 +1,11 @@
-package com.moni.payment.payment.adapter.in.web;
+package com.moni.payment.presentation.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.moni.payment.common.config.SecurityConfig;
 import com.moni.payment.common.exception.GlobalExceptionHandler;
 import com.moni.payment.common.exception.PaymentErrorCode;
 import com.moni.payment.common.exception.PaymentException;
-import com.moni.payment.payment.adapter.in.web.dto.SubscribeRequest;
+import com.moni.payment.presentation.dto.SubscribeRequest;
 import com.moni.payment.application.command.SubscribeResult;
 import com.moni.payment.application.usecase.InitiatePaymentUseCase;
 import org.junit.jupiter.api.DisplayName;
