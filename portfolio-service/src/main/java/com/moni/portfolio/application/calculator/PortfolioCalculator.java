@@ -84,7 +84,7 @@ public class PortfolioCalculator {
         }
 
         BigDecimal quantity = BigDecimal.valueOf(holding.quantity());
-        BigDecimal purchaseAmount = holding.averagePurchasePrice().multiply(quantity);
+        BigDecimal purchaseAmount = holding.totalPurchaseAmount();
         BigDecimal evaluationAmount = price.currentPrice().multiply(quantity);
         BigDecimal profitLoss = evaluationAmount.subtract(purchaseAmount);
         BigDecimal profitRate = calculateRate(profitLoss, purchaseAmount);

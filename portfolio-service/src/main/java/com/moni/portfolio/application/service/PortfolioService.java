@@ -24,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -37,6 +38,7 @@ public class PortfolioService {
     private static final int DEFAULT_PAGE = 0;
     private static final int DEFAULT_SIZE = 10;
     private static final int MAX_SIZE = 50;
+    private static final BigDecimal INITIAL_PRINCIPAL_AMOUNT = new BigDecimal("10000000");
     private static final String DEFAULT_SORT = "evaluationAmount,desc";
     private static final String EVALUATION_AMOUNT_ASC = "evaluationAmount,asc";
 
@@ -127,7 +129,7 @@ public class PortfolioService {
 
     private AccountInput getAccount(UUID userId) {
         TradeAccountResponseDto account = tradeServiceClient.getAccount(userId).data();
-        return new AccountInput(account.balance(), account.totalInvestment());
+        return new AccountInput(account.balance(), INITIAL_PRINCIPAL_AMOUNT);
     }
 
     private List<HoldingInput> getHoldings(UUID userId) {
@@ -145,7 +147,8 @@ public class PortfolioService {
                 .map(holding -> new HoldingInput(
                         holding.ticker(),
                         holding.quantity().longValue(),
-                        holding.averagePrice()
+                        holding.averagePrice(),
+                        holding.totalAmount()
                 ))
                 .toList();
     }
