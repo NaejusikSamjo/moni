@@ -19,8 +19,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class AiController {
 
-    private AiService aiService;
-    private NewsCollectService newsCollectService;
+    private final AiService aiService;
+    private final NewsCollectService newsCollectService;
 
     @PostMapping("/{ticker}/issue-analysis")
     public ResponseEntity<GlobalResponse<CompanyIssueResDto>> createIssueAnalysis(
