@@ -3,6 +3,16 @@ package com.moni.payment.domain.model;
 import com.moni.payment.domain.event.PaymentCompletedEvent;
 import com.moni.payment.domain.event.PaymentFailedEvent;
 import com.moni.payment.domain.event.PaymentInitiatedEvent;
+import com.moni.payment.infrastructure.persistence.converter.MerchantIdConverter;
+import com.moni.payment.infrastructure.persistence.converter.MoneyConverter;
+import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -10,22 +20,57 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
+@Entity
+@Table(name = "payment")
 public class Payment {
 
-    private final UUID id;
-    private final MerchantId merchantId;
-    private final UUID userId;
-    private final PaymentType paymentType;
-    private final Money amount;
+    @Id
+    private UUID id;
+
+    @Convert(converter = MerchantIdConverter.class)
+    @Column(name = "merchant_id", unique = true, nullable = false, length = 64)
+    private MerchantId merchantId;
+
+    @Column(name = "user_id", nullable = false)
+    private UUID userId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_type", nullable = false, length = 30)
+    private PaymentType paymentType;
+
+    @Convert(converter = MoneyConverter.class)
+    @Column(name = "amount", nullable = false, precision = 19, scale = 4)
+    private Money amount;
+
+    @Column(name = "pg_payment_key", unique = true)
     private String pgPaymentKey;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 20)
     private PaymentStatus status;
-    private final Instant expiresAt;
-    private final Instant createdAt;
-    private final String createdBy;
+
+    @Column(name = "expires_at", nullable = false)
+    private Instant expiresAt;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt;
+
+    @Column(name = "created_by", nullable = false, updatable = false, length = 100)
+    private String createdBy;
+
+    @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
+    @Column(name = "updated_by", nullable = false, length = 100)
     private String updatedBy;
-    private final List<PaymentHistory> histories;
-    private final List<Object> domainEvents;
+
+    @Transient
+    private List<PaymentHistory> histories = new ArrayList<>();
+
+    @Transient
+    private List<Object> domainEvents = new ArrayList<>();
+
+    protected Payment() {}
 
     private Payment(
             UUID id,

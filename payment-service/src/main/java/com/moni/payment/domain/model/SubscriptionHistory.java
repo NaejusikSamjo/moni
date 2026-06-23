@@ -1,16 +1,40 @@
 package com.moni.payment.domain.model;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
 import java.time.Instant;
 import java.util.UUID;
 
+@Entity
+@Table(name = "subscription_history")
 public class SubscriptionHistory {
 
-    private final UUID id;
-    private final UUID subscriptionId;
-    private final SubscriptionStatus fromStatus;
-    private final SubscriptionStatus toStatus;
-    private final String reason;
-    private final Instant changedAt;
+    @Id
+    private UUID id;
+
+    @Column(name = "subscription_id", nullable = false)
+    private UUID subscriptionId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "from_status", nullable = false, length = 30)
+    private SubscriptionStatus fromStatus;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "to_status", nullable = false, length = 30)
+    private SubscriptionStatus toStatus;
+
+    @Column(name = "reason", columnDefinition = "TEXT")
+    private String reason;
+
+    @Column(name = "changed_at", nullable = false)
+    private Instant changedAt;
+
+    protected SubscriptionHistory() {}
 
     private SubscriptionHistory(
             UUID id,

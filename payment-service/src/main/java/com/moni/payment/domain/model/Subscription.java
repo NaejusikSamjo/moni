@@ -2,6 +2,16 @@ package com.moni.payment.domain.model;
 
 import com.moni.payment.domain.event.SubscriptionActivatedEvent;
 import com.moni.payment.domain.event.SubscriptionCancelledEvent;
+import com.moni.payment.infrastructure.persistence.converter.BillingKeyConverter;
+import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
+import jakarta.persistence.Version;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -10,18 +20,43 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
+@Entity
+@Table(name = "subscription")
 public class Subscription {
 
-    private final UUID id;
-    private final UUID userId;
+    @Id
+    private UUID id;
+
+    @Column(name = "user_id", nullable = false)
+    private UUID userId;
+
+    @Convert(converter = BillingKeyConverter.class)
+    @Column(name = "billing_key")
     private BillingKey billingKey;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 30)
     private SubscriptionStatus status;
+
+    @Column(name = "next_billing_date")
     private LocalDate nextBillingDate;
-    private final Instant createdAt;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt;
+
+    @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
+    @Version
     private Long version;
-    private final List<SubscriptionHistory> histories;
-    private final List<Object> domainEvents;
+
+    @Transient
+    private List<SubscriptionHistory> histories = new ArrayList<>();
+
+    @Transient
+    private List<Object> domainEvents = new ArrayList<>();
+
+    protected Subscription() {}
 
     private Subscription(
             UUID id,
