@@ -1,5 +1,6 @@
 package com.moni.portfolio.presentation.dto.response;
 
+import com.moni.portfolio.application.calculator.model.HoldingResult;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.math.BigDecimal;
@@ -28,7 +29,22 @@ public record PortfolioHoldingProfitLossResponseDto(
         @Schema(description = "수익률", example = "20.0000")
         BigDecimal profitRate,
 
-        @Schema(description = "실현손익", example = "5000.00")
+        @Schema(description = "실현손익이(거래 내역 API 연동 전에는 null)", example = "5000.00", nullable = true)
         BigDecimal realizedProfitLoss
 ) {
+    public static PortfolioHoldingProfitLossResponseDto from(
+            HoldingResult result,
+            BigDecimal realizedProfitLoss
+    ) {
+        return new PortfolioHoldingProfitLossResponseDto(
+                result.ticker(),
+                result.quantity(),
+                result.averagePurchasePrice(),
+                result.currentPrice(),
+                result.evaluationAmount(),
+                result.profitLoss(),
+                result.profitRate(),
+                realizedProfitLoss
+        );
+    }
 }

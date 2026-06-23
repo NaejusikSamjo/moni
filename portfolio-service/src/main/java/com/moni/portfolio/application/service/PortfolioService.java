@@ -26,6 +26,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -126,22 +127,41 @@ public class PortfolioService {
     public PortfolioHoldingProfitLossResponseDto getHoldingProfitLoss(UUID userId, String ticker) {
         findPortfolio(userId);
 
-        // TODO: trade-service GET /api/holdings/{ticker} 호출 후 단일 보유 종목 조회
-        // TODO: trade-service GET /api/v1/trades/history 호출 후 실현손익 계산에 필요한 거래 내역 조회
-        // TODO: stock-service GET /api/v1/stocks/{ticker} 호출 후 현재가 조회
+        TradeHoldingResponseDto tradeHolding = tradeServiceClient.getHolding(userId, ticker).data();
+        StockResponseDto stock = stockServiceClient.getStockDetail(ticker).data();
+
+        HoldingInput holding = new HoldingInput(
+                tradeHolding.ticker(),
+                tradeHolding.quantity().longValue(),
+                tradeHolding.averagePrice()
+        );
+        PriceInput price = new PriceInput(stock.ticker(), stock.price());
+
+        HoldingResult result = portfolioCalculator.calculateHoldings(
+                List.of(holding),
+                List.of(price)
+        ).getFirst();
+
         // TODO: trade-service 종목별 실현손익 전용 API 제공 여부 확인
-        throw new CustomException(PortfolioErrorCode.EXTERNAL_SERVICE_ERROR);
+        // TODO: trade-service GET /api/v1/trades/history 호출 후 거래 내역 기반 실현손익 계산
+        BigDecimal realizedProfitLoss = null;
+
+        return PortfolioHoldingProfitLossResponseDto.from(result, realizedProfitLoss);
     }
 
     /** 수익률 조회 로직 */
     public PortfolioReturnsResponseDto getReturns(UUID userId) {
         findPortfolio(userId);
 
-        // TODO: trade-service GET /api/accounts 호출 후 사용자 자산/예수금 조회
-        // TODO: trade-service GET /api/holdings 호출 후 현재 보유 종목 목록 조회
+        AccountInput account = getAccount(userId);
+        List<HoldingInput> holdings = getHoldings(userId);
+        List<PriceInput> prices = getPrices(holdings);
+
+        PortfolioAssetResult result = portfolioCalculator.calculateAssets(account, holdings, prices);
+
         // TODO: trade-service GET /api/v1/trades/history 호출 후 기간별 보유 수량 변화 계산
         // TODO: stock-service GET /api/v1/stocks/{ticker}/chart 호출 후 가격 시계열 조회
-        throw new CustomException(PortfolioErrorCode.EXTERNAL_SERVICE_ERROR);
+        return new PortfolioReturnsResponseDto(result.totalReturnRate(), List.of());
     }
 
     private void findPortfolio(UUID userId) {
@@ -151,8 +171,6 @@ public class PortfolioService {
 
     private AccountInput getAccount(UUID userId) {
         TradeAccountResponseDto account = tradeServiceClient.getAccount(userId).data();
-
-        // TODO: totalInvestment가 포트폴리오 투자 원금과 같은 의미인지 확정 후 매핑 검토
         return new AccountInput(account.balance(), account.totalInvestment());
     }
 
