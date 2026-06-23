@@ -4,7 +4,9 @@ import com.moni.payment.application.command.ActivateSubscriptionCommand;
 import com.moni.payment.application.repository.SubscriptionEventPublisher;
 import com.moni.payment.application.repository.SubscriptionRepository;
 import com.moni.payment.application.usecase.ActivateSubscriptionUseCase;
+import com.moni.payment.application.usecase.CancelSubscriptionUseCase;
 import com.moni.payment.application.usecase.GetSubscriptionStatusQuery;
+import com.moni.payment.domain.event.SubscriptionCancelledEvent;
 import com.moni.payment.common.exception.PaymentErrorCode;
 import com.moni.payment.common.exception.PaymentException;
 import com.moni.payment.domain.event.SubscriptionActivatedEvent;
@@ -20,7 +22,7 @@ import java.util.UUID;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class SubscriptionService implements GetSubscriptionStatusQuery, ActivateSubscriptionUseCase {
+public class SubscriptionService implements GetSubscriptionStatusQuery, ActivateSubscriptionUseCase, CancelSubscriptionUseCase {
 
     private final SubscriptionRepository subscriptionRepository;
     private final SubscriptionEventPublisher subscriptionEventPublisher;
@@ -49,5 +51,25 @@ public class SubscriptionService implements GetSubscriptionStatusQuery, Activate
 
         log.info("구독 ACTIVE 저장: subscriptionId={}, userId={}", saved.getId(), command.userId());
         return saved;
+    }
+
+    @Override
+    @Transactional
+    public void cancelSubscription(CancelSubscriptionCommand command) {
+        Subscription subscription = subscriptionRepository.findById(command.subscriptionId())
+                .filter(s -> s.getUserId().equals(command.userId()))
+                .orElseThrow(() -> new PaymentException(PaymentErrorCode.SUBSCRIPTION_NOT_FOUND));
+
+        subscription.cancel(command.reason());
+        subscriptionRepository.save(subscription);
+        subscription.getHistories().forEach(subscriptionRepository::saveHistory);
+
+        subscription.pullDomainEvents().forEach(event -> {
+            if (event instanceof SubscriptionCancelledEvent cancelledEvent) {
+                subscriptionEventPublisher.publishCancelled(cancelledEvent);
+            }
+        });
+
+        log.info("구독 CANCELLING 저장: subscriptionId={}, userId={}", command.subscriptionId(), command.userId());
     }
 }

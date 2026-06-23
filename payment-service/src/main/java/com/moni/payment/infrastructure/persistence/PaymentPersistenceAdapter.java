@@ -38,7 +38,7 @@ public class PaymentPersistenceAdapter implements PaymentRepository {
 
     @Override
     public Optional<Payment> findByMerchantId(MerchantId merchantId) {
-        return paymentJpaRepository.findByMerchantId(merchantId.getValue());
+        return paymentJpaRepository.findByMerchantId(merchantId);
     }
 
     @Override

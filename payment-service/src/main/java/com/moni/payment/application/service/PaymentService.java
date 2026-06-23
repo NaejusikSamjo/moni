@@ -6,6 +6,8 @@ import com.moni.payment.application.command.SubscribeResult;
 import com.moni.payment.application.repository.PaymentRepository;
 import com.moni.payment.application.repository.PgGateway;
 import com.moni.payment.application.repository.SubscriptionRepository;
+import com.moni.payment.application.usecase.ConfirmPaymentUseCase;
+import com.moni.payment.application.usecase.GetPaymentHistoryUseCase;
 import com.moni.payment.application.usecase.InitiatePaymentUseCase;
 import com.moni.payment.common.exception.PaymentErrorCode;
 import com.moni.payment.common.exception.PaymentException;
@@ -27,7 +29,7 @@ import java.util.UUID;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class PaymentService implements InitiatePaymentUseCase {
+public class PaymentService implements InitiatePaymentUseCase, ConfirmPaymentUseCase, GetPaymentHistoryUseCase {
 
     private final SubscriptionRepository subscriptionRepository;
     private final PaymentRepository paymentRepository;
@@ -94,6 +96,24 @@ public class PaymentService implements InitiatePaymentUseCase {
                 payment.getStatus().name(),
                 payment.getAmount().getValue().longValue(),
                 nextBillingDate);
+    }
+
+    @Override
+    @Transactional
+    public void confirmPayment(ConfirmPaymentCommand command) {
+        Payment payment = paymentRepository.findByMerchantId(MerchantId.of(command.merchantId()))
+                .orElseThrow(() -> new PaymentException(PaymentErrorCode.PAYMENT_NOT_FOUND));
+        payment.complete(command.pgPaymentKey(), command.pgResponse(), command.respondedAt(), command.confirmedBy());
+        paymentRepository.save(payment);
+        List<PaymentHistory> histories = payment.getHistories();
+        paymentRepository.saveHistory(histories.get(histories.size() - 1));
+        log.info("결제 CONFIRM 저장: paymentId={}", payment.getId());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Payment> getHistory(GetPaymentHistoryQuery query) {
+        return paymentRepository.findByUserId(query.userId(), query.page(), query.size());
     }
 
     private void persistPaymentFailure(Payment payment, String pgResponse, String actor) {
