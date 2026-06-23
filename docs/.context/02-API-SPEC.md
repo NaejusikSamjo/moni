@@ -84,6 +84,7 @@
 
 | 기능             | URL                                                  | Method | 비고                                                                               |
 |----------------|------------------------------------------------------|--------|----------------------------------------------------------------------------------|
+| 포트폴리오 생성       | `/api/v1/portfolio`                                  | POST   |                                                                                  |
 | 보유 종목 현황 조회    | `/api/v1/portfolio/holdings`                         | GET    |                                                                                  |
 | 수익률 계산         | `/api/v1/portfolio/returns`                          | GET    |                                                                                  |
 | 종목별 손익         | `/api/v1/portfolio/holdings/{stockCode}/profit-loss` | GET    |                                                                                  |

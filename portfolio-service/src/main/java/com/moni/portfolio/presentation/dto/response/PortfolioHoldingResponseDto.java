@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 @Schema(description = "보유 종목 평가 응답")
 public record PortfolioHoldingResponseDto(
 
-        @Schema(description = "종목 코드", example = "TICKER-1")
+        @Schema(description = "종목 코드")
         String ticker,
 
         @Schema(description = "보유 수량", example = "10")
