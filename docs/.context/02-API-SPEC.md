@@ -106,14 +106,15 @@
 
 ## 4. 포트폴리오 (portfolio-service, 담당: 설아)
 
-| 기능             | URL                                                  | Method | 비고                                                                               |
-|----------------|------------------------------------------------------|--------|----------------------------------------------------------------------------------|
-| 보유 종목 현황 조회    | `/api/v1/portfolio/holdings`                         | GET    |                                                                                  |
-| 수익률 계산         | `/api/v1/portfolio/returns`                          | GET    |                                                                                  |
-| 종목별 손익         | `/api/v1/portfolio/holdings/{stockCode}/profit-loss` | GET    |                                                                                  |
-| 자산 조회          | `/api/v1/portfolio/assets`                           | GET    |                                                                                  |
-| AI 포트폴리오 분석 요청 | `/api/v1/portfolio/ai-analysis`                      | POST   | 내부적으로 ai-service의 `/api/v1/ai/portfolio/analysis` 호출(Feign, Authorization 헤더 전달) |
-| AI 포트폴리오 분석 조회 | `/api/v1/portfolio/ai-analysis/latest`               | GET    |                                                                                  |
+| 기능             | URL                                                      | Method | 비고                                                                               |
+|----------------|----------------------------------------------------------|--------|----------------------------------------------------------------------------------|
+| 포트폴리오 생성       | `/api/v1/portfolio`                                      | POST   |                                                                                  |
+| 보유 종목 현황 조회    | `/api/v1/portfolio/holdings`                             | GET    |                                                                                  |
+| ~~수익률 계산~~     | ~~`/api/v1/portfolio/returns`~~                          | ~~GET~~  | 현재 누적 수익률은 **자산 조회**에서 제공 (필요 시 복구)                                    |
+| ~~종목별 손익~~     | ~~`/api/v1/portfolio/holdings/{stockCode}/profit-loss`~~ | ~~GET~~    | **보유 종목 현황**에서 평가손익·수익률을 제공 (필요 시 복구)                               |
+| 자산 조회          | `/api/v1/portfolio/assets`                               | GET    |                                                                                  |
+| AI 포트폴리오 분석 요청 | `/api/v1/portfolio/ai-analysis`                          | POST   | 내부적으로 ai-service의 `/api/v1/ai/portfolio/analysis` 호출(Feign, Authorization 헤더 전달) |
+| AI 포트폴리오 분석 조회 | `/api/v1/portfolio/ai-analysis/latest`                   | GET    |                                                                                  |
 
 ---
 
