@@ -1,10 +1,12 @@
 package com.moni.ai;
 
+import com.moni.ai.application.service.AiService;
 import com.moni.ai.application.service.NewsCollectService;
 import com.moni.ai.domain.entity.NewsEntity;
 import com.moni.ai.domain.repository.NewsRepository;
 import com.moni.ai.infrastructure.client.NaverNewsClient;
-import com.moni.ai.presentation.dto.response.NaverNewsResponse;
+import com.moni.ai.presentation.dto.response.CompanyIssueResDto;
+import com.moni.ai.presentation.dto.response.NaverNewsResDto;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
@@ -40,11 +42,13 @@ class NaverNewsClientIntegrationTest {
     @Autowired
     private VectorStore vectorStore;
 
+    @Autowired
+    private AiService aiService;
+
     @Test
     @DisplayName("DB저장 확인")
     void API_호출_정상_반환() {
         // when
-
         newsCollectService.collectByTicker("005930","삼성전자");
 
         // then
@@ -63,7 +67,7 @@ class NaverNewsClientIntegrationTest {
     @DisplayName("HTML 태그와 엔티티가 정제된 텍스트가 반환된다")
     void HTML_태그_정제_확인() {
         // when
-        List<NaverNewsResponse.NaverNewsItem> items =
+        List<NaverNewsResDto.NaverNewsItem> items =
                 naverNewsClient.fetchNews("삼성전자 실적", 5, "sim");
 
         // then
@@ -92,5 +96,23 @@ class NaverNewsClientIntegrationTest {
             log.info("유사도 검색 결과 - 내용: {}", doc.getText());
             log.info("메타데이터: {}", doc.getMetadata());
         });
+    }
+
+    @Test
+    @DisplayName("삼성전자 AI 분석 결과 반환 확인")
+    void 삼성전자_AI_분석() {
+        // when
+        CompanyIssueResDto result = aiService.analyze("005930", null);
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.ticker).isEqualTo("005930");
+        assertThat(result.summary).isNotBlank();
+        assertThat(result.sentiment).isNotNull();
+
+        log.info("분석 결과 - ticker: {}", result.ticker);
+        log.info("분석 결과 - companyName: {}", result.companyName);
+        log.info("분석 결과 - sentiment: {}", result.sentiment);
+        log.info("분석 결과 - summary: {}", result.summary);
     }
 }
