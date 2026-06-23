@@ -64,13 +64,14 @@ class SubscriptionPersistenceAdapterTest {
     private SubscriptionHistoryRepository subscriptionHistoryRepository;
 
     private Subscription createAndSavePendingSubscription(UUID userId) {
-        Subscription subscription = Subscription.create(userId, LocalDate.now().plusMonths(1));
+        Subscription subscription = Subscription.create(userId);
         return adapter.save(subscription);
     }
 
     private Subscription createAndSaveActiveSubscription(UUID userId, LocalDate nextBillingDate) {
-        Subscription subscription = Subscription.create(userId, nextBillingDate);
+        Subscription subscription = Subscription.create(userId);
         subscription.activate(BillingKey.of("bk-" + UUID.randomUUID()));
+        subscription.extendBillingDate(nextBillingDate);
         return adapter.save(subscription);
     }
 

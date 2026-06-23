@@ -29,28 +29,28 @@ class PaymentTest {
 
     @BeforeEach
     void setUp() {
-        payment = Payment.initiate(USER_ID, MERCHANT_ID, AMOUNT, PaymentType.SUBSCRIPTION_INITIAL,
+        payment = Payment.create(USER_ID, MERCHANT_ID, AMOUNT, PaymentType.SUBSCRIPTION_INITIAL,
                 EXPIRES_AT, ACTOR);
     }
 
     @Nested
-    @DisplayName("initiate()")
-    class Initiate {
+    @DisplayName("create()")
+    class Create {
 
         @Test
-        @DisplayName("initiate() 후 상태는 PENDING이다")
+        @DisplayName("create() 후 상태는 PENDING이다")
         void statusIsPending() {
             assertThat(payment.getStatus()).isEqualTo(PaymentStatus.PENDING);
         }
 
         @Test
-        @DisplayName("initiate() 후 pgPaymentKey는 null이다")
+        @DisplayName("create() 후 pgPaymentKey는 null이다")
         void pgPaymentKeyIsNull() {
             assertThat(payment.getPgPaymentKey()).isNull();
         }
 
         @Test
-        @DisplayName("initiate() 후 PaymentInitiatedEvent가 발행된다")
+        @DisplayName("create() 후 PaymentInitiatedEvent가 발행된다")
         void emitsInitiatedEvent() {
             List<Object> events = payment.pullDomainEvents();
             assertThat(events).hasSize(1);
@@ -79,18 +79,18 @@ class PaymentTest {
         @Test
         @DisplayName("PENDING → COMPLETED 전이 후 상태가 변경된다")
         void statusBecomesCompleted() {
-            payment.pullDomainEvents(); // clear initiate event
-            payment.complete(PG_KEY, "{}", Instant.now(), ACTOR);
+            payment.pullDomainEvents();
+            payment.complete(PG_KEY, "bk-001", "{}", Instant.now(), ACTOR);
 
             assertThat(payment.getStatus()).isEqualTo(PaymentStatus.COMPLETED);
             assertThat(payment.getPgPaymentKey()).isEqualTo(PG_KEY);
         }
 
         @Test
-        @DisplayName("complete() 후 PaymentCompletedEvent가 발행된다")
+        @DisplayName("complete() 후 PaymentCompletedEvent가 billingKeyValue를 포함한다")
         void emitsCompletedEvent() {
             payment.pullDomainEvents();
-            payment.complete(PG_KEY, "{}", Instant.now(), ACTOR);
+            payment.complete(PG_KEY, "bk-001", "{}", Instant.now(), ACTOR);
 
             List<Object> events = payment.pullDomainEvents();
             assertThat(events).hasSize(1);
@@ -98,13 +98,14 @@ class PaymentTest {
 
             PaymentCompletedEvent event = (PaymentCompletedEvent) events.get(0);
             assertThat(event.pgPaymentKey()).isEqualTo(PG_KEY);
+            assertThat(event.billingKeyValue()).isEqualTo("bk-001");
         }
 
         @Test
         @DisplayName("complete() 후 histories에 이력이 추가된다")
         void historyIsAdded() {
             payment.pullDomainEvents();
-            payment.complete(PG_KEY, "{\"status\":\"DONE\"}", Instant.now(), ACTOR);
+            payment.complete(PG_KEY, null, "{\"status\":\"DONE\"}", Instant.now(), ACTOR);
 
             assertThat(payment.getHistories()).hasSize(1);
             PaymentHistory history = payment.getHistories().get(0);
@@ -115,8 +116,8 @@ class PaymentTest {
         @Test
         @DisplayName("COMPLETED 상태에서 complete() 재호출 시 예외 발생")
         void cannotCompleteAgain() {
-            payment.complete(PG_KEY, "{}", Instant.now(), ACTOR);
-            assertThatThrownBy(() -> payment.complete("another_key", "{}", Instant.now(), ACTOR))
+            payment.complete(PG_KEY, null, "{}", Instant.now(), ACTOR);
+            assertThatThrownBy(() -> payment.complete("another_key", null, "{}", Instant.now(), ACTOR))
                     .isInstanceOf(PaymentException.class);
         }
     }
@@ -130,8 +131,15 @@ class PaymentTest {
         void statusBecomesFailed() {
             payment.pullDomainEvents();
             payment.fail("{\"error\":\"INSUFFICIENT_BALANCE\"}", Instant.now(), ACTOR);
-
             assertThat(payment.getStatus()).isEqualTo(PaymentStatus.FAILED);
+        }
+
+        @Test
+        @DisplayName("fail() 후 pullLatestHistory()는 FAILED 이력을 반환한다")
+        void pullLatestHistoryReturnsFailed() {
+            payment.fail("{}", Instant.now(), ACTOR);
+            PaymentHistory latest = payment.pullLatestHistory();
+            assertThat(latest.getToStatus()).isEqualTo(PaymentStatus.FAILED);
         }
 
         @Test
@@ -163,6 +171,27 @@ class PaymentTest {
             payment.fail("{}", Instant.now(), ACTOR);
             assertThatThrownBy(() -> payment.fail("{}", Instant.now(), ACTOR))
                     .isInstanceOf(PaymentException.class);
+        }
+    }
+
+
+
+    @Nested
+    @DisplayName("pullLatestHistory()")
+    class PullLatestHistory {
+
+        @Test
+        @DisplayName("histories가 비어있으면 IllegalStateException이 발생한다")
+        void throwsWhenHistoriesEmpty() {
+            assertThatThrownBy(() -> payment.pullLatestHistory())
+                    .isInstanceOf(IllegalStateException.class);
+        }
+
+        @Test
+        @DisplayName("complete() 후 pullLatestHistory()는 COMPLETED 이력을 반환한다")
+        void returnsLatestAfterComplete() {
+            payment.complete("toss_pg_key_abc", "bk-001", "{}", Instant.now(), ACTOR);
+            assertThat(payment.pullLatestHistory().getToStatus()).isEqualTo(PaymentStatus.COMPLETED);
         }
     }
 

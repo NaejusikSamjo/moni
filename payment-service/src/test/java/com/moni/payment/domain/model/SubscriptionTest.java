@@ -26,7 +26,7 @@ class SubscriptionTest {
 
     @BeforeEach
     void setUp() {
-        subscription = Subscription.create(USER_ID, NEXT_BILLING);
+        subscription = Subscription.create(USER_ID);
     }
 
     @Nested

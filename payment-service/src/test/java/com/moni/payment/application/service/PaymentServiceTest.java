@@ -130,7 +130,7 @@ class PaymentServiceTest {
         }
 
         @Test
-        @DisplayName("SubscriptionService가 userId, billingKey, nextBillingDate로 호출된다")
+        @DisplayName("SubscriptionService가 userId, billingKey로 호출된다")
         void activatesSubscription() {
             paymentService.initiatePayment(command());
 
@@ -141,7 +141,6 @@ class PaymentServiceTest {
             ActivateSubscriptionCommand activateCmd = captor.getValue();
             assertThat(activateCmd.userId()).isEqualTo(USER_ID);
             assertThat(activateCmd.billingKeyValue()).isEqualTo(BILLING_KEY);
-            assertThat(activateCmd.nextBillingDate()).isEqualTo(LocalDate.now().plusMonths(1));
         }
 
         @Test
@@ -263,7 +262,7 @@ class PaymentServiceTest {
         private static final Instant RESPONDED_AT = Instant.now();
 
         private Payment pendingPayment() {
-            return Payment.initiate(
+            return Payment.create(
                     USER_ID,
                     MerchantId.of(MERCHANT_ID_VALUE),
                     Money.of(9900L),
@@ -333,7 +332,7 @@ class PaymentServiceTest {
         @Test
         @DisplayName("userId에 해당하는 결제 목록을 반환한다")
         void returnsPaymentList() {
-            Payment p1 = Payment.initiate(
+            Payment p1 = Payment.create(
                     USER_ID, MerchantId.of("MONI" + "b".repeat(32)),
                     Money.of(9900L), PaymentType.SUBSCRIPTION_INITIAL,
                     Instant.now().plusSeconds(600), USER_ID.toString());

@@ -37,7 +37,7 @@ class ActivateSubscriptionServiceTest {
 
     private static final UUID USER_ID = UUID.randomUUID();
     private static final String BILLING_KEY_VALUE = "billing-key-001";
-    private static final LocalDate NEXT_BILLING = LocalDate.now().plusMonths(1);
+    private static final LocalDate NEXT_BILLING = LocalDate.now().plusMonths(1); // Subscription.create() 내부 계산값과 동일
 
     @BeforeEach
     void setUp() {
@@ -47,7 +47,7 @@ class ActivateSubscriptionServiceTest {
     }
 
     private ActivateSubscriptionCommand command() {
-        return new ActivateSubscriptionCommand(USER_ID, BILLING_KEY_VALUE, NEXT_BILLING);
+        return new ActivateSubscriptionCommand(USER_ID, BILLING_KEY_VALUE);
     }
 
     @Nested

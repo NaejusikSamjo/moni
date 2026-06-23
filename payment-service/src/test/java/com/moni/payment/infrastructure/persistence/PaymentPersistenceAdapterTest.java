@@ -68,7 +68,7 @@ class PaymentPersistenceAdapterTest {
     private static final UUID USER_ID = UUID.randomUUID();
 
     private Payment createPendingPayment(String merchantSuffix) {
-        return Payment.initiate(
+        return Payment.create(
                 USER_ID,
                 MerchantId.of("MONI" + merchantSuffix),
                 Money.of(9900L),
@@ -148,7 +148,7 @@ class PaymentPersistenceAdapterTest {
         void findByUserIdSecondPage() {
             UUID specificUserId = UUID.randomUUID();
             for (int i = 0; i < 3; i++) {
-                Payment p = Payment.initiate(
+                Payment p = Payment.create(
                         specificUserId,
                         MerchantId.of("MONI" + "e" + i + "e".repeat(29)),
                         Money.of(9900L), PaymentType.SUBSCRIPTION_INITIAL,
