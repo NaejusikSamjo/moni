@@ -6,8 +6,8 @@ import com.moni.payment.domain.model.SubscriptionStatus;
 import com.moni.payment.domain.port.LoadSubscriptionPort;
 import com.moni.payment.domain.port.SaveSubscriptionHistoryPort;
 import com.moni.payment.domain.port.SaveSubscriptionPort;
-import com.moni.payment.infrastructure.repository.SubscriptionHistoryJpaRepository;
-import com.moni.payment.infrastructure.repository.SubscriptionJpaRepository;
+import com.moni.payment.infrastructure.repository.SubscriptionHistoryRepository;
+import com.moni.payment.infrastructure.repository.SubscriptionRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,54 +20,43 @@ import java.util.UUID;
 public class SubscriptionPersistenceAdapter
         implements SaveSubscriptionPort, LoadSubscriptionPort, SaveSubscriptionHistoryPort {
 
-    private final SubscriptionJpaRepository subscriptionJpaRepository;
-    private final SubscriptionHistoryJpaRepository subscriptionHistoryJpaRepository;
+    private final SubscriptionRepository subscriptionRepository;
+    private final SubscriptionHistoryRepository subscriptionHistoryRepository;
 
     public SubscriptionPersistenceAdapter(
-            SubscriptionJpaRepository subscriptionJpaRepository,
-            SubscriptionHistoryJpaRepository subscriptionHistoryJpaRepository) {
-        this.subscriptionJpaRepository = subscriptionJpaRepository;
-        this.subscriptionHistoryJpaRepository = subscriptionHistoryJpaRepository;
+            SubscriptionRepository subscriptionRepository,
+            SubscriptionHistoryRepository subscriptionHistoryRepository) {
+        this.subscriptionRepository = subscriptionRepository;
+        this.subscriptionHistoryRepository = subscriptionHistoryRepository;
     }
 
     @Override
     @Transactional
     public Subscription save(Subscription subscription) {
-        SubscriptionJpaEntity entity = SubscriptionJpaEntity.fromDomain(subscription);
-        return subscriptionJpaRepository.save(entity).toDomain();
+        return subscriptionRepository.save(subscription);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<Subscription> findById(UUID id) {
-        return subscriptionJpaRepository.findById(id)
-                .map(SubscriptionJpaEntity::toDomain);
+        return subscriptionRepository.findById(id);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<Subscription> findActiveByUserId(UUID userId) {
-        return subscriptionJpaRepository.findByUserIdAndStatus(userId, SubscriptionStatus.ACTIVE)
-                .map(SubscriptionJpaEntity::toDomain);
+        return subscriptionRepository.findByUserIdAndStatus(userId, SubscriptionStatus.ACTIVE);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<Subscription> findActiveSubscriptionsDueBefore(LocalDate date) {
-        return subscriptionJpaRepository.findActiveSubscriptionsDueBefore(date)
-                .stream()
-                .map(SubscriptionJpaEntity::toDomain)
-                .toList();
+        return subscriptionRepository.findActiveSubscriptionsDueBefore(SubscriptionStatus.ACTIVE, date);
     }
 
     @Override
     @Transactional
     public void save(SubscriptionHistory history) {
-        subscriptionJpaRepository.findById(history.getSubscriptionId())
-                .ifPresent(subscriptionEntity -> {
-                    SubscriptionHistoryJpaEntity historyEntity =
-                            SubscriptionHistoryJpaEntity.fromDomain(history, subscriptionEntity);
-                    subscriptionHistoryJpaRepository.save(historyEntity);
-                });
+        subscriptionHistoryRepository.save(history);
     }
 }
