@@ -6,7 +6,7 @@ import com.moni.payment.common.exception.PaymentException;
 import com.moni.payment.domain.event.BillingFailedEvent;
 import com.moni.payment.domain.event.SubscriptionActivatedEvent;
 import com.moni.payment.domain.event.SubscriptionCancelledEvent;
-import com.moni.payment.domain.port.SubscriptionEventPublisherPort;
+import com.moni.payment.application.repository.SubscriptionEventPublisher;
 import com.moni.payment.infrastructure.messaging.dto.SubscriptionEventMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,7 +18,7 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = "kafka.enabled", havingValue = "true", matchIfMissing = false)
-public class SubscriptionKafkaProducer implements SubscriptionEventPublisherPort {
+public class SubscriptionKafkaProducer implements SubscriptionEventPublisher {
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
 

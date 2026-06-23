@@ -1,15 +1,12 @@
 package com.moni.payment.application.service;
 
+import com.moni.payment.application.command.ActivateSubscriptionCommand;
+import com.moni.payment.application.repository.SubscriptionEventPublisher;
+import com.moni.payment.application.repository.SubscriptionRepository;
 import com.moni.payment.domain.event.SubscriptionActivatedEvent;
 import com.moni.payment.domain.model.Subscription;
 import com.moni.payment.domain.model.SubscriptionHistory;
 import com.moni.payment.domain.model.SubscriptionStatus;
-import com.moni.payment.domain.port.LoadSubscriptionPort;
-import com.moni.payment.domain.port.SaveSubscriptionHistoryPort;
-import com.moni.payment.domain.port.SaveSubscriptionPort;
-import com.moni.payment.domain.port.SubscriptionEventPublisherPort;
-import com.moni.payment.application.service.SubscriptionService;
-import com.moni.payment.application.usecase.ActivateSubscriptionUseCase;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -32,13 +29,9 @@ import static org.mockito.BDDMockito.then;
 class ActivateSubscriptionServiceTest {
 
     @Mock
-    private LoadSubscriptionPort loadSubscriptionPort;
+    private SubscriptionRepository subscriptionRepository;
     @Mock
-    private SaveSubscriptionPort saveSubscriptionPort;
-    @Mock
-    private SaveSubscriptionHistoryPort saveSubscriptionHistoryPort;
-    @Mock
-    private SubscriptionEventPublisherPort subscriptionEventPublisherPort;
+    private SubscriptionEventPublisher subscriptionEventPublisher;
 
     private SubscriptionService subscriptionService;
 
@@ -49,15 +42,12 @@ class ActivateSubscriptionServiceTest {
     @BeforeEach
     void setUp() {
         subscriptionService = new SubscriptionService(
-                loadSubscriptionPort,
-                saveSubscriptionPort,
-                saveSubscriptionHistoryPort,
-                subscriptionEventPublisherPort);
+                subscriptionRepository,
+                subscriptionEventPublisher);
     }
 
-    private ActivateSubscriptionUseCase.ActivateSubscriptionCommand command() {
-        return new ActivateSubscriptionUseCase.ActivateSubscriptionCommand(
-                USER_ID, BILLING_KEY_VALUE, NEXT_BILLING);
+    private ActivateSubscriptionCommand command() {
+        return new ActivateSubscriptionCommand(USER_ID, BILLING_KEY_VALUE, NEXT_BILLING);
     }
 
     @Nested
@@ -66,7 +56,7 @@ class ActivateSubscriptionServiceTest {
 
         @BeforeEach
         void setUp() {
-            given(saveSubscriptionPort.save(any())).willAnswer(inv -> inv.getArgument(0));
+            given(subscriptionRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
         }
 
         @Test
@@ -91,17 +81,17 @@ class ActivateSubscriptionServiceTest {
         @DisplayName("SubscriptionHistory가 저장된다")
         void historyIsSaved() {
             subscriptionService.activateSubscription(command());
-            then(saveSubscriptionHistoryPort).should().save(any(SubscriptionHistory.class));
+            then(subscriptionRepository).should().saveHistory(any(SubscriptionHistory.class));
         }
 
         @Test
-        @DisplayName("SubscriptionActivatedEvent가 Kafka로 발행된다")
+        @DisplayName("SubscriptionActivatedEvent가 발행된다")
         void publishesActivatedEvent() {
             subscriptionService.activateSubscription(command());
 
             ArgumentCaptor<SubscriptionActivatedEvent> captor =
                     ArgumentCaptor.forClass(SubscriptionActivatedEvent.class);
-            then(subscriptionEventPublisherPort).should().publishActivated(captor.capture());
+            then(subscriptionEventPublisher).should().publishActivated(captor.capture());
 
             SubscriptionActivatedEvent event = captor.getValue();
             assertThat(event.userId()).isEqualTo(USER_ID);

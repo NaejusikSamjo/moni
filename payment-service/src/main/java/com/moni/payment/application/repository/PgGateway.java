@@ -1,4 +1,4 @@
-package com.moni.payment.domain.port;
+package com.moni.payment.application.repository;
 
 import com.moni.payment.domain.model.MerchantId;
 import com.moni.payment.domain.model.Money;
@@ -6,7 +6,7 @@ import com.moni.payment.domain.model.PaymentType;
 
 import java.util.UUID;
 
-public interface PgGatewayPort {
+public interface PgGateway {
 
     record PgPaymentRequest(
             String authKey,

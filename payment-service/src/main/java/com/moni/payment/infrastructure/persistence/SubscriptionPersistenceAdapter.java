@@ -1,15 +1,12 @@
 package com.moni.payment.infrastructure.persistence;
 
+import com.moni.payment.application.repository.SubscriptionRepository;
 import com.moni.payment.domain.model.Subscription;
 import com.moni.payment.domain.model.SubscriptionHistory;
 import com.moni.payment.domain.model.SubscriptionStatus;
-import com.moni.payment.domain.port.LoadSubscriptionPort;
-import com.moni.payment.domain.port.SaveSubscriptionHistoryPort;
-import com.moni.payment.domain.port.SaveSubscriptionPort;
 import com.moni.payment.infrastructure.repository.SubscriptionHistoryRepository;
-import com.moni.payment.infrastructure.repository.SubscriptionRepository;
+import com.moni.payment.infrastructure.repository.SubscriptionJpaRepository;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -17,46 +14,40 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Component
-public class SubscriptionPersistenceAdapter
-        implements SaveSubscriptionPort, LoadSubscriptionPort, SaveSubscriptionHistoryPort {
+public class SubscriptionPersistenceAdapter implements SubscriptionRepository {
 
-    private final SubscriptionRepository subscriptionRepository;
+    private final SubscriptionJpaRepository subscriptionJpaRepository;
     private final SubscriptionHistoryRepository subscriptionHistoryRepository;
 
     public SubscriptionPersistenceAdapter(
-            SubscriptionRepository subscriptionRepository,
+            SubscriptionJpaRepository subscriptionJpaRepository,
             SubscriptionHistoryRepository subscriptionHistoryRepository) {
-        this.subscriptionRepository = subscriptionRepository;
+        this.subscriptionJpaRepository = subscriptionJpaRepository;
         this.subscriptionHistoryRepository = subscriptionHistoryRepository;
     }
 
     @Override
-    @Transactional
     public Subscription save(Subscription subscription) {
-        return subscriptionRepository.save(subscription);
+        return subscriptionJpaRepository.save(subscription);
     }
 
     @Override
-    @Transactional(readOnly = true)
     public Optional<Subscription> findById(UUID id) {
-        return subscriptionRepository.findById(id);
+        return subscriptionJpaRepository.findById(id);
     }
 
     @Override
-    @Transactional(readOnly = true)
     public Optional<Subscription> findActiveByUserId(UUID userId) {
-        return subscriptionRepository.findByUserIdAndStatus(userId, SubscriptionStatus.ACTIVE);
+        return subscriptionJpaRepository.findByUserIdAndStatus(userId, SubscriptionStatus.ACTIVE);
     }
 
     @Override
-    @Transactional(readOnly = true)
     public List<Subscription> findActiveSubscriptionsDueBefore(LocalDate date) {
-        return subscriptionRepository.findActiveSubscriptionsDueBefore(SubscriptionStatus.ACTIVE, date);
+        return subscriptionJpaRepository.findActiveSubscriptionsDueBefore(SubscriptionStatus.ACTIVE, date);
     }
 
     @Override
-    @Transactional
-    public void save(SubscriptionHistory history) {
+    public void saveHistory(SubscriptionHistory history) {
         subscriptionHistoryRepository.save(history);
     }
 }
