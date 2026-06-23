@@ -1,4 +1,4 @@
-package com.moni.payment.infrastructure.persistence.converter;
+package com.moni.payment.domain.model.converter;
 
 import com.moni.payment.domain.model.BillingKey;
 import org.junit.jupiter.api.DisplayName;

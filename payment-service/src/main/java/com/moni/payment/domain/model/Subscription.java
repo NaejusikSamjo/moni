@@ -2,7 +2,7 @@ package com.moni.payment.domain.model;
 
 import com.moni.payment.domain.event.SubscriptionActivatedEvent;
 import com.moni.payment.domain.event.SubscriptionCancelledEvent;
-import com.moni.payment.infrastructure.persistence.converter.BillingKeyConverter;
+import com.moni.payment.domain.model.converter.BillingKeyConverter;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;

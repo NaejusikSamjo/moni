@@ -1,61 +1,53 @@
 package com.moni.payment.infrastructure.persistence;
 
+import com.moni.payment.application.repository.PaymentRepository;
 import com.moni.payment.domain.model.MerchantId;
 import com.moni.payment.domain.model.Payment;
 import com.moni.payment.domain.model.PaymentHistory;
-import com.moni.payment.domain.port.LoadPaymentPort;
-import com.moni.payment.domain.port.SavePaymentHistoryPort;
-import com.moni.payment.domain.port.SavePaymentPort;
 import com.moni.payment.infrastructure.repository.PaymentHistoryRepository;
-import com.moni.payment.infrastructure.repository.PaymentRepository;
+import com.moni.payment.infrastructure.repository.PaymentJpaRepository;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 @Component
-public class PaymentPersistenceAdapter implements SavePaymentPort, LoadPaymentPort, SavePaymentHistoryPort {
+public class PaymentPersistenceAdapter implements PaymentRepository {
 
-    private final PaymentRepository paymentRepository;
+    private final PaymentJpaRepository paymentJpaRepository;
     private final PaymentHistoryRepository paymentHistoryRepository;
 
     public PaymentPersistenceAdapter(
-            PaymentRepository paymentRepository,
+            PaymentJpaRepository paymentJpaRepository,
             PaymentHistoryRepository paymentHistoryRepository) {
-        this.paymentRepository = paymentRepository;
+        this.paymentJpaRepository = paymentJpaRepository;
         this.paymentHistoryRepository = paymentHistoryRepository;
     }
 
     @Override
-    @Transactional
     public Payment save(Payment payment) {
-        return paymentRepository.save(payment);
+        return paymentJpaRepository.save(payment);
     }
 
     @Override
-    @Transactional(readOnly = true)
     public Optional<Payment> findById(UUID id) {
-        return paymentRepository.findById(id);
+        return paymentJpaRepository.findById(id);
     }
 
     @Override
-    @Transactional(readOnly = true)
     public Optional<Payment> findByMerchantId(MerchantId merchantId) {
-        return paymentRepository.findByMerchantId(merchantId.getValue());
+        return paymentJpaRepository.findByMerchantId(merchantId.getValue());
     }
 
     @Override
-    @Transactional(readOnly = true)
     public List<Payment> findByUserId(UUID userId, int page, int size) {
-        return paymentRepository.findByUserIdPaged(userId, PageRequest.of(page, size));
+        return paymentJpaRepository.findByUserIdPaged(userId, PageRequest.of(page, size));
     }
 
     @Override
-    @Transactional
-    public void save(PaymentHistory history) {
+    public void saveHistory(PaymentHistory history) {
         paymentHistoryRepository.save(history);
     }
 }

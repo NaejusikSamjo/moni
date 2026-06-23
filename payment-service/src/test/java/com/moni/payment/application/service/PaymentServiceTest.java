@@ -1,23 +1,19 @@
 package com.moni.payment.application.service;
 
-import com.moni.payment.common.exception.PaymentErrorCode;
-import com.moni.payment.common.exception.PaymentException;
+import com.moni.payment.application.command.ActivateSubscriptionCommand;
 import com.moni.payment.application.command.SubscribeCommand;
 import com.moni.payment.application.command.SubscribeResult;
-import com.moni.payment.application.service.PaymentService;
-import com.moni.payment.application.usecase.ActivateSubscriptionUseCase;
+import com.moni.payment.application.repository.PaymentRepository;
+import com.moni.payment.application.repository.PgGateway;
+import com.moni.payment.application.repository.SubscriptionRepository;
+import com.moni.payment.common.exception.PaymentErrorCode;
+import com.moni.payment.common.exception.PaymentException;
 import com.moni.payment.domain.model.BillingKey;
 import com.moni.payment.domain.model.MerchantId;
-import com.moni.payment.domain.model.Money;
 import com.moni.payment.domain.model.Payment;
 import com.moni.payment.domain.model.PaymentStatus;
-import com.moni.payment.domain.model.PaymentType;
 import com.moni.payment.domain.model.Subscription;
 import com.moni.payment.domain.model.SubscriptionStatus;
-import com.moni.payment.domain.port.LoadSubscriptionPort;
-import com.moni.payment.domain.port.PgGatewayPort;
-import com.moni.payment.domain.port.SavePaymentHistoryPort;
-import com.moni.payment.domain.port.SavePaymentPort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -29,11 +25,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-
-import java.util.ArrayList;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -49,15 +44,13 @@ import static org.mockito.Mockito.times;
 class PaymentServiceTest {
 
     @Mock
-    private LoadSubscriptionPort loadSubscriptionPort;
+    private SubscriptionRepository subscriptionRepository;
     @Mock
-    private SavePaymentPort savePaymentPort;
+    private PaymentRepository paymentRepository;
     @Mock
-    private SavePaymentHistoryPort savePaymentHistoryPort;
+    private PgGateway pgGateway;
     @Mock
-    private PgGatewayPort pgGatewayPort;
-    @Mock
-    private ActivateSubscriptionUseCase activateSubscriptionUseCase;
+    private SubscriptionService subscriptionService;
 
     private PaymentService paymentService;
 
@@ -71,19 +64,18 @@ class PaymentServiceTest {
     @BeforeEach
     void setUp() {
         paymentService = new PaymentService(
-                loadSubscriptionPort,
-                savePaymentPort,
-                savePaymentHistoryPort,
-                pgGatewayPort,
-                activateSubscriptionUseCase);
+                subscriptionRepository,
+                paymentRepository,
+                pgGateway,
+                subscriptionService);
     }
 
     private SubscribeCommand command() {
         return new SubscribeCommand(USER_ID, AUTH_KEY, CUSTOMER_KEY, AMOUNT, USER_ID.toString());
     }
 
-    private PgGatewayPort.PgPaymentResult successResult() {
-        return new PgGatewayPort.PgPaymentResult(PG_PAYMENT_KEY, BILLING_KEY, "{}", true);
+    private PgGateway.PgPaymentResult successResult() {
+        return new PgGateway.PgPaymentResult(PG_PAYMENT_KEY, BILLING_KEY, "{}", true);
     }
 
     private Subscription activeSubscription() {
@@ -104,15 +96,14 @@ class PaymentServiceTest {
 
         @BeforeEach
         void setUp() {
-            given(loadSubscriptionPort.findActiveByUserId(USER_ID)).willReturn(Optional.empty());
-            given(pgGatewayPort.requestPayment(any())).willReturn(successResult());
-            // doAnswer로 저장 시점 상태를 기록하면서 동시에 argument를 반환한다
+            given(subscriptionRepository.findActiveByUserId(USER_ID)).willReturn(Optional.empty());
+            given(pgGateway.requestPayment(any())).willReturn(successResult());
             doAnswer(inv -> {
                 Payment p = inv.getArgument(0);
                 statusAtSaveTime.add(p.getStatus());
                 return p;
-            }).when(savePaymentPort).save(any());
-            given(activateSubscriptionUseCase.activateSubscription(any())).willReturn(activeSubscription());
+            }).when(paymentRepository).save(any());
+            given(subscriptionService.activateSubscription(any())).willReturn(activeSubscription());
         }
 
         @Test
@@ -134,15 +125,15 @@ class PaymentServiceTest {
         }
 
         @Test
-        @DisplayName("ActivateSubscriptionUseCase가 userId, billingKey, nextBillingDate로 호출된다")
+        @DisplayName("SubscriptionService가 userId, billingKey, nextBillingDate로 호출된다")
         void activatesSubscription() {
             paymentService.initiatePayment(command());
 
-            ArgumentCaptor<ActivateSubscriptionUseCase.ActivateSubscriptionCommand> captor =
-                    ArgumentCaptor.forClass(ActivateSubscriptionUseCase.ActivateSubscriptionCommand.class);
-            then(activateSubscriptionUseCase).should().activateSubscription(captor.capture());
+            ArgumentCaptor<ActivateSubscriptionCommand> captor =
+                    ArgumentCaptor.forClass(ActivateSubscriptionCommand.class);
+            then(subscriptionService).should().activateSubscription(captor.capture());
 
-            ActivateSubscriptionUseCase.ActivateSubscriptionCommand activateCmd = captor.getValue();
+            ActivateSubscriptionCommand activateCmd = captor.getValue();
             assertThat(activateCmd.userId()).isEqualTo(USER_ID);
             assertThat(activateCmd.billingKeyValue()).isEqualTo(BILLING_KEY);
             assertThat(activateCmd.nextBillingDate()).isEqualTo(LocalDate.now().plusMonths(1));
@@ -152,7 +143,7 @@ class PaymentServiceTest {
         @DisplayName("PaymentHistory가 한 번 저장된다")
         void historyIsSaved() {
             paymentService.initiatePayment(command());
-            then(savePaymentHistoryPort).should(times(1)).save(any());
+            then(paymentRepository).should(times(1)).saveHistory(any());
         }
     }
 
@@ -163,7 +154,7 @@ class PaymentServiceTest {
         @Test
         @DisplayName("ACTIVE_SUBSCRIPTION_EXISTS 예외 발생, PG 호출 없음")
         void throwsExceptionWhenActiveSubscriptionExists() {
-            given(loadSubscriptionPort.findActiveByUserId(USER_ID))
+            given(subscriptionRepository.findActiveByUserId(USER_ID))
                     .willReturn(Optional.of(activeSubscription()));
 
             assertThatThrownBy(() -> paymentService.initiatePayment(command()))
@@ -171,8 +162,8 @@ class PaymentServiceTest {
                     .extracting(e -> ((PaymentException) e).getErrorCode())
                     .isEqualTo(PaymentErrorCode.ACTIVE_SUBSCRIPTION_EXISTS);
 
-            then(pgGatewayPort).should(never()).requestPayment(any());
-            then(savePaymentPort).should(never()).save(any());
+            then(pgGateway).should(never()).requestPayment(any());
+            then(paymentRepository).should(never()).save(any());
         }
     }
 
@@ -182,14 +173,14 @@ class PaymentServiceTest {
 
         @BeforeEach
         void setUp() {
-            given(loadSubscriptionPort.findActiveByUserId(USER_ID)).willReturn(Optional.empty());
-            given(savePaymentPort.save(any())).willAnswer(inv -> inv.getArgument(0));
+            given(subscriptionRepository.findActiveByUserId(USER_ID)).willReturn(Optional.empty());
+            given(paymentRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
         }
 
         @Test
         @DisplayName("PG 예외 → Payment FAILED 저장 후 예외 re-throw")
         void pgExceptionPersistsFailedPayment() {
-            given(pgGatewayPort.requestPayment(any()))
+            given(pgGateway.requestPayment(any()))
                     .willThrow(new PaymentException(PaymentErrorCode.PG_COMMUNICATION_ERROR));
 
             assertThatThrownBy(() -> paymentService.initiatePayment(command()))
@@ -198,15 +189,15 @@ class PaymentServiceTest {
                     .isEqualTo(PaymentErrorCode.PG_COMMUNICATION_ERROR);
 
             ArgumentCaptor<Payment> captor = ArgumentCaptor.forClass(Payment.class);
-            then(savePaymentPort).should(times(2)).save(captor.capture());
+            then(paymentRepository).should(times(2)).save(captor.capture());
             assertThat(captor.getAllValues().get(1).getStatus()).isEqualTo(PaymentStatus.FAILED);
         }
 
         @Test
         @DisplayName("PG success=false → Payment FAILED 저장 후 PG_PAYMENT_FAILED 예외 발생")
         void pgFailureResultPersistsFailedPayment() {
-            given(pgGatewayPort.requestPayment(any()))
-                    .willReturn(new PgGatewayPort.PgPaymentResult(null, null, "{\"error\":\"CARD_LIMIT\"}", false));
+            given(pgGateway.requestPayment(any()))
+                    .willReturn(new PgGateway.PgPaymentResult(null, null, "{\"error\":\"CARD_LIMIT\"}", false));
 
             assertThatThrownBy(() -> paymentService.initiatePayment(command()))
                     .isInstanceOf(PaymentException.class)
@@ -214,22 +205,22 @@ class PaymentServiceTest {
                     .isEqualTo(PaymentErrorCode.PG_PAYMENT_FAILED);
 
             ArgumentCaptor<Payment> captor = ArgumentCaptor.forClass(Payment.class);
-            then(savePaymentPort).should(times(2)).save(captor.capture());
+            then(paymentRepository).should(times(2)).save(captor.capture());
             assertThat(captor.getAllValues().get(1).getStatus()).isEqualTo(PaymentStatus.FAILED);
 
-            then(activateSubscriptionUseCase).should(never()).activateSubscription(any());
+            then(subscriptionService).should(never()).activateSubscription(any());
         }
 
         @Test
         @DisplayName("PG 실패 시 구독 활성화는 호출되지 않는다")
         void subscriptionNotActivatedOnPgFailure() {
-            given(pgGatewayPort.requestPayment(any()))
+            given(pgGateway.requestPayment(any()))
                     .willThrow(new PaymentException(PaymentErrorCode.PG_CONNECTION_TIMEOUT));
 
             assertThatThrownBy(() -> paymentService.initiatePayment(command()))
                     .isInstanceOf(PaymentException.class);
 
-            then(activateSubscriptionUseCase).should(never()).activateSubscription(any());
+            then(subscriptionService).should(never()).activateSubscription(any());
         }
     }
 
@@ -240,16 +231,16 @@ class PaymentServiceTest {
         @Test
         @DisplayName("PG 호출 시 merchantId가 유효한 형식으로 전달된다")
         void merchantIdIsValidFormat() {
-            given(loadSubscriptionPort.findActiveByUserId(USER_ID)).willReturn(Optional.empty());
-            given(pgGatewayPort.requestPayment(any())).willReturn(successResult());
-            given(savePaymentPort.save(any())).willAnswer(inv -> inv.getArgument(0));
-            given(activateSubscriptionUseCase.activateSubscription(any())).willReturn(activeSubscription());
+            given(subscriptionRepository.findActiveByUserId(USER_ID)).willReturn(Optional.empty());
+            given(pgGateway.requestPayment(any())).willReturn(successResult());
+            given(paymentRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
+            given(subscriptionService.activateSubscription(any())).willReturn(activeSubscription());
 
             paymentService.initiatePayment(command());
 
-            ArgumentCaptor<PgGatewayPort.PgPaymentRequest> captor =
-                    ArgumentCaptor.forClass(PgGatewayPort.PgPaymentRequest.class);
-            then(pgGatewayPort).should().requestPayment(captor.capture());
+            ArgumentCaptor<PgGateway.PgPaymentRequest> captor =
+                    ArgumentCaptor.forClass(PgGateway.PgPaymentRequest.class);
+            then(pgGateway).should().requestPayment(captor.capture());
 
             MerchantId merchantId = captor.getValue().merchantId();
             assertThat(merchantId.getValue()).startsWith("MONI");

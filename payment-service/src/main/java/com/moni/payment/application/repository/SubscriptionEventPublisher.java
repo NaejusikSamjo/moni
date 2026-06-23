@@ -1,10 +1,10 @@
-package com.moni.payment.domain.port;
+package com.moni.payment.application.repository;
 
 import com.moni.payment.domain.event.BillingFailedEvent;
 import com.moni.payment.domain.event.SubscriptionActivatedEvent;
 import com.moni.payment.domain.event.SubscriptionCancelledEvent;
 
-public interface SubscriptionEventPublisherPort {
+public interface SubscriptionEventPublisher {
 
     void publishActivated(SubscriptionActivatedEvent event);
 

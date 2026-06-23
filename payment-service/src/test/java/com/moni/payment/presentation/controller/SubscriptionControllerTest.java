@@ -1,5 +1,6 @@
 package com.moni.payment.presentation.controller;
 
+import com.moni.payment.application.usecase.GetSubscriptionStatusQuery;
 import com.moni.payment.common.config.SecurityConfig;
 import com.moni.payment.common.exception.GlobalExceptionHandler;
 import com.moni.payment.common.exception.PaymentErrorCode;
@@ -7,7 +8,6 @@ import com.moni.payment.common.exception.PaymentException;
 import com.moni.payment.domain.model.BillingKey;
 import com.moni.payment.domain.model.Subscription;
 import com.moni.payment.domain.model.SubscriptionStatus;
-import com.moni.payment.application.usecase.GetSubscriptionStatusUseCase;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -37,7 +37,7 @@ class SubscriptionControllerTest {
     private MockMvc mockMvc;
 
     @MockitoBean
-    private GetSubscriptionStatusUseCase getSubscriptionStatusUseCase;
+    private GetSubscriptionStatusQuery getSubscriptionStatusQuery;
 
     private static final UUID USER_ID = UUID.randomUUID();
     private static final LocalDate NEXT_BILLING = LocalDate.of(2026, 7, 19);
@@ -62,7 +62,7 @@ class SubscriptionControllerTest {
         @Test
         @DisplayName("구독이 존재하면 200과 응답 DTO를 반환한다")
         void returnsOk() throws Exception {
-            given(getSubscriptionStatusUseCase.getSubscriptionStatus(any()))
+            given(getSubscriptionStatusQuery.getSubscriptionStatus(any()))
                     .willReturn(activeSubscription());
 
             mockMvc.perform(get("/api/v1/payments/subscriptions/status")
@@ -79,7 +79,7 @@ class SubscriptionControllerTest {
         @Test
         @DisplayName("구독이 없으면 404를 반환한다")
         void returnsNotFound() throws Exception {
-            given(getSubscriptionStatusUseCase.getSubscriptionStatus(any()))
+            given(getSubscriptionStatusQuery.getSubscriptionStatus(any()))
                     .willThrow(new PaymentException(PaymentErrorCode.SUBSCRIPTION_NOT_FOUND));
 
             mockMvc.perform(get("/api/v1/payments/subscriptions/status")

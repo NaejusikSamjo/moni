@@ -1,8 +1,11 @@
 package com.moni.payment.application.service;
 
+import com.moni.payment.application.command.ActivateSubscriptionCommand;
 import com.moni.payment.application.command.SubscribeCommand;
 import com.moni.payment.application.command.SubscribeResult;
-import com.moni.payment.application.usecase.ActivateSubscriptionUseCase;
+import com.moni.payment.application.repository.PaymentRepository;
+import com.moni.payment.application.repository.PgGateway;
+import com.moni.payment.application.repository.SubscriptionRepository;
 import com.moni.payment.application.usecase.InitiatePaymentUseCase;
 import com.moni.payment.common.exception.PaymentErrorCode;
 import com.moni.payment.common.exception.PaymentException;
@@ -11,13 +14,10 @@ import com.moni.payment.domain.model.Money;
 import com.moni.payment.domain.model.Payment;
 import com.moni.payment.domain.model.PaymentHistory;
 import com.moni.payment.domain.model.PaymentType;
-import com.moni.payment.domain.port.LoadSubscriptionPort;
-import com.moni.payment.domain.port.PgGatewayPort;
-import com.moni.payment.domain.port.SavePaymentHistoryPort;
-import com.moni.payment.domain.port.SavePaymentPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -29,16 +29,16 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class PaymentService implements InitiatePaymentUseCase {
 
-    private final LoadSubscriptionPort loadSubscriptionPort;
-    private final SavePaymentPort savePaymentPort;
-    private final SavePaymentHistoryPort savePaymentHistoryPort;
-    private final PgGatewayPort pgGatewayPort;
-    private final ActivateSubscriptionUseCase activateSubscriptionUseCase;
+    private final SubscriptionRepository subscriptionRepository;
+    private final PaymentRepository paymentRepository;
+    private final PgGateway pgGateway;
+    private final SubscriptionService subscriptionService;
 
     @Override
+    @Transactional
     public SubscribeResult initiatePayment(SubscribeCommand command) {
         // 1. 이미 활성 구독 여부 확인
-        loadSubscriptionPort.findActiveByUserId(command.userId())
+        subscriptionRepository.findActiveByUserId(command.userId())
                 .ifPresent(existing -> {
                     throw new PaymentException(PaymentErrorCode.ACTIVE_SUBSCRIPTION_EXISTS);
                 });
@@ -47,23 +47,23 @@ public class PaymentService implements InitiatePaymentUseCase {
         MerchantId merchantId = MerchantId.of(
                 "MONI" + UUID.randomUUID().toString().replace("-", ""));
 
-        // 3. Payment(PENDING) 생성 후 저장 (Tx1 - 별도 커밋)
+        // 3. Payment(PENDING) 생성 후 저장
         Money amount = Money.of(command.amount());
         Payment payment = Payment.initiate(
                 command.userId(), merchantId, amount,
                 PaymentType.SUBSCRIPTION_INITIAL,
                 Instant.now().plusSeconds(600),
                 command.requestedBy());
-        savePaymentPort.save(payment);
+        paymentRepository.save(payment);
         log.info("결제 PENDING 저장: paymentId={}, userId={}", payment.getId(), command.userId());
 
-        // 4+5. PG API 호출 (트랜잭션 외부)
-        PgGatewayPort.PgPaymentRequest pgRequest = new PgGatewayPort.PgPaymentRequest(
+        // 4+5. PG API 호출 (트랜잭션 외부에서 실행이 이상적이나, 현재는 단일 트랜잭션 범위)
+        PgGateway.PgPaymentRequest pgRequest = new PgGateway.PgPaymentRequest(
                 command.authKey(), merchantId, command.userId(), amount, PaymentType.SUBSCRIPTION_INITIAL);
 
-        PgGatewayPort.PgPaymentResult pgResult;
+        PgGateway.PgPaymentResult pgResult;
         try {
-            pgResult = pgGatewayPort.requestPayment(pgRequest);
+            pgResult = pgGateway.requestPayment(pgRequest);
         } catch (PaymentException e) {
             // 6-B: PG 예외 → FAILED 저장 후 re-throw
             persistPaymentFailure(payment, "PG_ERROR", command.requestedBy());
@@ -76,17 +76,17 @@ public class PaymentService implements InitiatePaymentUseCase {
             throw new PaymentException(PaymentErrorCode.PG_PAYMENT_FAILED);
         }
 
-        // 6-A: 성공 → COMPLETED 저장 (Tx2 - 별도 커밋)
+        // 6-A: 성공 → COMPLETED 저장
         payment.complete(pgResult.pgPaymentKey(), pgResult.rawResponse(), Instant.now(), command.requestedBy());
-        savePaymentPort.save(payment);
+        paymentRepository.save(payment);
         List<PaymentHistory> histories = payment.getHistories();
-        savePaymentHistoryPort.save(histories.get(histories.size() - 1));
+        paymentRepository.saveHistory(histories.get(histories.size() - 1));
         log.info("결제 COMPLETED 저장: paymentId={}", payment.getId());
 
         // 7+8. 구독 활성화 및 이벤트 발행
         LocalDate nextBillingDate = LocalDate.now().plusMonths(1);
-        activateSubscriptionUseCase.activateSubscription(
-                new ActivateSubscriptionUseCase.ActivateSubscriptionCommand(
+        subscriptionService.activateSubscription(
+                new ActivateSubscriptionCommand(
                         command.userId(), pgResult.billingKeyValue(), nextBillingDate));
 
         return new SubscribeResult(
@@ -98,9 +98,9 @@ public class PaymentService implements InitiatePaymentUseCase {
 
     private void persistPaymentFailure(Payment payment, String pgResponse, String actor) {
         payment.fail(pgResponse, Instant.now(), actor);
-        savePaymentPort.save(payment);
+        paymentRepository.save(payment);
         List<PaymentHistory> histories = payment.getHistories();
-        savePaymentHistoryPort.save(histories.get(histories.size() - 1));
+        paymentRepository.saveHistory(histories.get(histories.size() - 1));
         log.warn("결제 FAILED 저장: paymentId={}", payment.getId());
     }
 }

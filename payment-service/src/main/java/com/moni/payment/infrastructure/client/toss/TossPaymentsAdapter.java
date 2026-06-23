@@ -2,11 +2,11 @@ package com.moni.payment.infrastructure.client.toss;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.moni.payment.application.repository.PgGateway;
 import com.moni.payment.common.exception.PaymentErrorCode;
 import com.moni.payment.common.exception.PaymentException;
 import com.moni.payment.domain.model.MerchantId;
 import com.moni.payment.domain.model.Money;
-import com.moni.payment.domain.port.PgGatewayPort;
 import com.moni.payment.infrastructure.client.toss.dto.TossBillingAuthRequest;
 import com.moni.payment.infrastructure.client.toss.dto.TossBillingChargeRequest;
 import com.moni.payment.infrastructure.client.toss.dto.TossPaymentResponse;
@@ -19,7 +19,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class TossPaymentsAdapter implements PgGatewayPort {
+public class TossPaymentsAdapter implements PgGateway {
 
     private static final String ORDER_NAME = "모니 AI 구독";
     private static final String STATUS_DONE = "DONE";

@@ -3,7 +3,7 @@ package com.moni.payment.infrastructure.messaging;
 import com.moni.payment.domain.event.BillingFailedEvent;
 import com.moni.payment.domain.event.SubscriptionActivatedEvent;
 import com.moni.payment.domain.event.SubscriptionCancelledEvent;
-import com.moni.payment.domain.port.SubscriptionEventPublisherPort;
+import com.moni.payment.application.repository.SubscriptionEventPublisher;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @ConditionalOnProperty(name = "kafka.enabled", havingValue = "false", matchIfMissing = true)
-public class NoOpSubscriptionEventPublisher implements SubscriptionEventPublisherPort {
+public class NoOpSubscriptionEventPublisher implements SubscriptionEventPublisher {
 
     @Override
     public void publishActivated(SubscriptionActivatedEvent event) {

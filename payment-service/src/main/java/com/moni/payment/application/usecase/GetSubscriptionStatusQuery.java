@@ -4,7 +4,7 @@ import com.moni.payment.domain.model.Subscription;
 
 import java.util.UUID;
 
-public interface GetSubscriptionStatusUseCase {
+public interface GetSubscriptionStatusQuery {
 
     Subscription getSubscriptionStatus(UUID userId);
 }

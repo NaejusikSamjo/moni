@@ -1,12 +1,12 @@
 package com.moni.payment.application.service;
 
+import com.moni.payment.application.repository.SubscriptionEventPublisher;
+import com.moni.payment.application.repository.SubscriptionRepository;
 import com.moni.payment.common.exception.PaymentErrorCode;
 import com.moni.payment.common.exception.PaymentException;
 import com.moni.payment.domain.model.BillingKey;
 import com.moni.payment.domain.model.Subscription;
 import com.moni.payment.domain.model.SubscriptionStatus;
-import com.moni.payment.application.service.SubscriptionService;
-import com.moni.payment.domain.port.LoadSubscriptionPort;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -30,7 +30,10 @@ import static org.mockito.BDDMockito.given;
 class GetSubscriptionStatusServiceTest {
 
     @Mock
-    private LoadSubscriptionPort loadSubscriptionPort;
+    private SubscriptionRepository subscriptionRepository;
+
+    @Mock
+    private SubscriptionEventPublisher subscriptionEventPublisher;
 
     @InjectMocks
     private SubscriptionService subscriptionService;
@@ -57,7 +60,7 @@ class GetSubscriptionStatusServiceTest {
         @DisplayName("활성 구독이 존재하면 Subscription을 반환한다")
         void returnsActiveSubscription() {
             Subscription expected = activeSubscription();
-            given(loadSubscriptionPort.findActiveByUserId(USER_ID))
+            given(subscriptionRepository.findActiveByUserId(USER_ID))
                     .willReturn(Optional.of(expected));
 
             Subscription result = subscriptionService.getSubscriptionStatus(USER_ID);
@@ -70,7 +73,7 @@ class GetSubscriptionStatusServiceTest {
         @Test
         @DisplayName("활성 구독이 없으면 SUBSCRIPTION_NOT_FOUND 예외 발생")
         void throwsWhenNotFound() {
-            given(loadSubscriptionPort.findActiveByUserId(USER_ID))
+            given(subscriptionRepository.findActiveByUserId(USER_ID))
                     .willReturn(Optional.empty());
 
             assertThatThrownBy(() -> subscriptionService.getSubscriptionStatus(USER_ID))
