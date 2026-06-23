@@ -2,6 +2,9 @@
 networks:
   default:
     name: moni-network
+  moni_infra:
+    external: true
+    name: moni_default
 
 name: moni
 services:
@@ -210,9 +213,12 @@ services:
       DB_URL: ${PAYMENT_DB_URL}
       DB_USERNAME: ${PAYMENT_DB_USERNAME}
       DB_PASSWORD: ${PAYMENT_DB_PASSWORD}
+      GATEWAY_SECRET: ${GATEWAY_SECRET}
       REDIS_HOST: ${REDIS_HOST}
       REDIS_PORT: ${REDIS_PORT}
       REDIS_PASSWORD: ${REDIS_PASSWORD}
+      TOSS_SECRET_KEY: ${TOSS_SECRET_KEY}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       SPRING_PROFILES_ACTIVE: prod
       OTEL_SERVICE_NAME: payment-service
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
@@ -222,6 +228,9 @@ services:
       OTEL_LOGS_EXPORTER: none
       OTEL_INSTRUMENTATION_LOGBACK_MDC_ENABLED: "true"
       OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=local"
+    networks:
+      - default
+      - moni_infra
     volumes:
       - ./logs/payment-service:/app/logs
     depends_on:
