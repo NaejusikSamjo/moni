@@ -1,4 +1,4 @@
-package com.moni.payment.subscription.application.service;
+package com.moni.payment.application.service;
 
 import com.moni.payment.domain.event.SubscriptionActivatedEvent;
 import com.moni.payment.domain.model.Subscription;

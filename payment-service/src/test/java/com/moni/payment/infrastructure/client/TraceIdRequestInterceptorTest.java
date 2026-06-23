@@ -1,4 +1,4 @@
-package com.moni.payment.client;
+package com.moni.payment.infrastructure.client;
 
 import com.moni.payment.infrastructure.client.TraceIdRequestInterceptor;
 import feign.RequestTemplate;
@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
 
 import static org.assertj.core.api.Assertions.assertThat;
+
 @DisplayName("TraceIdRequestInterceptor — Feign trace 헤더 전파 단위 테스트")
 class TraceIdRequestInterceptorTest {
 
