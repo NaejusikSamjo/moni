@@ -14,7 +14,7 @@ import com.moni.payment.common.exception.PaymentException;
 import com.moni.payment.domain.model.MerchantId;
 import com.moni.payment.domain.model.Money;
 import com.moni.payment.domain.model.Payment;
-import com.moni.payment.domain.model.PaymentHistory;
+import com.moni.payment.domain.model.Subscription;
 import com.moni.payment.domain.model.PaymentType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +22,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -51,15 +50,17 @@ public class PaymentService implements InitiatePaymentUseCase, ConfirmPaymentUse
 
         // 3. Payment(PENDING) 생성 후 저장
         Money amount = Money.of(command.amount());
-        Payment payment = Payment.initiate(
+        Payment payment = Payment.create(
                 command.userId(), merchantId, amount,
                 PaymentType.SUBSCRIPTION_INITIAL,
                 Instant.now().plusSeconds(600),
                 command.requestedBy());
+
         paymentRepository.save(payment);
+
         log.info("결제 PENDING 저장: paymentId={}, userId={}", payment.getId(), command.userId());
 
-        // 4+5. PG API 호출 (트랜잭션 외부에서 실행이 이상적이나, 현재는 단일 트랜잭션 범위)
+        // TODO: 단일 트랜잭션을 외부 트랜잭션으로 분리 (PG사)
         PgGateway.PgPaymentRequest pgRequest = new PgGateway.PgPaymentRequest(
                 command.authKey(), merchantId, command.userId(), amount, PaymentType.SUBSCRIPTION_INITIAL);
 
@@ -79,23 +80,20 @@ public class PaymentService implements InitiatePaymentUseCase, ConfirmPaymentUse
         }
 
         // 6-A: 성공 → COMPLETED 저장
-        payment.complete(pgResult.pgPaymentKey(), pgResult.rawResponse(), Instant.now(), command.requestedBy());
+        payment.complete(pgResult.pgPaymentKey(), pgResult.billingKeyValue(), pgResult.rawResponse(), Instant.now(), command.requestedBy());
         paymentRepository.save(payment);
-        List<PaymentHistory> histories = payment.getHistories();
-        paymentRepository.saveHistory(histories.get(histories.size() - 1));
+        paymentRepository.saveHistory(payment.pullLatestHistory());
         log.info("결제 COMPLETED 저장: paymentId={}", payment.getId());
 
         // 7+8. 구독 활성화 및 이벤트 발행
-        LocalDate nextBillingDate = LocalDate.now().plusMonths(1);
-        subscriptionService.activateSubscription(
-                new ActivateSubscriptionCommand(
-                        command.userId(), pgResult.billingKeyValue(), nextBillingDate));
+        Subscription subscription = subscriptionService.activateSubscription(
+                new ActivateSubscriptionCommand(command.userId(), pgResult.billingKeyValue()));
 
         return new SubscribeResult(
                 payment.getId(),
                 payment.getStatus().name(),
                 payment.getAmount().getValue().longValue(),
-                nextBillingDate);
+                subscription.getNextBillingDate());
     }
 
     @Override
@@ -103,10 +101,9 @@ public class PaymentService implements InitiatePaymentUseCase, ConfirmPaymentUse
     public void confirmPayment(ConfirmPaymentCommand command) {
         Payment payment = paymentRepository.findByMerchantId(MerchantId.of(command.merchantId()))
                 .orElseThrow(() -> new PaymentException(PaymentErrorCode.PAYMENT_NOT_FOUND));
-        payment.complete(command.pgPaymentKey(), command.pgResponse(), command.respondedAt(), command.confirmedBy());
+        payment.complete(command.pgPaymentKey(), null, command.pgResponse(), command.respondedAt(), command.confirmedBy());
         paymentRepository.save(payment);
-        List<PaymentHistory> histories = payment.getHistories();
-        paymentRepository.saveHistory(histories.get(histories.size() - 1));
+        paymentRepository.saveHistory(payment.pullLatestHistory());
         log.info("결제 CONFIRM 저장: paymentId={}", payment.getId());
     }
 
@@ -119,8 +116,7 @@ public class PaymentService implements InitiatePaymentUseCase, ConfirmPaymentUse
     private void persistPaymentFailure(Payment payment, String pgResponse, String actor) {
         payment.fail(pgResponse, Instant.now(), actor);
         paymentRepository.save(payment);
-        List<PaymentHistory> histories = payment.getHistories();
-        paymentRepository.saveHistory(histories.get(histories.size() - 1));
+        paymentRepository.saveHistory(payment.pullLatestHistory());
         log.warn("결제 FAILED 저장: paymentId={}", payment.getId());
     }
 }

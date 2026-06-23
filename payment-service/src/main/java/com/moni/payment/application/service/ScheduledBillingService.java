@@ -10,7 +10,6 @@ import com.moni.payment.domain.event.BillingFailedEvent;
 import com.moni.payment.domain.model.MerchantId;
 import com.moni.payment.domain.model.Money;
 import com.moni.payment.domain.model.Payment;
-import com.moni.payment.domain.model.PaymentHistory;
 import com.moni.payment.domain.model.PaymentType;
 import com.moni.payment.domain.model.Subscription;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.UUID;
 
 @Slf4j
 @Service
@@ -48,22 +46,21 @@ public class ScheduledBillingService implements ProcessScheduledBillingUseCase {
     }
 
     private void processOneBilling(Subscription subscription, LocalDate today) {
-        MerchantId merchantId = MerchantId.of("MONI" + UUID.randomUUID().toString().replace("-", ""));
+        MerchantId merchantId = MerchantId.generate();
 
         try {
             PgGateway.PgPaymentResult result = pgGateway.requestBillingPayment(
                     subscription.getBillingKey().getValue(), SUBSCRIPTION_AMOUNT, merchantId);
 
             if (result.success()) {
-                Payment payment = Payment.initiate(
+                Payment payment = Payment.create(
                         subscription.getUserId(), merchantId, SUBSCRIPTION_AMOUNT,
                         PaymentType.SUBSCRIPTION_RECURRING,
                         Instant.now().plusSeconds(60),
                         "SYSTEM");
-                payment.complete(result.pgPaymentKey(), result.rawResponse(), Instant.now(), "SYSTEM");
+                payment.complete(result.pgPaymentKey(), null, result.rawResponse(), Instant.now(), "SYSTEM");
                 paymentRepository.save(payment);
-                List<PaymentHistory> histories = payment.getHistories();
-                paymentRepository.saveHistory(histories.get(histories.size() - 1));
+                paymentRepository.saveHistory(payment.pullLatestHistory());
 
                 subscription.extendBillingDate(today.plusMonths(1));
                 subscriptionRepository.save(subscription);

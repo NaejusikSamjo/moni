@@ -37,7 +37,7 @@ public class SubscriptionService implements GetSubscriptionStatusQuery, Activate
     @Override
     @Transactional
     public Subscription activateSubscription(ActivateSubscriptionCommand command) {
-        Subscription subscription = Subscription.create(command.userId(), command.nextBillingDate());
+        Subscription subscription = Subscription.create(command.userId());
         subscription.activate(BillingKey.of(command.billingKeyValue()));
 
         Subscription saved = subscriptionRepository.save(subscription);
