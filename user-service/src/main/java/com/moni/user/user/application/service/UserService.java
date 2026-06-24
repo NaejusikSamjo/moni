@@ -14,6 +14,7 @@ import com.moni.user.user.domain.repository.InterestRepository;
 import com.moni.user.user.domain.repository.TendencyRepository;
 import com.moni.user.user.domain.repository.UserRepository;
 import com.moni.user.user.domain.repository.WatchlistRepository;
+import com.moni.user.user.presentation.dto.request.ChangePasswordRequest;
 import com.moni.user.user.presentation.dto.request.InterestRequest;
 import com.moni.user.user.presentation.dto.request.TendencyRequest;
 import com.moni.user.user.presentation.dto.request.UserUpdateRequest;
@@ -59,16 +60,24 @@ public class UserService {
             }
         }
 
-        if (request.getPassword() != null) {
-            if (passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-                throw new CustomException(UserErrorCode.PASSWORD_SAME_AS_CURRENT);
-            }
-            user.updatePassword(passwordEncoder.encode(request.getPassword()));
-        }
-
         user.updateProfile(request.getName(), request.getNickname(), request.getPhone());
 
         return UserResponse.from(user);
+    }
+
+    @Transactional
+    public void changePassword(UUID userId, ChangePasswordRequest request) {
+        validateOwnership(userId);
+        User user = getUserById(userId);
+
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            throw new CustomException(UserErrorCode.PASSWORD_WRONG);
+        }
+        if (passwordEncoder.matches(request.getNewPassword(), user.getPassword())) {
+            throw new CustomException(UserErrorCode.PASSWORD_SAME_AS_CURRENT);
+        }
+
+        user.updatePassword(passwordEncoder.encode(request.getNewPassword()));
     }
 
     @Transactional

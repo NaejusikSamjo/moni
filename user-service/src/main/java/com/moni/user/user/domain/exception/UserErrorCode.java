@@ -16,6 +16,7 @@ public enum UserErrorCode implements ErrorCode {
     WATCHLIST_ALREADY_EXISTS("USER-006", "이미 관심종목에 추가된 종목입니다.", HttpStatus.CONFLICT),
 
     PASSWORD_SAME_AS_CURRENT("USER-007", "현재 비밀번호와 동일합니다.", HttpStatus.BAD_REQUEST),
+    PASSWORD_WRONG("USER-011", "현재 비밀번호가 올바르지 않습니다.", HttpStatus.BAD_REQUEST),
 
     FORBIDDEN("USER-008", "접근 권한이 없습니다.", HttpStatus.FORBIDDEN),
 

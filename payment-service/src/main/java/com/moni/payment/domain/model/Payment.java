@@ -19,8 +19,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import lombok.Getter;
 
 @Entity
+@Getter
 @Table(name = "payment")
 public class Payment {
 
@@ -102,7 +104,7 @@ public class Payment {
         this.domainEvents = new ArrayList<>();
     }
 
-    public static Payment initiate(
+    public static Payment create(
             UUID userId,
             MerchantId merchantId,
             Money amount,
@@ -139,7 +141,7 @@ public class Payment {
                 createdAt, createdBy, updatedAt, updatedBy, histories);
     }
 
-    public void complete(String pgPaymentKey, String pgResponse, Instant respondedAt, String actor) {
+    public void complete(String pgPaymentKey, String billingKeyValue, String pgResponse, Instant respondedAt, String actor) {
         this.status.validateTransitionTo(PaymentStatus.COMPLETED);
         PaymentStatus previousStatus = this.status;
 
@@ -153,7 +155,14 @@ public class Payment {
         this.updatedAt = Instant.now();
         this.updatedBy = actor;
 
-        domainEvents.add(new PaymentCompletedEvent(id, userId, amount, pgPaymentKey));
+        domainEvents.add(new PaymentCompletedEvent(id, userId, amount, pgPaymentKey, billingKeyValue));
+    }
+
+    public PaymentHistory pullLatestHistory() {
+        if (histories.isEmpty()) {
+            throw new IllegalStateException("결제 이력이 존재하지 않습니다: paymentId=" + id);
+        }
+        return histories.get(histories.size() - 1);
     }
 
     public void fail(String pgResponse, Instant respondedAt, String actor) {
@@ -176,54 +185,6 @@ public class Payment {
         List<Object> events = new ArrayList<>(domainEvents);
         domainEvents.clear();
         return events;
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public MerchantId getMerchantId() {
-        return merchantId;
-    }
-
-    public UUID getUserId() {
-        return userId;
-    }
-
-    public PaymentType getPaymentType() {
-        return paymentType;
-    }
-
-    public Money getAmount() {
-        return amount;
-    }
-
-    public String getPgPaymentKey() {
-        return pgPaymentKey;
-    }
-
-    public PaymentStatus getStatus() {
-        return status;
-    }
-
-    public Instant getExpiresAt() {
-        return expiresAt;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public String getCreatedBy() {
-        return createdBy;
-    }
-
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public String getUpdatedBy() {
-        return updatedBy;
     }
 
     public List<PaymentHistory> getHistories() {

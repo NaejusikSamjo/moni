@@ -3,9 +3,10 @@ package com.moni.payment.presentation.controller;
 import com.moni.payment.common.response.ApiResponse;
 import com.moni.payment.presentation.dto.SubscribeRequest;
 import com.moni.payment.presentation.dto.SubscribeResponse;
-import com.moni.payment.application.command.SubscribeCommand;
-import com.moni.payment.application.command.SubscribeResult;
-import com.moni.payment.application.usecase.InitiatePaymentUseCase;
+import com.moni.payment.application.dto.commandDto.SubscribeCommand;
+import com.moni.payment.application.dto.commandDto.SubscribeResult;
+import com.moni.payment.application.service.SubscribePaymentUseCase;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -23,8 +24,10 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class PaymentController {
 
-    private final InitiatePaymentUseCase initiatePaymentUseCase;
+    private final SubscribePaymentUseCase subscribePaymentUseCase;
 
+    @Operation(summary = "toss PG사 정기 구독 API",
+    description = "클라이언트가 필수입니다. 또한 현재 서비스 가격 등을 클라이언트 측에 받고 있는 형태입니다.")
     @PostMapping("/subscription")
     public ResponseEntity<ApiResponse<SubscribeResponse>> subscribe(
             @RequestHeader("X-User-Id") UUID userId,
@@ -35,7 +38,7 @@ public class PaymentController {
                 request.customerKey(),
                 request.amount(),
                 userId.toString());
-        SubscribeResult result = initiatePaymentUseCase.initiatePayment(command);
+        SubscribeResult result = subscribePaymentUseCase.execute(command);
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(ApiResponse.success(HttpStatus.CREATED, SubscribeResponse.from(result)));
