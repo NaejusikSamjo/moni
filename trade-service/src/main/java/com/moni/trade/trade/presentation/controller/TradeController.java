@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/trades")
+@RequestMapping("/api/v1/trades")
 @RequiredArgsConstructor
 public class TradeController {
 
