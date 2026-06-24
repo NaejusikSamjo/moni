@@ -19,8 +19,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import lombok.Getter;
 
 @Entity
+@Getter
 @Table(name = "subscription")
 public class Subscription {
 
@@ -80,11 +82,11 @@ public class Subscription {
         this.domainEvents = new ArrayList<>();
     }
 
-    public static Subscription create(UUID userId, LocalDate nextBillingDate) {
+    public static Subscription create(UUID userId) {
         Instant now = Instant.now();
         return new Subscription(
                 UUID.randomUUID(), userId, null,
-                SubscriptionStatus.PENDING_ACTIVATION, nextBillingDate,
+                SubscriptionStatus.PENDING_ACTIVATION, LocalDate.now().plusMonths(1),
                 now, now, null,
                 Collections.emptyList());
     }
@@ -165,38 +167,6 @@ public class Subscription {
         List<Object> events = new ArrayList<>(domainEvents);
         domainEvents.clear();
         return events;
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public UUID getUserId() {
-        return userId;
-    }
-
-    public BillingKey getBillingKey() {
-        return billingKey;
-    }
-
-    public SubscriptionStatus getStatus() {
-        return status;
-    }
-
-    public LocalDate getNextBillingDate() {
-        return nextBillingDate;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public Long getVersion() {
-        return version;
     }
 
     public List<SubscriptionHistory> getHistories() {

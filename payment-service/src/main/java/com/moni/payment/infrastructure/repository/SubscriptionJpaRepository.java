@@ -15,6 +15,8 @@ public interface SubscriptionJpaRepository extends JpaRepository<Subscription, U
 
     Optional<Subscription> findByUserIdAndStatus(UUID userId, SubscriptionStatus status);
 
+    Optional<Subscription> findFirstByUserIdAndStatusIn(UUID userId, List<SubscriptionStatus> statuses);
+
     @Query("SELECT s FROM Subscription s WHERE s.status = :status AND s.nextBillingDate <= :date")
     List<Subscription> findActiveSubscriptionsDueBefore(
             @Param("status") SubscriptionStatus status,
