@@ -1,3 +1,10 @@
+tasks.named('test') {
+    environment 'DOCKER_API_VERSION', '1.41'
+    environment 'TESTCONTAINERS_RYUK_DISABLED', 'true'
+    systemProperty 'DOCKER_API_VERSION', '1.41'
+    systemProperty 'api.version', '1.41'
+}
+
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
@@ -36,4 +43,7 @@ dependencies {
     // Test
     testImplementation 'org.springframework.kafka:spring-kafka-test'
     testImplementation 'com.h2database:h2'
+    testImplementation 'org.springframework.boot:spring-boot-testcontainers'
+    testImplementation 'org.testcontainers:postgresql'
+    testImplementation 'org.testcontainers:junit-jupiter'
 }
