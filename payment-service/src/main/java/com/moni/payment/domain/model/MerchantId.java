@@ -4,6 +4,7 @@ import com.moni.payment.common.exception.PaymentErrorCode;
 import com.moni.payment.common.exception.PaymentException;
 
 import java.util.Objects;
+import java.util.UUID;
 import java.util.regex.Pattern;
 
 public final class MerchantId {
@@ -21,6 +22,10 @@ public final class MerchantId {
 
     public static MerchantId of(String value) {
         return new MerchantId(value);
+    }
+
+    public static MerchantId generate() {
+        return new MerchantId("MONI" + UUID.randomUUID().toString().replace("-", ""));
     }
 
     public String getValue() {
