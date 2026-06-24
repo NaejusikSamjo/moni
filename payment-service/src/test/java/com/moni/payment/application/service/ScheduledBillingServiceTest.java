@@ -1,7 +1,7 @@
 package com.moni.payment.application.service;
 
 import com.moni.payment.application.repository.PaymentRepository;
-import com.moni.payment.application.repository.PgGateway;
+import com.moni.payment.application.repository.PgPaymentClient;
 import com.moni.payment.application.repository.SubscriptionEventPublisher;
 import com.moni.payment.application.repository.SubscriptionRepository;
 import com.moni.payment.common.exception.PaymentErrorCode;
@@ -45,7 +45,7 @@ class ScheduledBillingServiceTest {
     @Mock
     private PaymentRepository paymentRepository;
     @Mock
-    private PgGateway pgGateway;
+    private PgPaymentClient pgPaymentClient;
     @Mock
     private SubscriptionEventPublisher subscriptionEventPublisher;
 
@@ -59,7 +59,7 @@ class ScheduledBillingServiceTest {
     @BeforeEach
     void setUp() {
         scheduledBillingService = new ScheduledBillingService(
-                subscriptionRepository, paymentRepository, pgGateway, subscriptionEventPublisher);
+                subscriptionRepository, paymentRepository, pgPaymentClient, subscriptionEventPublisher);
     }
 
     private Subscription activeSubscription() {
@@ -72,8 +72,8 @@ class ScheduledBillingServiceTest {
                 now, now, 1L, List.of());
     }
 
-    private PgGateway.PgPaymentResult successResult() {
-        return new PgGateway.PgPaymentResult(PG_PAYMENT_KEY, BILLING_KEY, "{\"status\":\"DONE\"}", true);
+    private PgPaymentClient.PgPaymentResult successResult() {
+        return new PgPaymentClient.PgPaymentResult(PG_PAYMENT_KEY, BILLING_KEY, "{\"status\":\"DONE\"}", true);
     }
 
     @Nested
@@ -88,7 +88,7 @@ class ScheduledBillingServiceTest {
 
             scheduledBillingService.processScheduledBilling();
 
-            then(pgGateway).should(never()).requestBillingPayment(anyString(), any(), any());
+            then(pgPaymentClient).should(never()).requestBillingPayment(anyString(), any(), any());
             then(paymentRepository).should(never()).save(any());
         }
     }
@@ -101,7 +101,7 @@ class ScheduledBillingServiceTest {
         void setUp() {
             given(subscriptionRepository.findActiveSubscriptionsDueBefore(any()))
                     .willReturn(List.of(activeSubscription()));
-            given(pgGateway.requestBillingPayment(anyString(), any(), any())).willReturn(successResult());
+            given(pgPaymentClient.requestBillingPayment(anyString(), any(), any())).willReturn(successResult());
             given(paymentRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
             given(subscriptionRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
         }
@@ -151,8 +151,8 @@ class ScheduledBillingServiceTest {
         void setUp() {
             given(subscriptionRepository.findActiveSubscriptionsDueBefore(any()))
                     .willReturn(List.of(activeSubscription()));
-            given(pgGateway.requestBillingPayment(anyString(), any(), any()))
-                    .willReturn(new PgGateway.PgPaymentResult(null, null, "{\"error\":\"CARD_LIMIT\"}", false));
+            given(pgPaymentClient.requestBillingPayment(anyString(), any(), any()))
+                    .willReturn(new PgPaymentClient.PgPaymentResult(null, null, "{\"error\":\"CARD_LIMIT\"}", false));
             given(subscriptionRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
         }
 
@@ -201,7 +201,7 @@ class ScheduledBillingServiceTest {
         void setUp() {
             given(subscriptionRepository.findActiveSubscriptionsDueBefore(any()))
                     .willReturn(List.of(activeSubscription()));
-            given(pgGateway.requestBillingPayment(anyString(), any(), any()))
+            given(pgPaymentClient.requestBillingPayment(anyString(), any(), any()))
                     .willThrow(new PaymentException(PaymentErrorCode.PG_CONNECTION_TIMEOUT));
             given(subscriptionRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
         }

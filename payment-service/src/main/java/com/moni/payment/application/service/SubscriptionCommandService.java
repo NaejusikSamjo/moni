@@ -5,11 +5,10 @@ import com.moni.payment.application.repository.SubscriptionEventPublisher;
 import com.moni.payment.application.repository.SubscriptionRepository;
 import com.moni.payment.application.usecase.ActivateSubscriptionUseCase;
 import com.moni.payment.application.usecase.CancelSubscriptionUseCase;
-import com.moni.payment.application.usecase.GetSubscriptionStatusQuery;
-import com.moni.payment.domain.event.SubscriptionCancelledEvent;
 import com.moni.payment.common.exception.PaymentErrorCode;
 import com.moni.payment.common.exception.PaymentException;
 import com.moni.payment.domain.event.SubscriptionActivatedEvent;
+import com.moni.payment.domain.event.SubscriptionCancelledEvent;
 import com.moni.payment.domain.model.BillingKey;
 import com.moni.payment.domain.model.Subscription;
 import lombok.RequiredArgsConstructor;
@@ -17,22 +16,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.UUID;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class SubscriptionService implements GetSubscriptionStatusQuery, ActivateSubscriptionUseCase, CancelSubscriptionUseCase {
+public class SubscriptionCommandService implements ActivateSubscriptionUseCase, CancelSubscriptionUseCase {
 
     private final SubscriptionRepository subscriptionRepository;
     private final SubscriptionEventPublisher subscriptionEventPublisher;
-
-    @Override
-    @Transactional(readOnly = true)
-    public Subscription getSubscriptionStatus(UUID userId) {
-        return subscriptionRepository.findActiveByUserId(userId)
-                .orElseThrow(() -> new PaymentException(PaymentErrorCode.SUBSCRIPTION_NOT_FOUND));
-    }
 
     @Override
     @Transactional

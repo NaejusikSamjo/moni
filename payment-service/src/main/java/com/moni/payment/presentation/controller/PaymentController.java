@@ -5,7 +5,7 @@ import com.moni.payment.presentation.dto.SubscribeRequest;
 import com.moni.payment.presentation.dto.SubscribeResponse;
 import com.moni.payment.application.command.SubscribeCommand;
 import com.moni.payment.application.command.SubscribeResult;
-import com.moni.payment.application.usecase.InitiatePaymentUseCase;
+import com.moni.payment.application.service.SubscribePaymentUseCase;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -23,7 +23,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class PaymentController {
 
-    private final InitiatePaymentUseCase initiatePaymentUseCase;
+    private final SubscribePaymentUseCase subscribePaymentUseCase;
 
     @PostMapping("/subscription")
     public ResponseEntity<ApiResponse<SubscribeResponse>> subscribe(
@@ -35,7 +35,7 @@ public class PaymentController {
                 request.customerKey(),
                 request.amount(),
                 userId.toString());
-        SubscribeResult result = initiatePaymentUseCase.initiatePayment(command);
+        SubscribeResult result = subscribePaymentUseCase.execute(command);
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(ApiResponse.success(HttpStatus.CREATED, SubscribeResponse.from(result)));

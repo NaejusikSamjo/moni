@@ -1,7 +1,7 @@
 package com.moni.payment.application.service;
 
 import com.moni.payment.application.repository.PaymentRepository;
-import com.moni.payment.application.repository.PgGateway;
+import com.moni.payment.application.repository.PgPaymentClient;
 import com.moni.payment.application.repository.SubscriptionEventPublisher;
 import com.moni.payment.application.repository.SubscriptionRepository;
 import com.moni.payment.application.usecase.ProcessScheduledBillingUseCase;
@@ -30,7 +30,7 @@ public class ScheduledBillingService implements ProcessScheduledBillingUseCase {
 
     private final SubscriptionRepository subscriptionRepository;
     private final PaymentRepository paymentRepository;
-    private final PgGateway pgGateway;
+    private final PgPaymentClient pgPaymentClient;
     private final SubscriptionEventPublisher subscriptionEventPublisher;
 
     @Override
@@ -49,7 +49,7 @@ public class ScheduledBillingService implements ProcessScheduledBillingUseCase {
         MerchantId merchantId = MerchantId.generate();
 
         try {
-            PgGateway.PgPaymentResult result = pgGateway.requestBillingPayment(
+            PgPaymentClient.PgPaymentResult result = pgPaymentClient.requestBillingPayment(
                     subscription.getBillingKey().getValue(), SUBSCRIPTION_AMOUNT, merchantId);
 
             if (result.success()) {

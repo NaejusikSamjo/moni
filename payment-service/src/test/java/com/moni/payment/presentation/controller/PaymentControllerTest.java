@@ -7,7 +7,7 @@ import com.moni.payment.common.exception.PaymentErrorCode;
 import com.moni.payment.common.exception.PaymentException;
 import com.moni.payment.presentation.dto.SubscribeRequest;
 import com.moni.payment.application.command.SubscribeResult;
-import com.moni.payment.application.usecase.InitiatePaymentUseCase;
+import com.moni.payment.application.service.SubscribePaymentUseCase;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -39,7 +39,7 @@ class PaymentControllerTest {
     private ObjectMapper objectMapper;
 
     @MockitoBean
-    private InitiatePaymentUseCase initiatePaymentUseCase;
+    private SubscribePaymentUseCase subscribePaymentUseCase;
 
     private static final UUID USER_ID = UUID.randomUUID();
     private static final UUID PAYMENT_ID = UUID.randomUUID();
@@ -61,7 +61,7 @@ class PaymentControllerTest {
         @Test
         @DisplayName("정상 결제 시 201과 응답 DTO를 반환한다")
         void returnsCreated() throws Exception {
-            given(initiatePaymentUseCase.initiatePayment(any())).willReturn(successResult());
+            given(subscribePaymentUseCase.execute(any())).willReturn(successResult());
 
             mockMvc.perform(post("/api/v1/payments/subscription")
                             .header("X-Gateway-Secret", GATEWAY_SECRET)
@@ -80,7 +80,7 @@ class PaymentControllerTest {
         @Test
         @DisplayName("이미 활성 구독이 있으면 409를 반환한다")
         void returnsConflictWhenActiveSubscriptionExists() throws Exception {
-            given(initiatePaymentUseCase.initiatePayment(any()))
+            given(subscribePaymentUseCase.execute(any()))
                     .willThrow(new PaymentException(PaymentErrorCode.ACTIVE_SUBSCRIPTION_EXISTS));
 
             mockMvc.perform(post("/api/v1/payments/subscription")
@@ -96,7 +96,7 @@ class PaymentControllerTest {
         @Test
         @DisplayName("PG 결제 실패 시 422를 반환한다")
         void returnsUnprocessableWhenPgFails() throws Exception {
-            given(initiatePaymentUseCase.initiatePayment(any()))
+            given(subscribePaymentUseCase.execute(any()))
                     .willThrow(new PaymentException(PaymentErrorCode.PG_PAYMENT_FAILED));
 
             mockMvc.perform(post("/api/v1/payments/subscription")
