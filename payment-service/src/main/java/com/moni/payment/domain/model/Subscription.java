@@ -122,6 +122,7 @@ public class Subscription {
         SubscriptionStatus previousStatus = this.status;
 
         this.status = SubscriptionStatus.CANCELLING;
+        this.nextBillingDate = null;
         this.updatedAt = Instant.now();
 
         histories.add(SubscriptionHistory.of(id, previousStatus, SubscriptionStatus.CANCELLING, reason));
