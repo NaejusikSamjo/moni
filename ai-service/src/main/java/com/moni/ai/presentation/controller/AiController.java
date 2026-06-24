@@ -2,6 +2,7 @@ package com.moni.ai.presentation.controller;
 
 import com.moni.ai.application.service.AiService;
 import com.moni.ai.application.service.NewsCollectService;
+import com.moni.ai.presentation.controller.docs.AiControllerDocs;
 import com.moni.ai.presentation.dto.request.IssueAnalysisReqDto;
 import com.moni.ai.presentation.dto.response.CompanyIssueResDto;
 import com.moni.common.response.GlobalResponse;
@@ -17,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/ai")
 @RequiredArgsConstructor
-public class AiController {
+public class AiController implements AiControllerDocs {
 
     private final AiService aiService;
     private final NewsCollectService newsCollectService;
