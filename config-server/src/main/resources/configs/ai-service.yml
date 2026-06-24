@@ -10,7 +10,7 @@ eureka:
     metadata-map:
       prometheus.scrape: "true"
       prometheus.path: "/actuator/prometheus"
-      prometheus.port: "${serer.port}"
+      prometheus.port: "${server.port}"
 
 spring:
   datasource:

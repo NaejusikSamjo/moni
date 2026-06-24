@@ -1,0 +1,125 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f0f2f5;
+    color: #333;
+    font-size: 14px;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 7px 14px;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    transition: opacity 0.15s;
+}
+.btn:hover { opacity: 0.85; }
+.btn-primary { background: #4f6ef7; color: #fff; padding: 10px 24px; font-size: 15px; }
+.btn-sm { padding: 4px 10px; font-size: 12px; }
+.btn-warning { background: #faad14; color: #fff; }
+.btn-success { background: #52c41a; color: #fff; }
+.btn-danger { background: #ff4d4f; color: #fff; }
+
+.header {
+    background: #1a1a2e;
+    color: #fff;
+    padding: 0 24px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+.header .logo { font-size: 18px; font-weight: 700; }
+.header nav a { color: #ccc; text-decoration: none; margin-left: 24px; font-size: 13px; }
+.header nav a:hover, .header nav a.active { color: #fff; }
+.header .logout-btn {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+}
+.logout-form { display: inline; }
+.nav-username { color: #aaa; font-size: 13px; margin-right: 12px; }
+
+.main { max-width: 1200px; margin: 32px auto; padding: 0 24px; }
+
+.stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 32px; }
+.stat-card {
+    background: #fff;
+    border-radius: 8px;
+    padding: 24px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    text-align: center;
+}
+.stat-card .label { font-size: 13px; color: #888; margin-bottom: 8px; }
+.stat-card .value { font-size: 36px; font-weight: 700; color: #1a1a2e; }
+
+.page-title { font-size: 20px; font-weight: 700; margin-bottom: 20px; color: #1a1a2e; }
+
+.alert { padding: 12px 16px; border-radius: 6px; margin-bottom: 16px; font-size: 13px; }
+.alert-success { background: #f6ffed; border: 1px solid #b7eb8f; color: #389e0d; }
+.alert-error { background: #fff2f0; border: 1px solid #ffccc7; color: #cf1322; }
+
+.table-wrapper {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+}
+table { width: 100%; border-collapse: collapse; }
+thead th {
+    background: #fafafa;
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 13px;
+    color: #888;
+    border-bottom: 1px solid #f0f0f0;
+    white-space: nowrap;
+}
+tbody td { padding: 12px 16px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: #fafafa; }
+.empty-state { text-align: center; padding: 32px; color: #888; }
+
+.badge { display: inline-block; padding: 2px 8px; border-radius: 100px; font-size: 12px; font-weight: 500; }
+.badge-active { background: #f6ffed; color: #389e0d; }
+.badge-suspended { background: #fff7e6; color: #d46b08; }
+.badge-deleted { background: #f5f5f5; color: #999; }
+
+.action-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.inline-form { display: inline-flex; gap: 4px; align-items: center; }
+.inline-form input[type="text"] {
+    width: 120px;
+    padding: 4px 8px;
+    border: 1px solid #d9d9d9;
+    border-radius: 6px;
+    font-size: 12px;
+}
+.suspend-reason { font-size: 12px; color: #d46b08; }
+
+.pagination { display: flex; justify-content: center; align-items: center; gap: 8px; padding: 20px 0; }
+.pagination a, .pagination span {
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    text-decoration: none;
+    color: #333;
+    border: 1px solid #d9d9d9;
+    background: #fff;
+}
+.pagination a:hover { background: #f0f2f5; }
+.pagination .current { background: #4f6ef7; color: #fff; border-color: #4f6ef7; }
+.pagination .disabled { color: #ccc; cursor: not-allowed; }

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TossPayments 빌링키 발급 테스트</title>
+  <script src="https://js.tosspayments.com/v2/standard"></script>
+  <style>
+    body { font-family: sans-serif; max-width: 600px; margin: 40px auto; padding: 0 20px; }
+    h2 { color: #333; }
+    .field { margin-bottom: 16px; }
+    label { display: block; font-weight: bold; margin-bottom: 4px; font-size: 14px; color: #555; }
+    input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; box-sizing: border-box; }
+    button { width: 100%; padding: 12px; background: #3182f6; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 8px; }
+    button:hover { background: #1b64da; }
+    .info { background: #f0f6ff; border-left: 4px solid #3182f6; padding: 12px 16px; margin-bottom: 24px; font-size: 13px; line-height: 1.6; }
+    .info code { background: #e0ecff; padding: 1px 5px; border-radius: 3px; font-family: monospace; }
+    .warn { color: #d93025; font-size: 12px; margin-top: 4px; }
+  </style>
+</head>
+<body>
+
+<h2>TossPayments 빌링키 발급 테스트</h2>
+
+<div class="info">
+  <strong>사용 방법</strong><br>
+  1. Toss 개발자 콘솔(<a href="https://developers.tosspayments.com" target="_blank">developers.tosspayments.com</a>)에서 <code>test_ck_...</code> 클라이언트 키를 복사하세요.<br>
+  2. Customer Key에 테스트할 사용자 UUID를 입력하세요.<br>
+  3. <strong>카드 등록</strong> 버튼을 클릭하면 Toss 결제 창이 열립니다.<br>
+  4. 카드 등록 완료 후 <strong>authKey</strong>가 성공 페이지에 표시됩니다.
+</div>
+
+<div class="field">
+  <label>Client Key (클라이언트 키)</label>
+  <input id="clientKey" type="text" placeholder="test_ck_xxxxxxxxxxxxxxxx" autocomplete="off">
+  <div class="warn">시크릿 키(test_sk_...)가 아닌 클라이언트 키(test_ck_...)를 입력하세요.</div>
+</div>
+
+<div class="field">
+  <label>Customer Key (사용자 UUID)</label>
+  <input id="customerKey" type="text" placeholder="dc408ae4-9187-4118-83ee-e6bd086dc71b" autocomplete="off">
+</div>
+
+<button onclick="requestBilling()">카드 등록 (authKey 발급)</button>
+
+<script>
+  async function requestBilling() {
+    const clientKey = document.getElementById('clientKey').value.trim();
+    const customerKey = document.getElementById('customerKey').value.trim();
+
+    if (!clientKey) {
+      alert('Client Key를 입력하세요. (test_ck_... 형식)');
+      return;
+    }
+    if (!clientKey.startsWith('test_ck_') && !clientKey.startsWith('live_ck_')) {
+      alert('클라이언트 키 형식이 올바르지 않습니다. test_ck_ 로 시작해야 합니다.');
+      return;
+    }
+    if (!customerKey) {
+      alert('Customer Key(사용자 UUID)를 입력하세요.');
+      return;
+    }
+
+    const successUrl = window.location.origin + '/toss-success.html';
+    const failUrl = window.location.origin + '/toss-fail.html';
+
+    try {
+      const tossPayments = TossPayments(clientKey);
+      const payment = tossPayments.payment({ customerKey });
+      await payment.requestBillingAuth({
+        method: 'CARD',
+        successUrl,
+        failUrl,
+      });
+    } catch (e) {
+      if (e.code !== 'USER_CANCEL') {
+        alert('오류 발생: ' + e.message);
+      }
+    }
+  }
+</script>
+
+</body>
+</html>

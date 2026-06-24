@@ -18,11 +18,15 @@ spring:
     properties:
       hibernate:
         format_sql: true
+        default_schema: stock_service
+        hbm2ddl:
+          create_namespaces: true
   data:
     redis:
       cluster:
-        nodes: ${REDIS_NODES:127.0.0.1:7000,127.0.0.1:7001,127.0.0.1:7002}
-      password: ${REDIS_PASSWORD}
+        nodes: ${REDIS_NODES:redis-cluster-0:7000,redis-cluster-1:7001,redis-cluster-2:7002}
+        max-redirects: 3
+      password: ${REDIS_CLUSTER_PASSWORD}
 
 kis:
   app-key: ${KIS_APP_KEY:}
@@ -51,7 +55,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: "*"
+        include: health, prometheus, metrics
   endpoint:
     health:
       show-details: always
@@ -62,12 +66,13 @@ management:
     metrics:
       export:
         enabled: true
-  zipkin:
-    tracing:
-      endpoint: ${ZIPKIN_URL:http://localhost:9411/api/v2/spans}
   tracing:
     sampling:
       probability: 1.0
+  zipkin:
+    tracing:
+      export:
+        enabled: false
 
 springdoc:
   api-docs:

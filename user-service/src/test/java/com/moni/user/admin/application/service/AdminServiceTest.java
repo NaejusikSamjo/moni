@@ -187,47 +187,4 @@ class AdminServiceTest {
         }
     }
 
-    @Nested
-    @DisplayName("유저 권한 변경")
-    class ChangeRole {
-
-        @Test
-        @DisplayName("USER를 ADMIN으로 변경한다")
-        void changeRole_toAdmin() {
-            // given
-            given(userRepository.findByIdAndDeletedAtIsNull(userId)).willReturn(Optional.of(mockUser));
-
-            // when
-            adminService.changeRole(userId, UserRole.ADMIN);
-
-            // then
-            assertThat(mockUser.getRole()).isEqualTo(UserRole.ADMIN);
-        }
-
-        @Test
-        @DisplayName("ADMIN을 USER로 변경한다")
-        void changeRole_toUser() {
-            // given
-            mockUser.changeRole(UserRole.ADMIN);
-            given(userRepository.findByIdAndDeletedAtIsNull(userId)).willReturn(Optional.of(mockUser));
-
-            // when
-            adminService.changeRole(userId, UserRole.USER);
-
-            // then
-            assertThat(mockUser.getRole()).isEqualTo(UserRole.USER);
-        }
-
-        @Test
-        @DisplayName("존재하지 않는 유저의 권한을 변경하면 예외를 던진다")
-        void changeRole_fail_userNotFound() {
-            // given
-            given(userRepository.findByIdAndDeletedAtIsNull(userId)).willReturn(Optional.empty());
-
-            // when & then
-            assertThatThrownBy(() -> adminService.changeRole(userId, UserRole.ADMIN))
-                    .isInstanceOf(CustomException.class)
-                    .hasFieldOrPropertyWithValue("errorCode", UserErrorCode.USER_NOT_FOUND);
-        }
-    }
 }

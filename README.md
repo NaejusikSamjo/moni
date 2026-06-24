@@ -12,6 +12,7 @@
 | notification-service | 19094 | 알림           |
 | payment-service      | 19095 | 구독/결제        |
 | ai-service           | 19096 | AI 분석/뉴스 요약  |
+| admin-service        | 19097 | 관리자 웹 UI     |
 
 ## 인프라 구성
 
