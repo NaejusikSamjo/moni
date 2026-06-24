@@ -3,7 +3,7 @@ package com.moni.ai.application.service;
 import com.moni.ai.domain.entity.NewsEntity;
 import com.moni.ai.domain.repository.NewsRepository;
 import com.moni.ai.infrastructure.client.NaverNewsClient;
-import com.moni.ai.presentation.dto.response.NaverNewsResponse;
+import com.moni.ai.presentation.dto.response.NaverNewsResDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.document.Document;
@@ -56,10 +56,10 @@ public class NewsCollectService {
             String query = companyName + " " + keyword;
 
             try {
-                List<NaverNewsResponse.NaverNewsItem> items =
+                List<NaverNewsResDto.NaverNewsItem> items =
                         naverNewsClient.fetchNews(query, 10,"sim");
 
-                List<NaverNewsResponse.NaverNewsItem> filtered= items.stream()
+                List<NaverNewsResDto.NaverNewsItem> filtered= items.stream()
                         .filter(item -> !newsRepository.existsByUrl(item.getLink()))
                         .filter(newsFilterService::isWithinDays) // 3일 이내 쓰여진 기사
                         .filter(item -> newsFilterService.isRelevant(item, companyName))              //  기업명 위치
@@ -67,7 +67,7 @@ public class NewsCollectService {
                                 item.getCleanDescription(), companyName, keyword))
                         .toList();
                 filtered.stream()
-                        .map(item -> toEntity(item, ticker))
+                        .map(item -> toEntity(item, ticker, companyName))
                         .forEach(newsRepository::save);
 
                 List<Document> documents = filtered.stream()
@@ -89,10 +89,11 @@ public class NewsCollectService {
         }
     }
 
-    private NewsEntity toEntity(NaverNewsResponse.NaverNewsItem item, String ticker) {
+    private NewsEntity toEntity(NaverNewsResDto.NaverNewsItem item, String ticker,String company) {
         return NewsEntity.builder()
                 .ticker(ticker)
                 .title(item.getCleanTitle())
+                .companyName(company)
                 .content(item.getCleanDescription())
                 .source(extractSource(item.getOriginallink()))
                 .url(item.getLink())
@@ -100,7 +101,7 @@ public class NewsCollectService {
                 .build();
     }
 
-    private Document toDocument(NaverNewsResponse.NaverNewsItem item,
+    private Document toDocument(NaverNewsResDto.NaverNewsItem item,
                                 String ticker, String company, String keyword){
         String content = "제목: " + item.getCleanTitle() + "\n내용: " + item.getCleanDescription();
         return new Document(

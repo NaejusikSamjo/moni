@@ -14,22 +14,22 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Entity
 @Table(name="p_news")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
-public class NewsEntity extends BaseEntity{
-
-    @Id
-    private UUID id;
+public class NewsEntity extends IdAudit{
 
     @Column(name="ticker",length=10)
     private String ticker;
 
     @Column(name="title",nullable=false)
     private String title;
+
+    // TODO: sa문서 반영
+    @Column(name = "company_name", length = 50)
+    private String companyName;
 
     @Column(name = "content", columnDefinition = "TEXT")
     private String content;
@@ -44,17 +44,12 @@ public class NewsEntity extends BaseEntity{
     @Column(name="published_at",nullable = false)
     private LocalDateTime publishedAt;
 
-    @PrePersist
-    public void prePersist() {
-        if (id == null) {
-            id = Generators.timeBasedEpochGenerator().generate();
-        }
-    }
 
     @Builder
     public NewsEntity(
             String ticker,
             String title,
+            String companyName,
             String content,
             String source,
             String url,
@@ -62,6 +57,7 @@ public class NewsEntity extends BaseEntity{
     ){
         this.ticker = ticker;
         this.title = title;
+        this.companyName=companyName;
         this.content = content;
         this.source = source;
         this.url = url;
