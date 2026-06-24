@@ -73,6 +73,7 @@ public class AuthService {
     }
 
     public void logout(String accessToken, String refreshToken) {
+        tokenService.validateAndGetUserId(refreshToken);
         tokenService.blacklistAccessToken(accessToken, "logout");
         tokenService.deleteRefreshTokenByToken(refreshToken);
     }
