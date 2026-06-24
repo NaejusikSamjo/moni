@@ -21,8 +21,6 @@ import java.util.Map;
 public class KafkaConfig {
 
     public static final String TOPIC_SUBSCRIPTION_SUCCEEDED = "payment.subscription.succeeded";
-    public static final String TOPIC_SUBSCRIPTION_CANCELLED = "payment.subscription.cancelled";
-    public static final String TOPIC_BILLING_FAILED = "payment.billing.failed";
 
     private static final int TOPIC_PARTITIONS = 3;
     private static final int TOPIC_REPLICAS = 1;
@@ -51,22 +49,6 @@ public class KafkaConfig {
     @Bean
     public NewTopic subscriptionSucceededTopic() {
         return TopicBuilder.name(TOPIC_SUBSCRIPTION_SUCCEEDED)
-                .partitions(TOPIC_PARTITIONS)
-                .replicas(TOPIC_REPLICAS)
-                .build();
-    }
-
-    @Bean
-    public NewTopic subscriptionCancelledTopic() {
-        return TopicBuilder.name(TOPIC_SUBSCRIPTION_CANCELLED)
-                .partitions(TOPIC_PARTITIONS)
-                .replicas(TOPIC_REPLICAS)
-                .build();
-    }
-
-    @Bean
-    public NewTopic billingFailedTopic() {
-        return TopicBuilder.name(TOPIC_BILLING_FAILED)
                 .partitions(TOPIC_PARTITIONS)
                 .replicas(TOPIC_REPLICAS)
                 .build();

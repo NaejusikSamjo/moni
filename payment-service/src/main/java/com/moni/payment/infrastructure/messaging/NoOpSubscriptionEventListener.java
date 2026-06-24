@@ -1,8 +1,6 @@
 package com.moni.payment.infrastructure.messaging;
 
-import com.moni.payment.domain.event.BillingFailedEvent;
 import com.moni.payment.domain.event.SubscriptionActivatedEvent;
-import com.moni.payment.domain.event.SubscriptionCancelledEvent;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
@@ -17,18 +15,6 @@ public class NoOpSubscriptionEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onSubscriptionActivated(SubscriptionActivatedEvent event) {
         log.info("[NoOp] SubscriptionActivatedEvent 무시 (Kafka 미활성화): subscriptionId={}, userId={}",
-                event.subscriptionId(), event.userId());
-    }
-
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void onSubscriptionCancelled(SubscriptionCancelledEvent event) {
-        log.info("[NoOp] SubscriptionCancelledEvent 무시 (Kafka 미활성화): subscriptionId={}, userId={}",
-                event.subscriptionId(), event.userId());
-    }
-
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void onBillingFailed(BillingFailedEvent event) {
-        log.info("[NoOp] BillingFailedEvent 무시 (Kafka 미활성화): subscriptionId={}, userId={}",
                 event.subscriptionId(), event.userId());
     }
 }

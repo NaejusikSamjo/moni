@@ -1,4 +1,4 @@
-package com.moni.payment.application.command;
+package com.moni.payment.application.dto.commandDto;
 
 import java.util.UUID;
 

@@ -1,10 +1,10 @@
 package com.moni.payment.application.service;
 
-import com.moni.payment.application.command.ApprovePaymentCommand;
-import com.moni.payment.application.command.FailPaymentCommand;
-import com.moni.payment.application.command.RecordPendingPaymentCommand;
-import com.moni.payment.application.command.SubscribeCommand;
-import com.moni.payment.application.command.SubscribeResult;
+import com.moni.payment.application.dto.commandDto.ApprovePaymentCommand;
+import com.moni.payment.application.dto.commandDto.FailPaymentCommand;
+import com.moni.payment.application.dto.commandDto.RecordPendingPaymentCommand;
+import com.moni.payment.application.dto.commandDto.SubscribeCommand;
+import com.moni.payment.application.dto.commandDto.SubscribeResult;
 import com.moni.payment.common.exception.PaymentErrorCode;
 import com.moni.payment.common.exception.PaymentException;
 import com.moni.payment.domain.model.MerchantId;
