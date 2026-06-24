@@ -1,4 +1,4 @@
-package com.moni.payment.application.service;
+package com.moni.payment.application.service.CommandService;
 
 import com.moni.payment.application.dto.commandDto.ActivateSubscriptionCommand;
 import com.moni.payment.domain.model.BillingKey;
