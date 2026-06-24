@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/holdings")
+@RequestMapping("/api/v1/holdings")
 @RequiredArgsConstructor
 public class HoldingController {
 
