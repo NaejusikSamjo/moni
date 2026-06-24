@@ -1,6 +1,6 @@
 package com.moni.payment.presentation.dto;
 
-import com.moni.payment.application.command.SubscribeResult;
+import com.moni.payment.application.dto.commandDto.SubscribeResult;
 
 import java.time.LocalDate;
 import java.util.UUID;
