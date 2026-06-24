@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
@@ -20,7 +21,7 @@ public class SubscriptionCommandService {
     private final SubscriptionHistoryRepository subscriptionHistoryRepository;
     private final ApplicationEventPublisher applicationEventPublisher;
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void activateSubscription(ActivateSubscriptionCommand command) {
         Subscription subscription = Subscription.create(command.userId());
         subscription.activate(BillingKey.of(command.billingKeyValue()));

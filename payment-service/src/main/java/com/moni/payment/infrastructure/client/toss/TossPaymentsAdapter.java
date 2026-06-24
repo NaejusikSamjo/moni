@@ -31,6 +31,7 @@ public class TossPaymentsAdapter {
 
     public record PgPaymentRequest(
             String authKey,
+            String customerKey,
             MerchantId merchantId,
             UUID userId,
             Money amount,
@@ -54,13 +55,13 @@ public class TossPaymentsAdapter {
     public PgPaymentResult requestPayment(PgPaymentRequest request) {
         TossBillingAuthRequest authRequest = new TossBillingAuthRequest(
                 request.authKey(),
-                request.userId().toString());
+                request.customerKey());
 
         TossPaymentResponse billingKeyResponse = callIssueBillingKey(authRequest);
         String billingKey = billingKeyResponse.billingKey();
 
         TossBillingChargeRequest chargeRequest = new TossBillingChargeRequest(
-                request.userId().toString(),
+                request.customerKey(),
                 request.amount().getValue().longValue(),
                 request.merchantId().getValue(),
                 ORDER_NAME);

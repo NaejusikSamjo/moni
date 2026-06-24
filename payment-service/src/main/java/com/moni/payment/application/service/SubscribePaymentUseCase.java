@@ -56,7 +56,8 @@ public class SubscribePaymentUseCase {
             try {
                 pgResult = tossPaymentsAdapter.requestPayment(
                         new TossPaymentsAdapter.PgPaymentRequest(
-                                command.authKey(), merchantId, userId, amount,
+                                command.authKey(), command.customerKey(),
+                                merchantId, userId, amount,
                                 PaymentType.SUBSCRIPTION_INITIAL));
             } catch (Exception e) {
                 paymentCommandService.failPayment(
