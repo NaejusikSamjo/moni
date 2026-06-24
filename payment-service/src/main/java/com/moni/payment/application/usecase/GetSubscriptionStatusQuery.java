@@ -1,10 +1,10 @@
 package com.moni.payment.application.usecase;
 
-import com.moni.payment.domain.model.Subscription;
+import com.moni.payment.application.dto.SubscriptionStatusResult;
 
 import java.util.UUID;
 
 public interface GetSubscriptionStatusQuery {
 
-    Subscription getSubscriptionStatus(UUID userId);
+    SubscriptionStatusResult execute(UUID userId);
 }

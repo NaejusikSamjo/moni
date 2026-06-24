@@ -16,6 +16,8 @@ public interface SubscriptionRepository {
 
     Optional<Subscription> findActiveByUserId(UUID userId);
 
+    Optional<Subscription> findCurrentByUserId(UUID userId);
+
     List<Subscription> findActiveSubscriptionsDueBefore(LocalDate date);
 
     void saveHistory(SubscriptionHistory history);

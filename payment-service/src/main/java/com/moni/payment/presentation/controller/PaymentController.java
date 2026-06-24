@@ -6,6 +6,7 @@ import com.moni.payment.presentation.dto.SubscribeResponse;
 import com.moni.payment.application.command.SubscribeCommand;
 import com.moni.payment.application.command.SubscribeResult;
 import com.moni.payment.application.service.SubscribePaymentUseCase;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -25,6 +26,8 @@ public class PaymentController {
 
     private final SubscribePaymentUseCase subscribePaymentUseCase;
 
+    @Operation(summary = "toss PG사 정기 구독 API",
+    description = "클라이언트가 필수입니다. 또한 현재 서비스 가격 등을 클라이언트 측에 받고 있는 형태입니다.")
     @PostMapping("/subscription")
     public ResponseEntity<ApiResponse<SubscribeResponse>> subscribe(
             @RequestHeader("X-User-Id") UUID userId,

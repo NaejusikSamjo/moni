@@ -13,6 +13,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static com.moni.payment.domain.model.SubscriptionStatus.ACTIVE;
+import static com.moni.payment.domain.model.SubscriptionStatus.CANCELLING;
+
 @Component
 public class SubscriptionPersistenceAdapter implements SubscriptionRepository {
 
@@ -39,6 +42,11 @@ public class SubscriptionPersistenceAdapter implements SubscriptionRepository {
     @Override
     public Optional<Subscription> findActiveByUserId(UUID userId) {
         return subscriptionJpaRepository.findByUserIdAndStatus(userId, SubscriptionStatus.ACTIVE);
+    }
+
+    @Override
+    public Optional<Subscription> findCurrentByUserId(UUID userId) {
+        return subscriptionJpaRepository.findFirstByUserIdAndStatusIn(userId, List.of(ACTIVE, CANCELLING));
     }
 
     @Override
