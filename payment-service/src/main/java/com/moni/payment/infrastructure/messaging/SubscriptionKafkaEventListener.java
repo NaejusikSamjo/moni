@@ -6,6 +6,10 @@ import com.moni.payment.common.exception.PaymentException;
 import com.moni.payment.domain.event.BillingFailedEvent;
 import com.moni.payment.domain.event.SubscriptionActivatedEvent;
 import com.moni.payment.domain.event.SubscriptionCancelledEvent;
+<<<<<<<< HEAD:payment-service/src/main/java/com/moni/payment/infrastructure/messaging/SubscriptionKafkaEventListener.java
+========
+import com.moni.payment.application.repository.SubscriptionEventPublisher;
+>>>>>>>> 943c276fae8ca320ebb258244ff13af5aa46f624:payment-service/src/main/java/com/moni/payment/infrastructure/messaging/SubscriptionKafkaProducer.java
 import com.moni.payment.infrastructure.messaging.dto.SubscriptionEventMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +23,11 @@ import org.springframework.transaction.event.TransactionalEventListener;
 @Component
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = "kafka.enabled", havingValue = "true", matchIfMissing = false)
+<<<<<<<< HEAD:payment-service/src/main/java/com/moni/payment/infrastructure/messaging/SubscriptionKafkaEventListener.java
 public class SubscriptionKafkaEventListener {
+========
+public class SubscriptionKafkaProducer implements SubscriptionEventPublisher {
+>>>>>>>> 943c276fae8ca320ebb258244ff13af5aa46f624:payment-service/src/main/java/com/moni/payment/infrastructure/messaging/SubscriptionKafkaProducer.java
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
 

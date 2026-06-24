@@ -1,7 +1,6 @@
 package com.moni.ai.presentation.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
@@ -12,7 +11,7 @@ import java.util.Locale;
 
 @Getter
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class NaverNewsResponse {
+public class NaverNewsResDto {
 
     private int total;
     private int start;
