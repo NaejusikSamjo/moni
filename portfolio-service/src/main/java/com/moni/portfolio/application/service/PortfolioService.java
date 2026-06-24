@@ -22,7 +22,9 @@ import com.moni.portfolio.presentation.dto.response.PortfolioCreateResponseDto;
 import com.moni.portfolio.presentation.dto.response.PortfolioHoldingResponseDto;
 import com.moni.portfolio.presentation.dto.response.PortfolioHoldingsResponseDto;
 import feign.FeignException;
+import feign.RetryableException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -131,9 +133,9 @@ public class PortfolioService {
     }
 
     private AccountInput getAccount(UUID userId) {
-        TradeAccountResponseDto account = requestExternalData(() -> tradeServiceClient.getAccount(userId));
+        TradeAccountResponseDto account = requestTradeData(() -> tradeServiceClient.getAccount(userId));
         if (account.balance() == null) {
-            throw externalServiceException();
+            throw new CustomException(PortfolioErrorCode.TRADE_RESPONSE_INVALID);
         }
 
         return new AccountInput(account.balance(), INITIAL_PRINCIPAL_AMOUNT);
@@ -156,12 +158,12 @@ public class PortfolioService {
     private List<PriceInput> getPrices(List<HoldingInput> holdings) {
         return holdings.stream()
                 .map(holding -> {
-                    StockResponseDto stock = requestExternalData(
+                    StockResponseDto stock = requestStockData(
                             () -> stockServiceClient.getStockDetail(holding.ticker())
                     );
 
                     if (stock.ticker() == null || !holding.ticker().equals(stock.ticker())) {
-                        throw externalServiceException();
+                        throw new CustomException(PortfolioErrorCode.STOCK_RESPONSE_INVALID);
                     }
                     if (stock.price() == null) {
                         throw new CustomException(PortfolioErrorCode.STOCK_PRICE_NOT_FOUND);
@@ -173,12 +175,12 @@ public class PortfolioService {
     }
 
     private TradePageResponseDto<TradeHoldingResponseDto> getHoldingPage(UUID userId, int page) {
-        TradePageResponseDto<TradeHoldingResponseDto> response = requestExternalData(
+        TradePageResponseDto<TradeHoldingResponseDto> response = requestTradeData(
                 () -> tradeServiceClient.getHoldings(userId, page, DEFAULT_SIZE)
         );
 
         if (response.content() == null || response.totalPages() < 0) {
-            throw externalServiceException();
+            throw new CustomException(PortfolioErrorCode.TRADE_RESPONSE_INVALID);
         }
         return response;
     }
@@ -190,7 +192,7 @@ public class PortfolioService {
                 || holding.quantity() == null
                 || holding.averagePrice() == null
                 || holding.totalAmount() == null) {
-            throw externalServiceException();
+            throw new CustomException(PortfolioErrorCode.TRADE_RESPONSE_INVALID);
         }
 
         return new HoldingInput(
@@ -201,20 +203,38 @@ public class PortfolioService {
         );
     }
 
-    private <T> T requestExternalData(Supplier<ExternalApiResponseDto<T>> request) {
+    private <T> T requestTradeData(Supplier<ExternalApiResponseDto<T>> request) {
         try {
             ExternalApiResponseDto<T> response = request.get();
             if (response == null || response.data() == null) {
-                throw externalServiceException();
+                throw new CustomException(PortfolioErrorCode.TRADE_RESPONSE_INVALID);
             }
             return response.data();
+        } catch (RetryableException exception) {
+            throw new CustomException(PortfolioErrorCode.TRADE_SERVICE_TIMEOUT);
         } catch (FeignException exception) {
-            throw externalServiceException();
+            if (exception.status() == HttpStatus.NOT_FOUND.value()) {
+                throw new CustomException(PortfolioErrorCode.TRADE_ACCOUNT_NOT_FOUND);
+            }
+            throw new CustomException(PortfolioErrorCode.TRADE_SERVICE_ERROR);
         }
     }
 
-    private CustomException externalServiceException() {
-        return new CustomException(PortfolioErrorCode.EXTERNAL_SERVICE_ERROR);
+    private <T> T requestStockData(Supplier<ExternalApiResponseDto<T>> request) {
+        try {
+            ExternalApiResponseDto<T> response = request.get();
+            if (response == null || response.data() == null) {
+                throw new CustomException(PortfolioErrorCode.STOCK_RESPONSE_INVALID);
+            }
+            return response.data();
+        } catch (RetryableException exception) {
+            throw new CustomException(PortfolioErrorCode.STOCK_SERVICE_TIMEOUT);
+        } catch (FeignException exception) {
+            if (exception.status() == HttpStatus.NOT_FOUND.value()) {
+                throw new CustomException(PortfolioErrorCode.STOCK_PRICE_NOT_FOUND);
+            }
+            throw new CustomException(PortfolioErrorCode.STOCK_SERVICE_ERROR);
+        }
     }
 
     /** page는 음수일 경우 기본 페이지로 보정 */
