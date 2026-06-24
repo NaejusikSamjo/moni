@@ -14,12 +14,12 @@ import java.util.UUID;
 @FeignClient(name = "trade-service")
 public interface TradeServiceClient {
 
-    @GetMapping("/api/accounts")
+    @GetMapping("/api/v1/accounts")
     ExternalApiResponseDto<TradeAccountResponseDto> getAccount(
             @RequestHeader("X-User-Id") UUID userId
     );
 
-    @GetMapping("/api/holdings")
+    @GetMapping("/api/v1/holdings")
     ExternalApiResponseDto<TradePageResponseDto<TradeHoldingResponseDto>> getHoldings(
             @RequestHeader("X-User-Id") UUID userId,
             @RequestParam("page") int page,
