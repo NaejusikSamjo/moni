@@ -1,41 +1,41 @@
 package com.moni.payment.application.service;
 
-import com.moni.payment.application.repository.PaymentRepository;
-import com.moni.payment.application.usecase.ConfirmPaymentUseCase;
-import com.moni.payment.application.usecase.GetPaymentHistoryUseCase;
+import com.moni.payment.application.command.ConfirmPaymentCommand;
+import com.moni.payment.application.dto.GetPaymentHistoryQuery;
 import com.moni.payment.common.exception.PaymentErrorCode;
 import com.moni.payment.common.exception.PaymentException;
 import com.moni.payment.domain.model.MerchantId;
 import com.moni.payment.domain.model.Payment;
+import com.moni.payment.infrastructure.repository.PaymentHistoryRepository;
+import com.moni.payment.infrastructure.repository.PaymentJpaRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.util.List;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class PaymentService implements ConfirmPaymentUseCase, GetPaymentHistoryUseCase {
+public class PaymentService {
 
-    private final PaymentRepository paymentRepository;
+    private final PaymentJpaRepository paymentJpaRepository;
+    private final PaymentHistoryRepository paymentHistoryRepository;
 
-    @Override
     @Transactional
     public void confirmPayment(ConfirmPaymentCommand command) {
-        Payment payment = paymentRepository.findByMerchantId(MerchantId.of(command.merchantId()))
+        Payment payment = paymentJpaRepository.findByMerchantId(MerchantId.of(command.merchantId()))
                 .orElseThrow(() -> new PaymentException(PaymentErrorCode.PAYMENT_NOT_FOUND));
         payment.complete(command.pgPaymentKey(), null, command.pgResponse(), command.respondedAt(), command.confirmedBy());
-        paymentRepository.save(payment);
-        paymentRepository.saveHistory(payment.pullLatestHistory());
+        paymentJpaRepository.save(payment);
+        paymentHistoryRepository.save(payment.pullLatestHistory());
         log.info("결제 CONFIRM 저장: paymentId={}", payment.getId());
     }
 
-    @Override
     @Transactional(readOnly = true)
     public List<Payment> getHistory(GetPaymentHistoryQuery query) {
-        return paymentRepository.findByUserId(query.userId(), query.page(), query.size());
+        return paymentJpaRepository.findByUserIdPaged(query.userId(), PageRequest.of(query.page(), query.size()));
     }
 }

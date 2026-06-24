@@ -1,8 +1,7 @@
 package com.moni.payment.application.service;
 
-import com.moni.payment.application.repository.PaymentRepository;
-import com.moni.payment.application.usecase.ConfirmPaymentUseCase;
-import com.moni.payment.application.usecase.GetPaymentHistoryUseCase;
+import com.moni.payment.application.command.ConfirmPaymentCommand;
+import com.moni.payment.application.dto.GetPaymentHistoryQuery;
 import com.moni.payment.common.exception.PaymentErrorCode;
 import com.moni.payment.common.exception.PaymentException;
 import com.moni.payment.domain.model.MerchantId;
@@ -10,6 +9,8 @@ import com.moni.payment.domain.model.Money;
 import com.moni.payment.domain.model.Payment;
 import com.moni.payment.domain.model.PaymentStatus;
 import com.moni.payment.domain.model.PaymentType;
+import com.moni.payment.infrastructure.repository.PaymentHistoryRepository;
+import com.moni.payment.infrastructure.repository.PaymentJpaRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -18,6 +19,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Pageable;
 
 import java.time.Instant;
 import java.util.Collections;
@@ -38,7 +40,9 @@ import static org.mockito.Mockito.times;
 class PaymentServiceTest {
 
     @Mock
-    private PaymentRepository paymentRepository;
+    private PaymentJpaRepository paymentJpaRepository;
+    @Mock
+    private PaymentHistoryRepository paymentHistoryRepository;
 
     private PaymentService paymentService;
 
@@ -46,7 +50,7 @@ class PaymentServiceTest {
 
     @BeforeEach
     void setUp() {
-        paymentService = new PaymentService(paymentRepository);
+        paymentService = new PaymentService(paymentJpaRepository, paymentHistoryRepository);
     }
 
     @Nested
@@ -68,8 +72,8 @@ class PaymentServiceTest {
                     USER_ID.toString());
         }
 
-        private ConfirmPaymentUseCase.ConfirmPaymentCommand confirmCommand() {
-            return new ConfirmPaymentUseCase.ConfirmPaymentCommand(
+        private ConfirmPaymentCommand confirmCommand() {
+            return new ConfirmPaymentCommand(
                     MERCHANT_ID_VALUE, PG_PAYMENT_KEY, PG_RESPONSE, RESPONDED_AT, USER_ID.toString());
         }
 
@@ -77,29 +81,29 @@ class PaymentServiceTest {
         @DisplayName("PENDING 결제 확인 성공 → COMPLETED 저장 후 히스토리 저장")
         void successCompletesPayment() {
             Payment payment = pendingPayment();
-            given(paymentRepository.findByMerchantId(MerchantId.of(MERCHANT_ID_VALUE)))
+            given(paymentJpaRepository.findByMerchantId(MerchantId.of(MERCHANT_ID_VALUE)))
                     .willReturn(Optional.of(payment));
-            given(paymentRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
+            given(paymentJpaRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
 
             paymentService.confirmPayment(confirmCommand());
 
             ArgumentCaptor<Payment> captor = ArgumentCaptor.forClass(Payment.class);
-            then(paymentRepository).should(times(1)).save(captor.capture());
+            then(paymentJpaRepository).should(times(1)).save(captor.capture());
             assertThat(captor.getValue().getStatus()).isEqualTo(PaymentStatus.COMPLETED);
-            then(paymentRepository).should(times(1)).saveHistory(any());
+            then(paymentHistoryRepository).should(times(1)).save(any());
         }
 
         @Test
         @DisplayName("merchantId에 해당하는 결제가 없으면 PAYMENT_NOT_FOUND 예외 발생")
         void throwsWhenPaymentNotFound() {
-            given(paymentRepository.findByMerchantId(any())).willReturn(Optional.empty());
+            given(paymentJpaRepository.findByMerchantId(any())).willReturn(Optional.empty());
 
             assertThatThrownBy(() -> paymentService.confirmPayment(confirmCommand()))
                     .isInstanceOf(PaymentException.class)
                     .extracting(e -> ((PaymentException) e).getErrorCode())
                     .isEqualTo(PaymentErrorCode.PAYMENT_NOT_FOUND);
 
-            then(paymentRepository).should(never()).save(any());
+            then(paymentJpaRepository).should(never()).save(any());
         }
 
         @Test
@@ -113,7 +117,7 @@ class PaymentServiceTest {
                     Instant.now(), USER_ID.toString(),
                     Instant.now(), USER_ID.toString(),
                     Collections.emptyList());
-            given(paymentRepository.findByMerchantId(any())).willReturn(Optional.of(completed));
+            given(paymentJpaRepository.findByMerchantId(any())).willReturn(Optional.of(completed));
 
             assertThatThrownBy(() -> paymentService.confirmPayment(confirmCommand()))
                     .isInstanceOf(PaymentException.class)
@@ -133,10 +137,10 @@ class PaymentServiceTest {
                     USER_ID, MerchantId.of("MONI" + "b".repeat(32)),
                     Money.of(9900L), PaymentType.SUBSCRIPTION_INITIAL,
                     Instant.now().plusSeconds(600), USER_ID.toString());
-            given(paymentRepository.findByUserId(USER_ID, 0, 10)).willReturn(List.of(p1));
+            given(paymentJpaRepository.findByUserIdPaged(any(UUID.class), any(Pageable.class)))
+                    .willReturn(List.of(p1));
 
-            List<Payment> result = paymentService.getHistory(
-                    new GetPaymentHistoryUseCase.GetPaymentHistoryQuery(USER_ID, 0, 10));
+            List<Payment> result = paymentService.getHistory(new GetPaymentHistoryQuery(USER_ID, 0, 10));
 
             assertThat(result).hasSize(1);
             assertThat(result.get(0).getUserId()).isEqualTo(USER_ID);
@@ -145,10 +149,10 @@ class PaymentServiceTest {
         @Test
         @DisplayName("결제 내역이 없으면 빈 리스트를 반환한다")
         void returnsEmptyListWhenNoHistory() {
-            given(paymentRepository.findByUserId(USER_ID, 0, 10)).willReturn(Collections.emptyList());
+            given(paymentJpaRepository.findByUserIdPaged(any(UUID.class), any(Pageable.class)))
+                    .willReturn(Collections.emptyList());
 
-            List<Payment> result = paymentService.getHistory(
-                    new GetPaymentHistoryUseCase.GetPaymentHistoryQuery(USER_ID, 0, 10));
+            List<Payment> result = paymentService.getHistory(new GetPaymentHistoryQuery(USER_ID, 0, 10));
 
             assertThat(result).isEmpty();
         }

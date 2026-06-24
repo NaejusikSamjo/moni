@@ -1,9 +1,7 @@
 package com.moni.payment.application.service;
 
 import com.moni.payment.application.command.ActivateSubscriptionCommand;
-import com.moni.payment.application.repository.SubscriptionEventPublisher;
-import com.moni.payment.application.repository.SubscriptionRepository;
-import com.moni.payment.application.usecase.CancelSubscriptionUseCase.CancelSubscriptionCommand;
+import com.moni.payment.application.command.CancelSubscriptionCommand;
 import com.moni.payment.common.exception.PaymentErrorCode;
 import com.moni.payment.common.exception.PaymentException;
 import com.moni.payment.domain.event.SubscriptionActivatedEvent;
@@ -12,6 +10,8 @@ import com.moni.payment.domain.model.BillingKey;
 import com.moni.payment.domain.model.Subscription;
 import com.moni.payment.domain.model.SubscriptionHistory;
 import com.moni.payment.domain.model.SubscriptionStatus;
+import com.moni.payment.infrastructure.repository.SubscriptionHistoryRepository;
+import com.moni.payment.infrastructure.repository.SubscriptionJpaRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -20,6 +20,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -38,9 +39,11 @@ import static org.mockito.BDDMockito.then;
 class SubscriptionCommandServiceTest {
 
     @Mock
-    private SubscriptionRepository subscriptionRepository;
+    private SubscriptionJpaRepository subscriptionJpaRepository;
     @Mock
-    private SubscriptionEventPublisher subscriptionEventPublisher;
+    private SubscriptionHistoryRepository subscriptionHistoryRepository;
+    @Mock
+    private ApplicationEventPublisher applicationEventPublisher;
 
     private SubscriptionCommandService subscriptionCommandService;
 
@@ -50,7 +53,7 @@ class SubscriptionCommandServiceTest {
     @BeforeEach
     void setUp() {
         subscriptionCommandService = new SubscriptionCommandService(
-                subscriptionRepository, subscriptionEventPublisher);
+                subscriptionJpaRepository, subscriptionHistoryRepository, applicationEventPublisher);
     }
 
     private Subscription activeSubscription() {
@@ -67,7 +70,7 @@ class SubscriptionCommandServiceTest {
 
         @BeforeEach
         void setUp() {
-            given(subscriptionRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
+            given(subscriptionJpaRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
         }
 
         @Test
@@ -96,20 +99,21 @@ class SubscriptionCommandServiceTest {
             subscriptionCommandService.activateSubscription(
                     new ActivateSubscriptionCommand(USER_ID, BILLING_KEY_VALUE));
 
-            then(subscriptionRepository).should().saveHistory(any(SubscriptionHistory.class));
+            then(subscriptionHistoryRepository).should().save(any(SubscriptionHistory.class));
         }
 
         @Test
-        @DisplayName("SubscriptionActivatedEvent가 발행된다")
+        @DisplayName("SubscriptionActivatedEvent가 ApplicationEventPublisher를 통해 발행된다")
         void publishesActivatedEvent() {
             subscriptionCommandService.activateSubscription(
                     new ActivateSubscriptionCommand(USER_ID, BILLING_KEY_VALUE));
 
-            ArgumentCaptor<SubscriptionActivatedEvent> captor =
-                    ArgumentCaptor.forClass(SubscriptionActivatedEvent.class);
-            then(subscriptionEventPublisher).should().publishActivated(captor.capture());
-            assertThat(captor.getValue().userId()).isEqualTo(USER_ID);
-            assertThat(captor.getValue().billingKey().getValue()).isEqualTo(BILLING_KEY_VALUE);
+            ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
+            then(applicationEventPublisher).should().publishEvent(captor.capture());
+            assertThat(captor.getValue()).isInstanceOf(SubscriptionActivatedEvent.class);
+            SubscriptionActivatedEvent event = (SubscriptionActivatedEvent) captor.getValue();
+            assertThat(event.userId()).isEqualTo(USER_ID);
+            assertThat(event.billingKey().getValue()).isEqualTo(BILLING_KEY_VALUE);
         }
     }
 
@@ -122,35 +126,36 @@ class SubscriptionCommandServiceTest {
         @BeforeEach
         void setUp() {
             subscription = activeSubscription();
-            given(subscriptionRepository.findById(subscription.getId()))
+            given(subscriptionJpaRepository.findById(subscription.getId()))
                     .willReturn(Optional.of(subscription));
         }
 
         @Test
         @DisplayName("구독 상태가 CANCELLING으로 변경된다")
         void statusBecomesCancelling() {
-            given(subscriptionRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
+            given(subscriptionJpaRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
 
             subscriptionCommandService.cancelSubscription(
                     new CancelSubscriptionCommand(subscription.getId(), USER_ID, "사용자 요청"));
 
             ArgumentCaptor<Subscription> captor = ArgumentCaptor.forClass(Subscription.class);
-            then(subscriptionRepository).should().save(captor.capture());
+            then(subscriptionJpaRepository).should().save(captor.capture());
             assertThat(captor.getValue().getStatus()).isEqualTo(SubscriptionStatus.CANCELLING);
         }
 
         @Test
-        @DisplayName("SubscriptionCancelledEvent가 발행된다")
+        @DisplayName("SubscriptionCancelledEvent가 ApplicationEventPublisher를 통해 발행된다")
         void publishesCancelledEvent() {
-            given(subscriptionRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
+            given(subscriptionJpaRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
 
             subscriptionCommandService.cancelSubscription(
                     new CancelSubscriptionCommand(subscription.getId(), USER_ID, "환불 요청"));
 
-            ArgumentCaptor<SubscriptionCancelledEvent> captor =
-                    ArgumentCaptor.forClass(SubscriptionCancelledEvent.class);
-            then(subscriptionEventPublisher).should().publishCancelled(captor.capture());
-            assertThat(captor.getValue().userId()).isEqualTo(USER_ID);
+            ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
+            then(applicationEventPublisher).should().publishEvent(captor.capture());
+            assertThat(captor.getValue()).isInstanceOf(SubscriptionCancelledEvent.class);
+            SubscriptionCancelledEvent event = (SubscriptionCancelledEvent) captor.getValue();
+            assertThat(event.userId()).isEqualTo(USER_ID);
         }
 
         @Test

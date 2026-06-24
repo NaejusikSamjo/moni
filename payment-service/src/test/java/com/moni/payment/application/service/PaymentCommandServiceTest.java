@@ -3,7 +3,6 @@ package com.moni.payment.application.service;
 import com.moni.payment.application.command.ApprovePaymentCommand;
 import com.moni.payment.application.command.FailPaymentCommand;
 import com.moni.payment.application.command.RecordPendingPaymentCommand;
-import com.moni.payment.application.repository.PaymentRepository;
 import com.moni.payment.common.exception.PaymentErrorCode;
 import com.moni.payment.common.exception.PaymentException;
 import com.moni.payment.domain.event.PaymentCompletedEvent;
@@ -12,6 +11,8 @@ import com.moni.payment.domain.model.Money;
 import com.moni.payment.domain.model.Payment;
 import com.moni.payment.domain.model.PaymentStatus;
 import com.moni.payment.domain.model.PaymentType;
+import com.moni.payment.infrastructure.repository.PaymentHistoryRepository;
+import com.moni.payment.infrastructure.repository.PaymentJpaRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -38,7 +39,9 @@ import static org.mockito.Mockito.never;
 class PaymentCommandServiceTest {
 
     @Mock
-    private PaymentRepository paymentRepository;
+    private PaymentJpaRepository paymentJpaRepository;
+    @Mock
+    private PaymentHistoryRepository paymentHistoryRepository;
     @Mock
     private ApplicationEventPublisher applicationEventPublisher;
 
@@ -51,7 +54,8 @@ class PaymentCommandServiceTest {
 
     @BeforeEach
     void setUp() {
-        paymentCommandService = new PaymentCommandService(paymentRepository, applicationEventPublisher);
+        paymentCommandService = new PaymentCommandService(
+                paymentJpaRepository, paymentHistoryRepository, applicationEventPublisher);
     }
 
     private Payment pendingPayment() {
@@ -66,7 +70,7 @@ class PaymentCommandServiceTest {
         @Test
         @DisplayName("Payment를 PENDING 상태로 저장하고 paymentId를 반환한다")
         void savesPendingPaymentAndReturnsId() {
-            given(paymentRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
+            given(paymentJpaRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
 
             RecordPendingPaymentCommand command = new RecordPendingPaymentCommand(
                     USER_ID, MerchantId.generate(), Money.of(9900L),
@@ -76,7 +80,7 @@ class PaymentCommandServiceTest {
 
             assertThat(paymentId).isNotNull();
             ArgumentCaptor<Payment> captor = ArgumentCaptor.forClass(Payment.class);
-            then(paymentRepository).should().save(captor.capture());
+            then(paymentJpaRepository).should().save(captor.capture());
             assertThat(captor.getValue().getStatus()).isEqualTo(PaymentStatus.PENDING);
             assertThat(captor.getValue().getUserId()).isEqualTo(USER_ID);
         }
@@ -91,40 +95,40 @@ class PaymentCommandServiceTest {
         @BeforeEach
         void setUp() {
             payment = pendingPayment();
-            payment.pullDomainEvents(); // PaymentInitiatedEvent 초기화 (DB 로드 시와 동일 상태)
+            payment.pullDomainEvents();
         }
 
         @Test
         @DisplayName("Payment가 COMPLETED 상태로 저장된다")
         void savesCompletedPayment() {
-            given(paymentRepository.findById(payment.getId())).willReturn(Optional.of(payment));
-            given(paymentRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
+            given(paymentJpaRepository.findById(payment.getId())).willReturn(Optional.of(payment));
+            given(paymentJpaRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
 
             paymentCommandService.approvePayment(
                     new ApprovePaymentCommand(payment.getId(), PG_PAYMENT_KEY, BILLING_KEY, "{}", ACTOR));
 
             ArgumentCaptor<Payment> captor = ArgumentCaptor.forClass(Payment.class);
-            then(paymentRepository).should().save(captor.capture());
+            then(paymentJpaRepository).should().save(captor.capture());
             assertThat(captor.getValue().getStatus()).isEqualTo(PaymentStatus.COMPLETED);
         }
 
         @Test
         @DisplayName("PaymentHistory가 저장된다")
         void savesHistory() {
-            given(paymentRepository.findById(payment.getId())).willReturn(Optional.of(payment));
-            given(paymentRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
+            given(paymentJpaRepository.findById(payment.getId())).willReturn(Optional.of(payment));
+            given(paymentJpaRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
 
             paymentCommandService.approvePayment(
                     new ApprovePaymentCommand(payment.getId(), PG_PAYMENT_KEY, BILLING_KEY, "{}", ACTOR));
 
-            then(paymentRepository).should().saveHistory(any());
+            then(paymentHistoryRepository).should().save(any());
         }
 
         @Test
         @DisplayName("PaymentCompletedEvent가 ApplicationEventPublisher를 통해 발행된다")
         void publishesPaymentCompletedEvent() {
-            given(paymentRepository.findById(payment.getId())).willReturn(Optional.of(payment));
-            given(paymentRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
+            given(paymentJpaRepository.findById(payment.getId())).willReturn(Optional.of(payment));
+            given(paymentJpaRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
 
             paymentCommandService.approvePayment(
                     new ApprovePaymentCommand(payment.getId(), PG_PAYMENT_KEY, BILLING_KEY, "{}", ACTOR));
@@ -142,7 +146,7 @@ class PaymentCommandServiceTest {
         @DisplayName("paymentId에 해당하는 결제가 없으면 PAYMENT_NOT_FOUND 예외 발생")
         void throwsWhenPaymentNotFound() {
             UUID unknownId = UUID.randomUUID();
-            given(paymentRepository.findById(unknownId)).willReturn(Optional.empty());
+            given(paymentJpaRepository.findById(unknownId)).willReturn(Optional.empty());
 
             assertThatThrownBy(() -> paymentCommandService.approvePayment(
                     new ApprovePaymentCommand(unknownId, PG_PAYMENT_KEY, BILLING_KEY, "{}", ACTOR)))
@@ -163,8 +167,8 @@ class PaymentCommandServiceTest {
         @BeforeEach
         void setUp() {
             payment = pendingPayment();
-            given(paymentRepository.findById(payment.getId())).willReturn(Optional.of(payment));
-            given(paymentRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
+            given(paymentJpaRepository.findById(payment.getId())).willReturn(Optional.of(payment));
+            given(paymentJpaRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
         }
 
         @Test
@@ -174,7 +178,7 @@ class PaymentCommandServiceTest {
                     new FailPaymentCommand(payment.getId(), "{\"error\":\"CARD_LIMIT\"}", ACTOR));
 
             ArgumentCaptor<Payment> captor = ArgumentCaptor.forClass(Payment.class);
-            then(paymentRepository).should().save(captor.capture());
+            then(paymentJpaRepository).should().save(captor.capture());
             assertThat(captor.getValue().getStatus()).isEqualTo(PaymentStatus.FAILED);
         }
 
@@ -184,7 +188,7 @@ class PaymentCommandServiceTest {
             paymentCommandService.failPayment(
                     new FailPaymentCommand(payment.getId(), "{}", ACTOR));
 
-            then(paymentRepository).should().saveHistory(any());
+            then(paymentHistoryRepository).should().save(any());
         }
 
         @Test

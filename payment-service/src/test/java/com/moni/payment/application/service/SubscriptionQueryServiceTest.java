@@ -1,12 +1,12 @@
 package com.moni.payment.application.service;
 
 import com.moni.payment.application.dto.SubscriptionStatusResult;
-import com.moni.payment.application.repository.SubscriptionRepository;
 import com.moni.payment.common.exception.PaymentErrorCode;
 import com.moni.payment.common.exception.PaymentException;
 import com.moni.payment.domain.model.BillingKey;
 import com.moni.payment.domain.model.Subscription;
 import com.moni.payment.domain.model.SubscriptionStatus;
+import com.moni.payment.infrastructure.repository.SubscriptionJpaRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -21,6 +21,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static com.moni.payment.domain.model.SubscriptionStatus.ACTIVE;
+import static com.moni.payment.domain.model.SubscriptionStatus.CANCELLING;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
@@ -30,7 +32,7 @@ import static org.mockito.BDDMockito.given;
 class SubscriptionQueryServiceTest {
 
     @Mock
-    private SubscriptionRepository subscriptionRepository;
+    private SubscriptionJpaRepository subscriptionJpaRepository;
 
     private SubscriptionQueryService subscriptionQueryService;
 
@@ -38,14 +40,14 @@ class SubscriptionQueryServiceTest {
 
     @BeforeEach
     void setUp() {
-        subscriptionQueryService = new SubscriptionQueryService(subscriptionRepository);
+        subscriptionQueryService = new SubscriptionQueryService(subscriptionJpaRepository);
     }
 
     private Subscription activeSubscription() {
         Instant now = Instant.now();
         return Subscription.reconstitute(
                 UUID.randomUUID(), USER_ID, BillingKey.of("bk-001"),
-                SubscriptionStatus.ACTIVE, LocalDate.now().plusMonths(1),
+                ACTIVE, LocalDate.now().plusMonths(1),
                 now, now, 1L, List.of());
     }
 
@@ -53,7 +55,7 @@ class SubscriptionQueryServiceTest {
         Instant now = Instant.now();
         return Subscription.reconstitute(
                 UUID.randomUUID(), USER_ID, BillingKey.of("bk-001"),
-                SubscriptionStatus.CANCELLING, LocalDate.now().plusMonths(1),
+                CANCELLING, LocalDate.now().plusMonths(1),
                 now, now, 1L, List.of());
     }
 
@@ -64,31 +66,35 @@ class SubscriptionQueryServiceTest {
         @Test
         @DisplayName("ACTIVE 구독이 있으면 subscribed=true 결과를 반환한다")
         void returnsActiveResult() {
-            given(subscriptionRepository.findCurrentByUserId(USER_ID))
+            given(subscriptionJpaRepository.findFirstByUserIdAndStatusIn(
+                    USER_ID, List.of(ACTIVE, CANCELLING)))
                     .willReturn(Optional.of(activeSubscription()));
 
             SubscriptionStatusResult result = subscriptionQueryService.execute(USER_ID);
 
             assertThat(result.subscribed()).isTrue();
-            assertThat(result.status()).isEqualTo(SubscriptionStatus.ACTIVE);
+            assertThat(result.status()).isEqualTo(ACTIVE);
         }
 
         @Test
         @DisplayName("CANCELLING 구독이 있으면 subscribed=true 결과를 반환한다")
         void returnsCancellingResult() {
-            given(subscriptionRepository.findCurrentByUserId(USER_ID))
+            given(subscriptionJpaRepository.findFirstByUserIdAndStatusIn(
+                    USER_ID, List.of(ACTIVE, CANCELLING)))
                     .willReturn(Optional.of(cancellingSubscription()));
 
             SubscriptionStatusResult result = subscriptionQueryService.execute(USER_ID);
 
             assertThat(result.subscribed()).isTrue();
-            assertThat(result.status()).isEqualTo(SubscriptionStatus.CANCELLING);
+            assertThat(result.status()).isEqualTo(CANCELLING);
         }
 
         @Test
         @DisplayName("구독이 없으면 예외 없이 subscribed=false 결과를 반환한다")
         void returnsInactiveWhenNoSubscription() {
-            given(subscriptionRepository.findCurrentByUserId(USER_ID)).willReturn(Optional.empty());
+            given(subscriptionJpaRepository.findFirstByUserIdAndStatusIn(
+                    USER_ID, List.of(ACTIVE, CANCELLING)))
+                    .willReturn(Optional.empty());
 
             SubscriptionStatusResult result = subscriptionQueryService.execute(USER_ID);
 
@@ -105,7 +111,8 @@ class SubscriptionQueryServiceTest {
         @Test
         @DisplayName("ACTIVE 구독이 없으면 예외 없이 통과한다")
         void passesWhenNoActiveSubscription() {
-            given(subscriptionRepository.findActiveByUserId(USER_ID)).willReturn(Optional.empty());
+            given(subscriptionJpaRepository.findByUserIdAndStatus(USER_ID, ACTIVE))
+                    .willReturn(Optional.empty());
 
             subscriptionQueryService.checkNoActiveSubscription(USER_ID);
         }
@@ -113,7 +120,7 @@ class SubscriptionQueryServiceTest {
         @Test
         @DisplayName("ACTIVE 구독이 존재하면 ACTIVE_SUBSCRIPTION_EXISTS 예외 발생")
         void throwsWhenActiveSubscriptionExists() {
-            given(subscriptionRepository.findActiveByUserId(USER_ID))
+            given(subscriptionJpaRepository.findByUserIdAndStatus(USER_ID, ACTIVE))
                     .willReturn(Optional.of(activeSubscription()));
 
             assertThatThrownBy(() -> subscriptionQueryService.checkNoActiveSubscription(USER_ID))

@@ -8,7 +8,6 @@ import com.moni.payment.domain.event.SubscriptionActivatedEvent;
 import com.moni.payment.domain.event.SubscriptionCancelledEvent;
 import com.moni.payment.domain.model.BillingKey;
 import com.moni.payment.domain.model.Money;
-import com.moni.payment.infrastructure.messaging.SubscriptionKafkaProducer;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -30,14 +29,14 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("SubscriptionKafkaProducer")
+@DisplayName("SubscriptionKafkaEventListener")
 class SubscriptionKafkaProducerTest {
 
     @Mock
     private KafkaTemplate<String, Object> kafkaTemplate;
 
     @InjectMocks
-    private SubscriptionKafkaProducer producer;
+    private SubscriptionKafkaEventListener listener;
 
     private static final UUID SUBSCRIPTION_ID = UUID.randomUUID();
     private static final UUID USER_ID = UUID.randomUUID();
@@ -51,8 +50,8 @@ class SubscriptionKafkaProducerTest {
     }
 
     @Nested
-    @DisplayName("publishActivated()")
-    class PublishActivated {
+    @DisplayName("onSubscriptionActivated()")
+    class OnSubscriptionActivated {
 
         @Test
         @DisplayName("SUBSCRIPTION_ACTIVATED 이벤트를 succeeded 토픽으로 발행한다")
@@ -61,7 +60,7 @@ class SubscriptionKafkaProducerTest {
             SubscriptionActivatedEvent event = new SubscriptionActivatedEvent(
                     SUBSCRIPTION_ID, USER_ID, BILLING_KEY);
 
-            producer.publishActivated(event);
+            listener.onSubscriptionActivated(event);
 
             verify(kafkaTemplate).send(
                     eq(KafkaConfig.TOPIC_SUBSCRIPTION_SUCCEEDED),
@@ -79,7 +78,7 @@ class SubscriptionKafkaProducerTest {
             SubscriptionActivatedEvent event = new SubscriptionActivatedEvent(
                     SUBSCRIPTION_ID, USER_ID, BILLING_KEY);
 
-            assertThatThrownBy(() -> producer.publishActivated(event))
+            assertThatThrownBy(() -> listener.onSubscriptionActivated(event))
                     .isInstanceOf(PaymentException.class)
                     .extracting(e -> ((PaymentException) e).getErrorCode())
                     .isEqualTo(PaymentErrorCode.KAFKA_PUBLISH_FAILED);
@@ -87,8 +86,8 @@ class SubscriptionKafkaProducerTest {
     }
 
     @Nested
-    @DisplayName("publishCancelled()")
-    class PublishCancelled {
+    @DisplayName("onSubscriptionCancelled()")
+    class OnSubscriptionCancelled {
 
         @Test
         @DisplayName("SUBSCRIPTION_CANCELLED 이벤트를 cancelled 토픽으로 발행한다")
@@ -97,7 +96,7 @@ class SubscriptionKafkaProducerTest {
             SubscriptionCancelledEvent event = new SubscriptionCancelledEvent(
                     SUBSCRIPTION_ID, USER_ID, "사용자 요청");
 
-            producer.publishCancelled(event);
+            listener.onSubscriptionCancelled(event);
 
             verify(kafkaTemplate).send(
                     eq(KafkaConfig.TOPIC_SUBSCRIPTION_CANCELLED),
@@ -107,8 +106,8 @@ class SubscriptionKafkaProducerTest {
     }
 
     @Nested
-    @DisplayName("publishBillingFailed()")
-    class PublishBillingFailed {
+    @DisplayName("onBillingFailed()")
+    class OnBillingFailed {
 
         @Test
         @DisplayName("BILLING_FAILED 이벤트를 billing.failed 토픽으로 발행한다")
@@ -117,7 +116,7 @@ class SubscriptionKafkaProducerTest {
             BillingFailedEvent event = new BillingFailedEvent(
                     SUBSCRIPTION_ID, USER_ID, Money.of(9900), "카드 한도 초과");
 
-            producer.publishBillingFailed(event);
+            listener.onBillingFailed(event);
 
             verify(kafkaTemplate).send(
                     eq(KafkaConfig.TOPIC_BILLING_FAILED),

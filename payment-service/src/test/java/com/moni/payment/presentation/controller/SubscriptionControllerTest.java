@@ -1,7 +1,7 @@
 package com.moni.payment.presentation.controller;
 
 import com.moni.payment.application.dto.SubscriptionStatusResult;
-import com.moni.payment.application.usecase.GetSubscriptionStatusQuery;
+import com.moni.payment.application.service.SubscriptionQueryService;
 import com.moni.payment.common.config.SecurityConfig;
 import com.moni.payment.common.exception.GlobalExceptionHandler;
 import com.moni.payment.domain.model.SubscriptionStatus;
@@ -32,7 +32,7 @@ class SubscriptionControllerTest {
     private MockMvc mockMvc;
 
     @MockitoBean
-    private GetSubscriptionStatusQuery getSubscriptionStatusQuery;
+    private SubscriptionQueryService subscriptionQueryService;
 
     private static final UUID USER_ID = UUID.randomUUID();
     private static final UUID SUBSCRIPTION_ID = UUID.randomUUID();
@@ -49,7 +49,7 @@ class SubscriptionControllerTest {
         void returnsOkWhenSubscribed() throws Exception {
             SubscriptionStatusResult result = new SubscriptionStatusResult(
                     true, SUBSCRIPTION_ID, SubscriptionStatus.ACTIVE, NEXT_BILLING, 9900L);
-            given(getSubscriptionStatusQuery.execute(any())).willReturn(result);
+            given(subscriptionQueryService.execute(any())).willReturn(result);
 
             mockMvc.perform(get("/api/v1/payments/subscriptions/status")
                             .header("X-Gateway-Secret", GATEWAY_SECRET)
@@ -66,7 +66,7 @@ class SubscriptionControllerTest {
         @Test
         @DisplayName("구독 중이 아니면 200과 subscribed=false 응답을 반환한다")
         void returnsOkWithInactiveWhenNotSubscribed() throws Exception {
-            given(getSubscriptionStatusQuery.execute(any())).willReturn(SubscriptionStatusResult.inactive());
+            given(subscriptionQueryService.execute(any())).willReturn(SubscriptionStatusResult.inactive());
 
             mockMvc.perform(get("/api/v1/payments/subscriptions/status")
                             .header("X-Gateway-Secret", GATEWAY_SECRET)
@@ -84,7 +84,7 @@ class SubscriptionControllerTest {
         void returnsOkWhenCancelling() throws Exception {
             SubscriptionStatusResult result = new SubscriptionStatusResult(
                     true, SUBSCRIPTION_ID, SubscriptionStatus.CANCELLING, NEXT_BILLING, 9900L);
-            given(getSubscriptionStatusQuery.execute(any())).willReturn(result);
+            given(subscriptionQueryService.execute(any())).willReturn(result);
 
             mockMvc.perform(get("/api/v1/payments/subscriptions/status")
                             .header("X-Gateway-Secret", GATEWAY_SECRET)

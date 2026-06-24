@@ -5,13 +5,13 @@ import com.moni.payment.application.command.FailPaymentCommand;
 import com.moni.payment.application.command.RecordPendingPaymentCommand;
 import com.moni.payment.application.command.SubscribeCommand;
 import com.moni.payment.application.command.SubscribeResult;
-import com.moni.payment.application.repository.PgPaymentClient;
-import com.moni.payment.application.repository.SubscriptionLockRepository;
 import com.moni.payment.common.exception.PaymentErrorCode;
 import com.moni.payment.common.exception.PaymentException;
 import com.moni.payment.domain.model.MerchantId;
 import com.moni.payment.domain.model.Money;
 import com.moni.payment.domain.model.PaymentType;
+import com.moni.payment.infrastructure.client.toss.TossPaymentsAdapter;
+import com.moni.payment.infrastructure.lock.RedisSubscriptionLock;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -30,22 +30,19 @@ public class SubscribePaymentUseCase {
 
     private final SubscriptionQueryService subscriptionQueryService;
     private final PaymentCommandService paymentCommandService;
-    private final PgPaymentClient pgPaymentClient;
-    private final SubscriptionLockRepository subscriptionLockRepository;
+    private final TossPaymentsAdapter tossPaymentsAdapter;
+    private final RedisSubscriptionLock redisSubscriptionLock;
 
     public SubscribeResult execute(SubscribeCommand command) {
         UUID userId = command.userId();
 
-        // [1] Redis 멱등키 — 중복 결제 방지
-        if (!subscriptionLockRepository.tryLock(userId, LOCK_TTL)) {
+        if (!redisSubscriptionLock.tryLock(userId, LOCK_TTL)) {
             throw new PaymentException(PaymentErrorCode.DUPLICATE_PAYMENT);
         }
 
         try {
-            // [2] 이미 활성 구독 여부 확인
             subscriptionQueryService.checkNoActiveSubscription(userId);
 
-            // [3] Tx1: PENDING 저장
             MerchantId merchantId = MerchantId.generate();
             Money amount = Money.of(command.amount());
             UUID paymentId = paymentCommandService.recordPendingPayment(
@@ -55,28 +52,24 @@ public class SubscribePaymentUseCase {
                             Instant.now().plusSeconds(600),
                             command.requestedBy()));
 
-            // [4] PG 호출 (트랜잭션 밖)
-            PgPaymentClient.PgPaymentResult pgResult;
+            TossPaymentsAdapter.PgPaymentResult pgResult;
             try {
-                pgResult = pgPaymentClient.requestPayment(
-                        new PgPaymentClient.PgPaymentRequest(
+                pgResult = tossPaymentsAdapter.requestPayment(
+                        new TossPaymentsAdapter.PgPaymentRequest(
                                 command.authKey(), merchantId, userId, amount,
                                 PaymentType.SUBSCRIPTION_INITIAL));
             } catch (Exception e) {
-                // [5-Fail] PG 예외 → Tx2: FAILED 저장
                 paymentCommandService.failPayment(
                         new FailPaymentCommand(paymentId, "PG_ERROR", command.requestedBy()));
                 throw new PaymentException(PaymentErrorCode.PG_PAYMENT_FAILED);
             }
 
             if (!pgResult.success()) {
-                // [5-Fail] PG 실패 → Tx2: FAILED 저장
                 paymentCommandService.failPayment(
                         new FailPaymentCommand(paymentId, pgResult.rawResponse(), command.requestedBy()));
                 throw new PaymentException(PaymentErrorCode.PG_PAYMENT_FAILED);
             }
 
-            // [5-OK] Tx2: COMPLETED 저장 + PaymentCompletedEvent 발행 → Listener에서 Tx3 구독 활성화
             paymentCommandService.approvePayment(
                     new ApprovePaymentCommand(
                             paymentId, pgResult.pgPaymentKey(), pgResult.billingKeyValue(),
@@ -88,7 +81,7 @@ public class SubscribePaymentUseCase {
                     LocalDate.now().plusMonths(1));
 
         } finally {
-            subscriptionLockRepository.unlock(userId);
+            redisSubscriptionLock.unlock(userId);
         }
     }
 }

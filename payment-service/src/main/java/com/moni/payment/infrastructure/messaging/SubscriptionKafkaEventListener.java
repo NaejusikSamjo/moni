@@ -6,24 +6,25 @@ import com.moni.payment.common.exception.PaymentException;
 import com.moni.payment.domain.event.BillingFailedEvent;
 import com.moni.payment.domain.event.SubscriptionActivatedEvent;
 import com.moni.payment.domain.event.SubscriptionCancelledEvent;
-import com.moni.payment.application.repository.SubscriptionEventPublisher;
 import com.moni.payment.infrastructure.messaging.dto.SubscriptionEventMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = "kafka.enabled", havingValue = "true", matchIfMissing = false)
-public class SubscriptionKafkaProducer implements SubscriptionEventPublisher {
+public class SubscriptionKafkaEventListener {
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
-    @Override
-    public void publishActivated(SubscriptionActivatedEvent event) {
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onSubscriptionActivated(SubscriptionActivatedEvent event) {
         SubscriptionEventMessage message = new SubscriptionEventMessage(
                 "SUBSCRIPTION_ACTIVATED",
                 event.subscriptionId(),
@@ -33,8 +34,8 @@ public class SubscriptionKafkaProducer implements SubscriptionEventPublisher {
         send(KafkaConfig.TOPIC_SUBSCRIPTION_SUCCEEDED, event.subscriptionId().toString(), message);
     }
 
-    @Override
-    public void publishCancelled(SubscriptionCancelledEvent event) {
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onSubscriptionCancelled(SubscriptionCancelledEvent event) {
         SubscriptionEventMessage message = new SubscriptionEventMessage(
                 "SUBSCRIPTION_CANCELLED",
                 event.subscriptionId(),
@@ -44,8 +45,8 @@ public class SubscriptionKafkaProducer implements SubscriptionEventPublisher {
         send(KafkaConfig.TOPIC_SUBSCRIPTION_CANCELLED, event.subscriptionId().toString(), message);
     }
 
-    @Override
-    public void publishBillingFailed(BillingFailedEvent event) {
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onBillingFailed(BillingFailedEvent event) {
         SubscriptionEventMessage message = new SubscriptionEventMessage(
                 "BILLING_FAILED",
                 event.subscriptionId(),

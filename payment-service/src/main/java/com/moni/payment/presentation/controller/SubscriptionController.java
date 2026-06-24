@@ -1,7 +1,7 @@
 package com.moni.payment.presentation.controller;
 
 import com.moni.payment.application.dto.SubscriptionStatusResult;
-import com.moni.payment.application.usecase.GetSubscriptionStatusQuery;
+import com.moni.payment.application.service.SubscriptionQueryService;
 import com.moni.payment.common.response.ApiResponse;
 import com.moni.payment.presentation.dto.SubscriptionStatusResponse;
 import lombok.RequiredArgsConstructor;
@@ -18,12 +18,12 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class SubscriptionController {
 
-    private final GetSubscriptionStatusQuery getSubscriptionStatusQuery;
+    private final SubscriptionQueryService subscriptionQueryService;
 
     @GetMapping("/status")
     public ResponseEntity<ApiResponse<SubscriptionStatusResponse>> getStatus(
             @RequestHeader("X-User-Id") UUID userId) {
-        SubscriptionStatusResult result = getSubscriptionStatusQuery.execute(userId);
+        SubscriptionStatusResult result = subscriptionQueryService.execute(userId);
         return ResponseEntity.ok(ApiResponse.success(SubscriptionStatusResponse.from(result)));
     }
 }

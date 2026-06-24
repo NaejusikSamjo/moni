@@ -2,11 +2,11 @@ package com.moni.payment.infrastructure.client.toss;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.moni.payment.application.repository.PgPaymentClient;
 import com.moni.payment.common.exception.PaymentErrorCode;
 import com.moni.payment.common.exception.PaymentException;
 import com.moni.payment.domain.model.MerchantId;
 import com.moni.payment.domain.model.Money;
+import com.moni.payment.domain.model.PaymentType;
 import com.moni.payment.infrastructure.client.toss.dto.TossBillingAuthRequest;
 import com.moni.payment.infrastructure.client.toss.dto.TossBillingChargeRequest;
 import com.moni.payment.infrastructure.client.toss.dto.TossPaymentResponse;
@@ -16,10 +16,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.UUID;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class TossPaymentsAdapter implements PgPaymentClient {
+public class TossPaymentsAdapter {
 
     private static final String ORDER_NAME = "모니 AI 구독";
     private static final String STATUS_DONE = "DONE";
@@ -27,7 +29,28 @@ public class TossPaymentsAdapter implements PgPaymentClient {
     private final TossPaymentsClient tossPaymentsClient;
     private final ObjectMapper objectMapper;
 
-    @Override
+    public record PgPaymentRequest(
+            String authKey,
+            MerchantId merchantId,
+            UUID userId,
+            Money amount,
+            PaymentType paymentType) {
+    }
+
+    public record PgPaymentResult(
+            String pgPaymentKey,
+            String billingKeyValue,
+            String rawResponse,
+            boolean success) {
+    }
+
+    public enum PgPaymentStatus {
+        APPROVED,
+        CANCELED,
+        FAILED,
+        WAITING_FOR_DEPOSIT
+    }
+
     public PgPaymentResult requestPayment(PgPaymentRequest request) {
         TossBillingAuthRequest authRequest = new TossBillingAuthRequest(
                 request.authKey(),
@@ -51,7 +74,6 @@ public class TossPaymentsAdapter implements PgPaymentClient {
                 STATUS_DONE.equals(chargeResponse.status()));
     }
 
-    @Override
     public PgPaymentResult requestBillingPayment(String billingKeyValue, Money amount, MerchantId merchantId) {
         TossBillingChargeRequest chargeRequest = new TossBillingChargeRequest(
                 null,
@@ -68,7 +90,6 @@ public class TossPaymentsAdapter implements PgPaymentClient {
                 STATUS_DONE.equals(response.status()));
     }
 
-    @Override
     public PgPaymentStatus inquirePayment(String pgPaymentKey) {
         try {
             TossPaymentResponse response = tossPaymentsClient.getPayment(pgPaymentKey);

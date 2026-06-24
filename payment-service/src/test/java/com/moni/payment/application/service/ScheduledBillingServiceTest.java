@@ -1,9 +1,5 @@
 package com.moni.payment.application.service;
 
-import com.moni.payment.application.repository.PaymentRepository;
-import com.moni.payment.application.repository.PgPaymentClient;
-import com.moni.payment.application.repository.SubscriptionEventPublisher;
-import com.moni.payment.application.repository.SubscriptionRepository;
 import com.moni.payment.common.exception.PaymentErrorCode;
 import com.moni.payment.common.exception.PaymentException;
 import com.moni.payment.domain.event.BillingFailedEvent;
@@ -13,6 +9,11 @@ import com.moni.payment.domain.model.PaymentStatus;
 import com.moni.payment.domain.model.Subscription;
 import com.moni.payment.domain.model.SubscriptionHistory;
 import com.moni.payment.domain.model.SubscriptionStatus;
+import com.moni.payment.infrastructure.client.toss.TossPaymentsAdapter;
+import com.moni.payment.infrastructure.repository.PaymentHistoryRepository;
+import com.moni.payment.infrastructure.repository.PaymentJpaRepository;
+import com.moni.payment.infrastructure.repository.SubscriptionHistoryRepository;
+import com.moni.payment.infrastructure.repository.SubscriptionJpaRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -21,6 +22,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -41,13 +43,17 @@ import static org.mockito.Mockito.times;
 class ScheduledBillingServiceTest {
 
     @Mock
-    private SubscriptionRepository subscriptionRepository;
+    private SubscriptionJpaRepository subscriptionJpaRepository;
     @Mock
-    private PaymentRepository paymentRepository;
+    private SubscriptionHistoryRepository subscriptionHistoryRepository;
     @Mock
-    private PgPaymentClient pgPaymentClient;
+    private PaymentJpaRepository paymentJpaRepository;
     @Mock
-    private SubscriptionEventPublisher subscriptionEventPublisher;
+    private PaymentHistoryRepository paymentHistoryRepository;
+    @Mock
+    private TossPaymentsAdapter tossPaymentsAdapter;
+    @Mock
+    private ApplicationEventPublisher applicationEventPublisher;
 
     private ScheduledBillingService scheduledBillingService;
 
@@ -59,7 +65,9 @@ class ScheduledBillingServiceTest {
     @BeforeEach
     void setUp() {
         scheduledBillingService = new ScheduledBillingService(
-                subscriptionRepository, paymentRepository, pgPaymentClient, subscriptionEventPublisher);
+                subscriptionJpaRepository, subscriptionHistoryRepository,
+                paymentJpaRepository, paymentHistoryRepository,
+                tossPaymentsAdapter, applicationEventPublisher);
     }
 
     private Subscription activeSubscription() {
@@ -72,8 +80,8 @@ class ScheduledBillingServiceTest {
                 now, now, 1L, List.of());
     }
 
-    private PgPaymentClient.PgPaymentResult successResult() {
-        return new PgPaymentClient.PgPaymentResult(PG_PAYMENT_KEY, BILLING_KEY, "{\"status\":\"DONE\"}", true);
+    private TossPaymentsAdapter.PgPaymentResult successResult() {
+        return new TossPaymentsAdapter.PgPaymentResult(PG_PAYMENT_KEY, BILLING_KEY, "{\"status\":\"DONE\"}", true);
     }
 
     @Nested
@@ -83,13 +91,13 @@ class ScheduledBillingServiceTest {
         @Test
         @DisplayName("정기결제 대상이 없으면 PG 호출 없이 종료된다")
         void noOpWhenNoDueSubscriptions() {
-            given(subscriptionRepository.findActiveSubscriptionsDueBefore(any()))
+            given(subscriptionJpaRepository.findActiveSubscriptionsDueBefore(any(), any()))
                     .willReturn(Collections.emptyList());
 
             scheduledBillingService.processScheduledBilling();
 
-            then(pgPaymentClient).should(never()).requestBillingPayment(anyString(), any(), any());
-            then(paymentRepository).should(never()).save(any());
+            then(tossPaymentsAdapter).should(never()).requestBillingPayment(anyString(), any(), any());
+            then(paymentJpaRepository).should(never()).save(any());
         }
     }
 
@@ -99,11 +107,11 @@ class ScheduledBillingServiceTest {
 
         @BeforeEach
         void setUp() {
-            given(subscriptionRepository.findActiveSubscriptionsDueBefore(any()))
+            given(subscriptionJpaRepository.findActiveSubscriptionsDueBefore(any(), any()))
                     .willReturn(List.of(activeSubscription()));
-            given(pgPaymentClient.requestBillingPayment(anyString(), any(), any())).willReturn(successResult());
-            given(paymentRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
-            given(subscriptionRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
+            given(tossPaymentsAdapter.requestBillingPayment(anyString(), any(), any())).willReturn(successResult());
+            given(paymentJpaRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
+            given(subscriptionJpaRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
         }
 
         @Test
@@ -112,7 +120,7 @@ class ScheduledBillingServiceTest {
             scheduledBillingService.processScheduledBilling();
 
             ArgumentCaptor<Payment> paymentCaptor = ArgumentCaptor.forClass(Payment.class);
-            then(paymentRepository).should().save(paymentCaptor.capture());
+            then(paymentJpaRepository).should().save(paymentCaptor.capture());
             assertThat(paymentCaptor.getValue().getStatus()).isEqualTo(PaymentStatus.COMPLETED);
             assertThat(paymentCaptor.getValue().getUserId()).isEqualTo(USER_ID);
         }
@@ -121,7 +129,7 @@ class ScheduledBillingServiceTest {
         @DisplayName("결제 성공 시 PaymentHistory가 저장된다")
         void paymentHistorySaved() {
             scheduledBillingService.processScheduledBilling();
-            then(paymentRepository).should(times(1)).saveHistory(any());
+            then(paymentHistoryRepository).should(times(1)).save(any());
         }
 
         @Test
@@ -130,7 +138,7 @@ class ScheduledBillingServiceTest {
             scheduledBillingService.processScheduledBilling();
 
             ArgumentCaptor<Subscription> subscriptionCaptor = ArgumentCaptor.forClass(Subscription.class);
-            then(subscriptionRepository).should().save(subscriptionCaptor.capture());
+            then(subscriptionJpaRepository).should().save(subscriptionCaptor.capture());
             assertThat(subscriptionCaptor.getValue().getNextBillingDate())
                     .isEqualTo(LocalDate.now().plusMonths(1));
         }
@@ -139,7 +147,7 @@ class ScheduledBillingServiceTest {
         @DisplayName("결제 성공 시 BillingFailedEvent는 발행되지 않는다")
         void noBillingFailedEventOnSuccess() {
             scheduledBillingService.processScheduledBilling();
-            then(subscriptionEventPublisher).should(never()).publishBillingFailed(any());
+            then(applicationEventPublisher).should(never()).publishEvent(any(BillingFailedEvent.class));
         }
     }
 
@@ -149,11 +157,11 @@ class ScheduledBillingServiceTest {
 
         @BeforeEach
         void setUp() {
-            given(subscriptionRepository.findActiveSubscriptionsDueBefore(any()))
+            given(subscriptionJpaRepository.findActiveSubscriptionsDueBefore(any(), any()))
                     .willReturn(List.of(activeSubscription()));
-            given(pgPaymentClient.requestBillingPayment(anyString(), any(), any()))
-                    .willReturn(new PgPaymentClient.PgPaymentResult(null, null, "{\"error\":\"CARD_LIMIT\"}", false));
-            given(subscriptionRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
+            given(tossPaymentsAdapter.requestBillingPayment(anyString(), any(), any()))
+                    .willReturn(new TossPaymentsAdapter.PgPaymentResult(null, null, "{\"error\":\"CARD_LIMIT\"}", false));
+            given(subscriptionJpaRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
         }
 
         @Test
@@ -162,7 +170,7 @@ class ScheduledBillingServiceTest {
             scheduledBillingService.processScheduledBilling();
 
             ArgumentCaptor<Subscription> captor = ArgumentCaptor.forClass(Subscription.class);
-            then(subscriptionRepository).should().save(captor.capture());
+            then(subscriptionJpaRepository).should().save(captor.capture());
             assertThat(captor.getValue().getStatus()).isEqualTo(SubscriptionStatus.SUSPENDED);
         }
 
@@ -170,7 +178,7 @@ class ScheduledBillingServiceTest {
         @DisplayName("PG 실패 시 SubscriptionHistory가 저장된다")
         void historyIsSavedOnFailure() {
             scheduledBillingService.processScheduledBilling();
-            then(subscriptionRepository).should().saveHistory(any(SubscriptionHistory.class));
+            then(subscriptionHistoryRepository).should().save(any(SubscriptionHistory.class));
         }
 
         @Test
@@ -178,18 +186,20 @@ class ScheduledBillingServiceTest {
         void billingFailedEventPublished() {
             scheduledBillingService.processScheduledBilling();
 
-            ArgumentCaptor<BillingFailedEvent> captor = ArgumentCaptor.forClass(BillingFailedEvent.class);
-            then(subscriptionEventPublisher).should().publishBillingFailed(captor.capture());
-            assertThat(captor.getValue().subscriptionId()).isEqualTo(SUBSCRIPTION_ID);
-            assertThat(captor.getValue().userId()).isEqualTo(USER_ID);
-            assertThat(captor.getValue().amount()).isEqualTo(ScheduledBillingService.SUBSCRIPTION_AMOUNT);
+            ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
+            then(applicationEventPublisher).should().publishEvent(captor.capture());
+            assertThat(captor.getValue()).isInstanceOf(BillingFailedEvent.class);
+            BillingFailedEvent event = (BillingFailedEvent) captor.getValue();
+            assertThat(event.subscriptionId()).isEqualTo(SUBSCRIPTION_ID);
+            assertThat(event.userId()).isEqualTo(USER_ID);
+            assertThat(event.amount()).isEqualTo(ScheduledBillingService.SUBSCRIPTION_AMOUNT);
         }
 
         @Test
         @DisplayName("PG 실패 시 Payment는 저장되지 않는다")
         void paymentNotSavedOnFailure() {
             scheduledBillingService.processScheduledBilling();
-            then(paymentRepository).should(never()).save(any());
+            then(paymentJpaRepository).should(never()).save(any());
         }
     }
 
@@ -199,11 +209,11 @@ class ScheduledBillingServiceTest {
 
         @BeforeEach
         void setUp() {
-            given(subscriptionRepository.findActiveSubscriptionsDueBefore(any()))
+            given(subscriptionJpaRepository.findActiveSubscriptionsDueBefore(any(), any()))
                     .willReturn(List.of(activeSubscription()));
-            given(pgPaymentClient.requestBillingPayment(anyString(), any(), any()))
+            given(tossPaymentsAdapter.requestBillingPayment(anyString(), any(), any()))
                     .willThrow(new PaymentException(PaymentErrorCode.PG_CONNECTION_TIMEOUT));
-            given(subscriptionRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
+            given(subscriptionJpaRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
         }
 
         @Test
@@ -212,7 +222,7 @@ class ScheduledBillingServiceTest {
             scheduledBillingService.processScheduledBilling();
 
             ArgumentCaptor<Subscription> captor = ArgumentCaptor.forClass(Subscription.class);
-            then(subscriptionRepository).should().save(captor.capture());
+            then(subscriptionJpaRepository).should().save(captor.capture());
             assertThat(captor.getValue().getStatus()).isEqualTo(SubscriptionStatus.SUSPENDED);
         }
 
@@ -220,7 +230,7 @@ class ScheduledBillingServiceTest {
         @DisplayName("PG 예외 시에도 BillingFailedEvent가 발행된다")
         void billingFailedEventPublishedOnException() {
             scheduledBillingService.processScheduledBilling();
-            then(subscriptionEventPublisher).should().publishBillingFailed(any(BillingFailedEvent.class));
+            then(applicationEventPublisher).should().publishEvent(any(BillingFailedEvent.class));
         }
     }
 }
