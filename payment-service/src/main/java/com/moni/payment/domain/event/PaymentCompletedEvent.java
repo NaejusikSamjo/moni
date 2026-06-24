@@ -10,9 +10,10 @@ public record PaymentCompletedEvent(
         UUID userId,
         Money amount,
         String pgPaymentKey,
+        String billingKeyValue,
         Instant occurredAt) {
 
-    public PaymentCompletedEvent(UUID paymentId, UUID userId, Money amount, String pgPaymentKey) {
-        this(paymentId, userId, amount, pgPaymentKey, Instant.now());
+    public PaymentCompletedEvent(UUID paymentId, UUID userId, Money amount, String pgPaymentKey, String billingKeyValue) {
+        this(paymentId, userId, amount, pgPaymentKey, billingKeyValue, Instant.now());
     }
 }
