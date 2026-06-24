@@ -1,4 +1,4 @@
-package com.moni.payment.application.service;
+package com.moni.payment.application.service.CommandService;
 
 import com.moni.payment.application.dto.SubscriptionStatusResult;
 import com.moni.payment.common.exception.PaymentErrorCode;
