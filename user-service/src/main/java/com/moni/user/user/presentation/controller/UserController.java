@@ -5,6 +5,7 @@ import com.moni.common.error.exception.CustomException;
 import com.moni.common.response.GlobalResponse;
 import com.moni.common.security.SecurityUtil;
 import com.moni.user.user.application.service.UserService;
+import com.moni.user.user.presentation.dto.request.ChangePasswordRequest;
 import com.moni.user.user.presentation.dto.request.InterestRequest;
 import com.moni.user.user.presentation.dto.request.TendencyRequest;
 import com.moni.user.user.presentation.dto.request.UserUpdateRequest;
@@ -15,6 +16,8 @@ import com.moni.user.user.presentation.dto.response.WatchlistResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Pattern;
+import org.springframework.validation.annotation.Validated;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -32,6 +35,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Tag(name = "User", description = "사용자 API")
+@Validated
 @RestController
 @RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
@@ -53,6 +57,14 @@ public class UserController {
     public ResponseEntity<GlobalResponse<UserResponse>> updateMe(@RequestBody @Valid UserUpdateRequest request) {
         UUID userId = currentUserId();
         return ResponseEntity.ok(GlobalResponse.success(HttpStatus.OK.value(), userService.updateMe(userId, request)));
+    }
+
+    @Operation(summary = "비밀번호 변경")
+    @PostMapping("/me/password")
+    public ResponseEntity<Void> changePassword(@RequestBody @Valid ChangePasswordRequest request) {
+        UUID userId = currentUserId();
+        userService.changePassword(userId, request);
+        return ResponseEntity.noContent().build();
     }
 
     @Operation(summary = "회원 탈퇴")
@@ -119,7 +131,8 @@ public class UserController {
 
     @Operation(summary = "관심종목 추가")
     @PutMapping("/me/watchlist/{stockCode}")
-    public ResponseEntity<GlobalResponse<WatchlistResponse>> addWatchlist(@PathVariable String stockCode) {
+    public ResponseEntity<GlobalResponse<WatchlistResponse>> addWatchlist(
+            @PathVariable @Pattern(regexp = "^\\d{6}$", message = "종목코드는 6자리 숫자여야 합니다.") String stockCode) {
         UUID userId = currentUserId();
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(GlobalResponse.success(HttpStatus.CREATED.value(), userService.addWatchlist(userId, stockCode)));
@@ -134,7 +147,8 @@ public class UserController {
 
     @Operation(summary = "관심종목 삭제")
     @DeleteMapping("/me/watchlist/{stockCode}")
-    public ResponseEntity<Void> removeWatchlist(@PathVariable String stockCode) {
+    public ResponseEntity<Void> removeWatchlist(
+            @PathVariable @Pattern(regexp = "^\\d{6}$", message = "종목코드는 6자리 숫자여야 합니다.") String stockCode) {
         UUID userId = currentUserId();
         userService.removeWatchlist(userId, stockCode);
         return ResponseEntity.noContent().build();
