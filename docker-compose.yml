@@ -1,7 +1,11 @@
 # TODO: 운영 배포 시 제거 - 외부 직접 접근 차단 (게이트웨이 8080만 오픈)
 networks:
   default:
+    external: true
     name: moni-network
+  moni_infra:
+    external: true
+    name: moni_default
 
 name: moni
 services:
@@ -16,7 +20,8 @@ services:
       test: ["CMD", "curl", "-f", "http://localhost:8888/actuator/health"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 30s
 
   eureka-server:
     build:
@@ -31,7 +36,8 @@ services:
       test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 60s
 
   api-gateway:
     build:
@@ -123,9 +129,12 @@ services:
       DB_URL: ${STOCK_DB_URL}
       DB_USERNAME: ${STOCK_DB_USERNAME}
       DB_PASSWORD: ${STOCK_DB_PASSWORD}
-      REDIS_HOST: ${REDIS_HOST}
-      REDIS_PORT: ${REDIS_PORT}
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      GATEWAY_SECRET: ${GATEWAY_SECRET}
+      REDIS_NODES: ${REDIS_NODES}
+      REDIS_CLUSTER_PASSWORD: ${REDIS_CLUSTER_PASSWORD}
+      KIS_APP_KEY: ${KIS_APP_KEY}
+      KIS_APP_SECRET: ${KIS_APP_SECRET}
+      KIS_WS_TR_ID: ${KIS_WS_TR_ID}
       SPRING_PROFILES_ACTIVE: prod
       OTEL_SERVICE_NAME: stock-service
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
@@ -157,6 +166,7 @@ services:
       REDIS_HOST: ${REDIS_HOST}
       REDIS_PORT: ${REDIS_PORT}
       REDIS_PASSWORD: ${REDIS_PASSWORD}
+      GATEWAY_SECRET: ${GATEWAY_SECRET}
       SPRING_PROFILES_ACTIVE: prod
       OTEL_SERVICE_NAME: portfolio-service
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
@@ -210,9 +220,12 @@ services:
       DB_URL: ${PAYMENT_DB_URL}
       DB_USERNAME: ${PAYMENT_DB_USERNAME}
       DB_PASSWORD: ${PAYMENT_DB_PASSWORD}
+      GATEWAY_SECRET: ${GATEWAY_SECRET}
       REDIS_HOST: ${REDIS_HOST}
       REDIS_PORT: ${REDIS_PORT}
       REDIS_PASSWORD: ${REDIS_PASSWORD}
+      TOSS_SECRET_KEY: ${TOSS_SECRET_KEY}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       SPRING_PROFILES_ACTIVE: prod
       OTEL_SERVICE_NAME: payment-service
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
@@ -222,6 +235,9 @@ services:
       OTEL_LOGS_EXPORTER: none
       OTEL_INSTRUMENTATION_LOGBACK_MDC_ENABLED: "true"
       OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=local"
+    networks:
+      - default
+      - moni_infra
     volumes:
       - ./logs/payment-service:/app/logs
     depends_on:
@@ -256,6 +272,32 @@ services:
       OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=local"
     volumes:
       - ./logs/ai-service:/app/logs
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+
+  admin-service:
+    build:
+      context: .
+      dockerfile: admin-service/Dockerfile
+    ports:
+      - "19097:19097"
+    environment:
+      GATEWAY_SECRET: ${GATEWAY_SECRET}
+      OKTA_CLIENT_ID: ${OKTA_CLIENT_ID}
+      OKTA_CLIENT_SECRET: ${OKTA_CLIENT_SECRET}
+      OKTA_ISSUER_URI: ${OKTA_ISSUER_URI}
+      SPRING_PROFILES_ACTIVE: prod
+      OTEL_SERVICE_NAME: admin-service
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
+      OTEL_INSTRUMENTATION_LOGBACK_MDC_ENABLED: "true"
+      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=local"
+    volumes:
+      - ./logs/admin-service:/app/logs
     depends_on:
       eureka-server:
         condition: service_healthy

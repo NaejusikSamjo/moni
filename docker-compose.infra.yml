@@ -1,3 +1,7 @@
+networks:
+  default:
+    name: moni-network
+
 services:
 
   user-db:
@@ -120,3 +124,99 @@ services:
       - "29092:29092"
     volumes:
       - ./.docker-volumes/kafka:/var/lib/kafka/data
+
+  # Redis Cluster (stock-service 전용 — 3 master, no replica)
+  redis-cluster-0:
+    image: redis:7.2-alpine
+    container_name: redis_cluster_0
+    command: >
+      redis-server --port 7000
+      --cluster-enabled yes
+      --cluster-config-file nodes.conf
+      --cluster-node-timeout 5000
+      --requirepass ${REDIS_CLUSTER_PASSWORD}
+      --masterauth ${REDIS_CLUSTER_PASSWORD}
+      --cluster-announce-hostname redis-cluster-0
+      --cluster-announce-port 7000
+      --cluster-preferred-endpoint-type hostname
+    environment:
+      REDIS_CLUSTER_PASSWORD: ${REDIS_CLUSTER_PASSWORD}
+    ports:
+      - "7000:7000"
+    volumes:
+      - ./.docker-volumes/redis-cluster-0:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -p 7000 -a ${REDIS_CLUSTER_PASSWORD} ping | grep -q PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis-cluster-1:
+    image: redis:7.2-alpine
+    container_name: redis_cluster_1
+    command: >
+      redis-server --port 7001
+      --cluster-enabled yes
+      --cluster-config-file nodes.conf
+      --cluster-node-timeout 5000
+      --requirepass ${REDIS_CLUSTER_PASSWORD}
+      --masterauth ${REDIS_CLUSTER_PASSWORD}
+      --cluster-announce-hostname redis-cluster-1
+      --cluster-announce-port 7001
+      --cluster-preferred-endpoint-type hostname
+    environment:
+      REDIS_CLUSTER_PASSWORD: ${REDIS_CLUSTER_PASSWORD}
+    ports:
+      - "7001:7001"
+    volumes:
+      - ./.docker-volumes/redis-cluster-1:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -p 7001 -a ${REDIS_CLUSTER_PASSWORD} ping | grep -q PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis-cluster-2:
+    image: redis:7.2-alpine
+    container_name: redis_cluster_2
+    command: >
+      redis-server --port 7002
+      --cluster-enabled yes
+      --cluster-config-file nodes.conf
+      --cluster-node-timeout 5000
+      --requirepass ${REDIS_CLUSTER_PASSWORD}
+      --masterauth ${REDIS_CLUSTER_PASSWORD}
+      --cluster-announce-hostname redis-cluster-2
+      --cluster-announce-port 7002
+      --cluster-preferred-endpoint-type hostname
+    environment:
+      REDIS_CLUSTER_PASSWORD: ${REDIS_CLUSTER_PASSWORD}
+    ports:
+      - "7002:7002"
+    volumes:
+      - ./.docker-volumes/redis-cluster-2:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -p 7002 -a ${REDIS_CLUSTER_PASSWORD} ping | grep -q PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # 클러스터 초기화 — 첫 기동 시에만 실행, 이후 재시작 시 || true 로 무시
+  redis-cluster-init:
+    image: redis:7.2-alpine
+    container_name: redis_cluster_init
+    restart: "no"
+    depends_on:
+      redis-cluster-0:
+        condition: service_healthy
+      redis-cluster-1:
+        condition: service_healthy
+      redis-cluster-2:
+        condition: service_healthy
+    command: >
+      sh -c "redis-cli -a $$REDIS_CLUSTER_PASSWORD
+      --cluster create
+      redis-cluster-0:7000 redis-cluster-1:7001 redis-cluster-2:7002
+      --cluster-replicas 0 --cluster-yes || true"
+    environment:
+      REDIS_CLUSTER_PASSWORD: ${REDIS_CLUSTER_PASSWORD}
