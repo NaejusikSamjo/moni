@@ -95,7 +95,7 @@ services:
     container_name: moni_redis
     command: redis-server --requirepass ${REDIS_PASSWORD}
     ports:
-      - "26379:6379"
+      - "${REDIS_PORT}:6379"
     volumes:
       - ./.docker-volumes/redis:/data
 
@@ -106,7 +106,7 @@ services:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
     ports:
-      - "22181:2181"
+      - "${ZOOKEEPER_PORT}:2181"
     volumes:
       - ./.docker-volumes/zookeeper:/var/lib/zookeeper/data
 
@@ -118,12 +118,12 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://${KAFKA_HOST_IP}:${KAFKA_PORT}
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
     ports:
-      - "29092:29092"
+      - "${KAFKA_PORT}:${KAFKA_PORT}"
     volumes:
       - ./.docker-volumes/kafka:/var/lib/kafka/data
 
@@ -132,23 +132,23 @@ services:
     image: redis:7.2-alpine
     container_name: redis_cluster_0
     command: >
-      redis-server --port 7000
+      redis-server --port ${REDIS_CLUSTER_PORT_0}
       --cluster-enabled yes
       --cluster-config-file nodes.conf
       --cluster-node-timeout 5000
       --requirepass ${REDIS_CLUSTER_PASSWORD}
       --masterauth ${REDIS_CLUSTER_PASSWORD}
-      --cluster-announce-hostname redis-cluster-0
-      --cluster-announce-port 7000
+      --cluster-announce-hostname ${REDIS_CLUSTER_HOST}
+      --cluster-announce-port ${REDIS_CLUSTER_PORT_0}
       --cluster-preferred-endpoint-type hostname
     environment:
       REDIS_CLUSTER_PASSWORD: ${REDIS_CLUSTER_PASSWORD}
     ports:
-      - "7000:7000"
+      - "${REDIS_CLUSTER_PORT_0}:${REDIS_CLUSTER_PORT_0}"
     volumes:
       - ./.docker-volumes/redis-cluster-0:/data
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli -p 7000 -a ${REDIS_CLUSTER_PASSWORD} ping | grep -q PONG"]
+      test: ["CMD-SHELL", "redis-cli -p ${REDIS_CLUSTER_PORT_0} -a ${REDIS_CLUSTER_PASSWORD} ping | grep -q PONG"]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -157,23 +157,23 @@ services:
     image: redis:7.2-alpine
     container_name: redis_cluster_1
     command: >
-      redis-server --port 7001
+      redis-server --port ${REDIS_CLUSTER_PORT_1}
       --cluster-enabled yes
       --cluster-config-file nodes.conf
       --cluster-node-timeout 5000
       --requirepass ${REDIS_CLUSTER_PASSWORD}
       --masterauth ${REDIS_CLUSTER_PASSWORD}
-      --cluster-announce-hostname redis-cluster-1
-      --cluster-announce-port 7001
+      --cluster-announce-hostname ${REDIS_CLUSTER_HOST}
+      --cluster-announce-port ${REDIS_CLUSTER_PORT_1}
       --cluster-preferred-endpoint-type hostname
     environment:
       REDIS_CLUSTER_PASSWORD: ${REDIS_CLUSTER_PASSWORD}
     ports:
-      - "7001:7001"
+      - "${REDIS_CLUSTER_PORT_1}:${REDIS_CLUSTER_PORT_1}"
     volumes:
       - ./.docker-volumes/redis-cluster-1:/data
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli -p 7001 -a ${REDIS_CLUSTER_PASSWORD} ping | grep -q PONG"]
+      test: ["CMD-SHELL", "redis-cli -p ${REDIS_CLUSTER_PORT_1} -a ${REDIS_CLUSTER_PASSWORD} ping | grep -q PONG"]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -182,23 +182,23 @@ services:
     image: redis:7.2-alpine
     container_name: redis_cluster_2
     command: >
-      redis-server --port 7002
+      redis-server --port ${REDIS_CLUSTER_PORT_2}
       --cluster-enabled yes
       --cluster-config-file nodes.conf
       --cluster-node-timeout 5000
       --requirepass ${REDIS_CLUSTER_PASSWORD}
       --masterauth ${REDIS_CLUSTER_PASSWORD}
-      --cluster-announce-hostname redis-cluster-2
-      --cluster-announce-port 7002
+      --cluster-announce-hostname ${REDIS_CLUSTER_HOST}
+      --cluster-announce-port ${REDIS_CLUSTER_PORT_2}
       --cluster-preferred-endpoint-type hostname
     environment:
       REDIS_CLUSTER_PASSWORD: ${REDIS_CLUSTER_PASSWORD}
     ports:
-      - "7002:7002"
+      - "${REDIS_CLUSTER_PORT_2}:${REDIS_CLUSTER_PORT_2}"
     volumes:
       - ./.docker-volumes/redis-cluster-2:/data
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli -p 7002 -a ${REDIS_CLUSTER_PASSWORD} ping | grep -q PONG"]
+      test: ["CMD-SHELL", "redis-cli -p ${REDIS_CLUSTER_PORT_2} -a ${REDIS_CLUSTER_PASSWORD} ping | grep -q PONG"]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -218,7 +218,7 @@ services:
     command: >
       sh -c "redis-cli -a $$REDIS_CLUSTER_PASSWORD
       --cluster create
-      redis-cluster-0:7000 redis-cluster-1:7001 redis-cluster-2:7002
+      redis-cluster-0:${REDIS_CLUSTER_PORT_0} redis-cluster-1:${REDIS_CLUSTER_PORT_1} redis-cluster-2:${REDIS_CLUSTER_PORT_2}
       --cluster-replicas 0 --cluster-yes || true"
     environment:
       REDIS_CLUSTER_PASSWORD: ${REDIS_CLUSTER_PASSWORD}

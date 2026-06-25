@@ -10,18 +10,20 @@ services:
     command: ["-config.file=/etc/tempo.yaml"]
     volumes:
       - ./monitor/tempo.yaml:/etc/tempo.yaml
+      - ./.docker-volumes/tempo:/tmp/tempo
     ports:
-      - "127.0.0.1:4317:4317"   # OTLP gRPC (OTel Agent → Tempo)
-      - "127.0.0.1:4318:4318"   # OTLP HTTP
-      - "127.0.0.1:3200:3200"   # Tempo HTTP API (Grafana → Tempo)
+      - "${TEMPO_GRPC_PORT}:4317"       # OTLP gRPC — 서비스 EC2(10.0.3.72)에서 접근
+      - "127.0.0.1:4318:4318"           # OTLP HTTP
+      - "127.0.0.1:3200:3200"           # Tempo HTTP API (Grafana → Tempo)
 
   loki:
     image: grafana/loki:3.3.2
     container_name: moni-loki
     ports:
-      - "127.0.0.1:3100:3100"
+      - "127.0.0.1:${LOKI_PORT}:3100"
     volumes:
       - ./monitor/loki-config.yaml:/etc/loki/local-config.yaml
+      - ./.docker-volumes/loki:/loki
 
   promtail:
     image: grafana/promtail:3.3.2
@@ -39,22 +41,29 @@ services:
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--web.enable-remote-write-receiver'
+      - '--config.expand-env=true'
+    environment:
+      SERVICE_PRIVATE_IP: ${SERVICE_PRIVATE_IP}
     volumes:
       - ./monitor/prometheus.yml:/etc/prometheus/prometheus.yml
       - ./monitor/rules:/etc/prometheus/rules:ro
+      - ./.docker-volumes/prometheus:/prometheus
     ports:
-      - "127.0.0.1:9090:9090"
+      - "127.0.0.1:${PROMETHEUS_PORT}:9090"
 
   grafana:
     image: grafana/grafana:11.4.0
     container_name: moni-grafana
     ports:
-      - "3000:3000"
+      - "${GRAFANA_PORT}:3000"
     environment:
       GF_FEATURE_TOGGLES_ENABLE: traceqlEditor
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
     volumes:
       - ./monitor/grafana/provisioning:/etc/grafana/provisioning
       - ./monitor/grafana/dashboards:/var/lib/grafana/dashboards
+      - ./.docker-volumes/grafana:/var/lib/grafana
     depends_on:
       - loki
       - tempo
