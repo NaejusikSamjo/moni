@@ -1,5 +1,6 @@
 server:
   port: 19097
+  forward-headers-strategy: framework
   servlet:
     session:
       timeout: 30m
