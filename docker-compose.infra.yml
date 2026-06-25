@@ -87,6 +87,8 @@ services:
       - "25438:5432"
     volumes:
       - ./.docker-volumes/ai-db:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql #추가
+
 
   redis:
     image: redis:7.2-alpine

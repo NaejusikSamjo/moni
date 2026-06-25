@@ -1,11 +1,14 @@
 package com.moni.ai.application.service;
 
+import com.moni.ai.common.exception.AiErrorCode;
 import com.moni.ai.domain.entity.CompanyIssueAnalysisEntity;
 import com.moni.ai.domain.entity.NewsEntity;
 import com.moni.ai.domain.enums.SentimentEnum;
+import com.moni.ai.domain.enums.WatchCompany;
 import com.moni.ai.domain.repository.CompanyIssueAnalysisRepository;
 import com.moni.ai.domain.repository.NewsRepository;
 import com.moni.ai.presentation.dto.response.CompanyIssueResDto;
+import com.moni.common.error.exception.CustomException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -14,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -23,13 +27,14 @@ public class AiService {
 
     private final ChatClient chatClient;
     private final CompanyIssueAnalysisRepository companyIssueAnalysisRepository;
-    private final NewsRepository newsRepository;
 
     //분석 결과 유효 시간
     private static final int CACHE_HOURS = 6;
 
     @Transactional
     public CompanyIssueResDto analyze(String ticker, String question) {
+
+        WatchCompany company = WatchCompany.fromTicker(ticker);
 
         // 1. 유효한 캐시 조회
         // TODO: queryDSL도입 예정
@@ -42,22 +47,16 @@ public class AiService {
         }
 
 
-
-        // 2. RAG + LLM 호출 전에 companyName 조회
-        String companyName = newsRepository.findFirstByTicker(ticker)
-                .map(NewsEntity::getCompanyName)
-                .orElse("");
-
         // 3. 질의 생성 (null이면 ticker 기반 기본 질의)
         String query = (question != null && !question.isBlank())
-                ? "[" + ticker + " " + companyName + "] " + question
-                : "[" + ticker + " " + companyName + "] " + companyName + " 기업의 최근 주요 이슈와 뉴스만 분석해줘. 다른 기업 정보는 제외해줘.";
+                ? "[" + ticker + " " + company.getCompanyName() + "] " + question
+                : "[" + ticker + " " + company.getCompanyName() + "] " + company.getCompanyName() + " 기업의 최근 주요 이슈와 뉴스만 분석해줘. 다른 기업 정보는 제외해줘.";
 
         // 4. RAG + LLM 호출
         log.info("[{}] RAG 분석 시작 - 질의: {}", ticker, query);
         String response = chatClient.prompt()
                 .system(sp -> sp.param("ticker", ticker)
-                        .param("companyName", companyName))
+                        .param("companyName", company.getCompanyName()))
                 .user(query)
                 .advisors(advisor -> advisor
                         .param(QuestionAnswerAdvisor.FILTER_EXPRESSION,
@@ -71,7 +70,7 @@ public class AiService {
         // 6. 분석 결과 저장
         CompanyIssueAnalysisEntity entity = CompanyIssueAnalysisEntity.builder()
                 .ticker(ticker)
-                .companyName(companyName)
+                .companyName(company.getCompanyName())
                 .summary(response)
                 .sentiment(sentiment)
                 .expiredAt(LocalDateTime.now().plusHours(CACHE_HOURS))
@@ -92,9 +91,12 @@ public class AiService {
 
 
     public CompanyIssueResDto getLatestAnalysis(String ticker) {
+
+        WatchCompany.fromTicker(ticker);
+
         return companyIssueAnalysisRepository
                 .findTopByTickerAndExpiredAtAfterOrderByCreatedAtDesc(ticker, LocalDateTime.now())
                 .map(CompanyIssueResDto::toDto)
-                .orElseThrow(() -> new IllegalArgumentException("분석 결과가 없습니다. POST로 먼저 분석을 요청해주세요."));
+                .orElseThrow(() -> new CustomException(AiErrorCode.AI_NOT_FOUND));
     }
 }
