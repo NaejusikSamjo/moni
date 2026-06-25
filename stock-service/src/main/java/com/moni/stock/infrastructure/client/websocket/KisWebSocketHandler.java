@@ -108,5 +108,26 @@ public class KisWebSocketHandler extends TextWebSocketHandler {
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
         log.warn("KIS WebSocket 연결 종료: {}", status);
+        kisWebSocketManager.connect();
+
+        waitForConnection();
+
+        log.info("KIS WebSocket 재초기화 완료");
+    }
+
+    private void waitForConnection() {
+        int attempts = 0;
+        while (!kisWebSocketManager.isConnected() && attempts < 10) {
+            try {
+                Thread.sleep(500);
+                attempts++;
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+        if (!kisWebSocketManager.isConnected()) {
+            log.warn("KIS WebSocket 연결 대기 시간 초과 - 구독 건너뜀");
+        }
     }
 }

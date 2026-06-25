@@ -40,3 +40,6 @@ out/
 claudRead.md
 ### local logs ###
 logs/
+
+### Docker volumes ###
+.docker-volumes/
