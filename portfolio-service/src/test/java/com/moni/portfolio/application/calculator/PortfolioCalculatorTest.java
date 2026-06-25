@@ -44,12 +44,12 @@ class PortfolioCalculatorTest {
             PortfolioAssetResult result = portfolioCalculator.calculateAssets(account, holdings, prices);
 
             // then
-            assertThat(result.totalAsset()).isEqualByComparingTo("120000.00");
-            assertThat(result.cashBalance()).isEqualByComparingTo("40000");
+            assertThat(result.totalAsset()).isEqualByComparingTo("110000.00");
+            assertThat(result.cashBalance()).isEqualByComparingTo("30000.00");
             assertThat(result.stockEvaluationAmount()).isEqualByComparingTo("80000.00");
             assertThat(result.principalAmount()).isEqualByComparingTo("90000");
-            assertThat(result.totalProfitLoss()).isEqualByComparingTo("30000.00");
-            assertThat(result.totalReturnRate()).isEqualByComparingTo("33.3333");
+            assertThat(result.totalProfitLoss()).isEqualByComparingTo("20000.00");
+            assertThat(result.totalReturnRate()).isEqualByComparingTo("22.2222");
             assertThat(result.holdings()).hasSize(2);
 
             HoldingResult firstHolding = result.holdings().get(0);
@@ -65,6 +65,29 @@ class PortfolioCalculatorTest {
             assertThat(secondHolding.profitLoss()).isEqualByComparingTo("-10000.00");
             assertThat(secondHolding.profitRate()).isEqualByComparingTo("-33.3333");
             assertThat(secondHolding.weight()).isEqualByComparingTo("25.0000");
+        }
+
+        @Test
+        @DisplayName("성공 - 계좌 잔액 대신 고정 원금에서 누적 매수 금액을 차감해 예수금을 계산한다")
+        void success_calculate_cash_balance_from_principal_and_purchase_amount() {
+            // given
+            AccountInput account = new AccountInput(money("10000000"), money("10000000"));
+            List<HoldingInput> holdings = List.of(
+                    new HoldingInput("005930", 10L, money("59000"), money("590000"))
+            );
+            List<PriceInput> prices = List.of(
+                    new PriceInput("005930", money("358500"))
+            );
+
+            // when
+            PortfolioAssetResult result = portfolioCalculator.calculateAssets(account, holdings, prices);
+
+            // then
+            assertThat(result.cashBalance()).isEqualByComparingTo("9410000.00");
+            assertThat(result.stockEvaluationAmount()).isEqualByComparingTo("3585000.00");
+            assertThat(result.totalAsset()).isEqualByComparingTo("12995000.00");
+            assertThat(result.totalProfitLoss()).isEqualByComparingTo("2995000.00");
+            assertThat(result.totalReturnRate()).isEqualByComparingTo("29.9500");
         }
 
         @Test
@@ -91,8 +114,12 @@ class PortfolioCalculatorTest {
         void success_zero_principal_amount() {
             // given
             AccountInput account = new AccountInput(money("10000"), BigDecimal.ZERO);
-            List<HoldingInput> holdings = List.of();
-            List<PriceInput> prices = List.of();
+            List<HoldingInput> holdings = List.of(
+                    new HoldingInput("TICKER-1", 10L, BigDecimal.ZERO, BigDecimal.ZERO)
+            );
+            List<PriceInput> prices = List.of(
+                    new PriceInput("TICKER-1", money("1000"))
+            );
 
             // when
             PortfolioAssetResult result = portfolioCalculator.calculateAssets(account, holdings, prices);
