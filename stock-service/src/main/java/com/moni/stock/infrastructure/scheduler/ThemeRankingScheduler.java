@@ -21,7 +21,7 @@ import java.util.List;
 public class ThemeRankingScheduler {
 
     private static final int TOP_N = 5;
-    private static final long CALL_INTERVAL_MS = 60L; // 18회/초 제한 준수 (~16.6회/초)
+    private static final long CALL_INTERVAL_MS = 300L; // 18회/초 제한 준수 (~16.6회/초)
 
     private final ThemeRepository themeRepository;
     private final KisOAuthClient kisOAuthClient;
@@ -48,8 +48,8 @@ public class ThemeRankingScheduler {
                 log.warn("테마 랭킹 스케줄러 인터럽트");
                 break;
             } catch (Exception e) {
-                log.warn("테마 조회 실패 - code: {}", theme.getThemeCode());
-            }
+                    log.warn("테마 조회 실패 - code: {}, error: {}", theme.getThemeCode(), e.getMessage(), e);
+                }
         }
 
         List<ThemeRankingResponse> top5 = rankings.stream()
