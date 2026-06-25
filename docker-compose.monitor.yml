@@ -36,12 +36,15 @@ services:
       - loki
 
   prometheus:
-    image: prom/prometheus:v3.1.0
+    image: prom/prometheus:v3.12.0
     container_name: moni-prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--web.enable-remote-write-receiver'
-      - '--config.expand-env=true'
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        cp /etc/prometheus/prometheus.yml /tmp/prometheus.yml &&
+        sed -i "s/\$${SERVICE_PRIVATE_IP}/${SERVICE_PRIVATE_IP}/g" /tmp/prometheus.yml &&
+        exec /bin/prometheus --config.file=/tmp/prometheus.yml --web.enable-remote-write-receiver
     environment:
       SERVICE_PRIVATE_IP: ${SERVICE_PRIVATE_IP}
     volumes:
