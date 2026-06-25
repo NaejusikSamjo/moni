@@ -1,7 +1,7 @@
 package com.moni.payment.presentation.controller;
 
 import com.moni.payment.application.dto.SubscriptionStatusResult;
-import com.moni.payment.application.dto.comman.CancelSubscriptionResult;
+import com.moni.payment.application.dto.command.CancelSubscriptionResult;
 import com.moni.payment.application.service.command.SubscriptionQueryService;
 import com.moni.payment.application.service.SubscribeCancelUseCase;
 import com.moni.payment.common.response.ApiResponse;

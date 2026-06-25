@@ -1,6 +1,6 @@
 package com.moni.payment.application.service.command;
 
-import com.moni.payment.application.dto.comman.ActivateSubscriptionCommand;
+import com.moni.payment.application.dto.command.ActivateSubscriptionCommand;
 import com.moni.payment.domain.model.BillingKey;
 import com.moni.payment.domain.model.Subscription;
 import com.moni.payment.infrastructure.repository.SubscriptionHistoryRepository;

@@ -1,8 +1,8 @@
 package com.moni.payment.presentation.controller;
 
 import com.moni.common.response.paging.PageRes;
-import com.moni.payment.application.dto.comman.SubscribeCommand;
-import com.moni.payment.application.dto.comman.SubscribeResult;
+import com.moni.payment.application.dto.command.SubscribeCommand;
+import com.moni.payment.application.dto.command.SubscribeResult;
 import com.moni.payment.application.service.PaymentQueryService;
 import com.moni.payment.application.service.SubscribePaymentUseCase;
 import com.moni.payment.common.response.ApiResponse;
