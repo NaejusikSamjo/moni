@@ -1,6 +1,6 @@
 package com.moni.payment.presentation.dto;
 
-import com.moni.payment.application.dto.commandDto.CancelSubscriptionResult;
+import com.moni.payment.application.dto.comman.CancelSubscriptionResult;
 import com.moni.payment.domain.model.SubscriptionStatus;
 
 import java.time.Instant;

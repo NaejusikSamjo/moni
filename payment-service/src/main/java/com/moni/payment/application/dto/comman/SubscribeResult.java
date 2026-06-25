@@ -1,4 +1,4 @@
-package com.moni.payment.application.dto.commandDto;
+package com.moni.payment.application.dto.comman;
 
 import java.time.LocalDate;
 import java.util.UUID;

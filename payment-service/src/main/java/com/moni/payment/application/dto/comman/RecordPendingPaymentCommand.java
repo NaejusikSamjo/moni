@@ -1,4 +1,4 @@
-package com.moni.payment.application.dto.commandDto;
+package com.moni.payment.application.dto.comman;
 
 import com.moni.payment.domain.model.MerchantId;
 import com.moni.payment.domain.model.Money;
