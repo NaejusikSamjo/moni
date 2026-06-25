@@ -4,7 +4,6 @@ import com.moni.common.error.exception.CustomException;
 import com.moni.trade.account.domain.entity.Account;
 import com.moni.trade.account.domain.exception.AccountErrorCode;
 import com.moni.trade.account.domain.repository.AccountRepository;
-import com.moni.trade.account.presentation.dto.request.AccountCreateRequestDto;
 import com.moni.trade.account.presentation.dto.response.AccountResponseDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -29,11 +28,11 @@ public class AccountService {
     }
 
     @Transactional
-    public AccountResponseDto createAccount(AccountCreateRequestDto request) {
-        if (accountRepository.existsByUserId(request.userId())) {
+    public AccountResponseDto createAccount(UUID userId) {
+        if (accountRepository.existsByUserId(userId)) {
             throw new CustomException(AccountErrorCode.ACCOUNT_ALREADY_EXISTS);
         }
-        Account account = Account.create(request.userId(), INITIAL_BALANCE);
+        Account account = Account.create(userId, INITIAL_BALANCE);
         return AccountResponseDto.from(accountRepository.save(account));
     }
 }
