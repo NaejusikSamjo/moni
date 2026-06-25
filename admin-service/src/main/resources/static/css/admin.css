@@ -79,7 +79,17 @@ body {
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
     overflow: hidden;
 }
-table { width: 100%; border-collapse: collapse; }
+table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.col-name     { width: 10%; }
+.col-email    { width: 18%; }
+.col-nickname { width: 10%; }
+.col-role     { width: 7%; }
+.col-status   { width: 8%; }
+.col-provider { width: 9%; }
+.col-date     { width: 10%; }
+.col-action   { width: 28%; }
+.col-reason   { width: 30%; }
+.cell-truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 0; }
 thead th {
     background: #fafafa;
     padding: 12px 16px;
@@ -123,3 +133,34 @@ tbody tr:hover { background: #fafafa; }
 .pagination a:hover { background: #f0f2f5; }
 .pagination .current { background: #4f6ef7; color: #fff; border-color: #4f6ef7; }
 .pagination .disabled { color: #ccc; cursor: not-allowed; }
+
+.login-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+}
+.login-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 48px 40px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    text-align: center;
+    width: 340px;
+}
+.login-card .logo {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin-bottom: 8px;
+}
+.login-card .subtitle {
+    color: #888;
+    font-size: 13px;
+    margin-bottom: 32px;
+}
+.login-card .logout-msg {
+    color: #52c41a;
+    font-size: 13px;
+    margin-bottom: 20px;
+}
