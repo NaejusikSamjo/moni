@@ -84,7 +84,7 @@ public class KisOAuthClient {
 
     }
 
-    public synchronized JsonNode getCandle(String ticker, String targetTime, String index) {
+    public synchronized JsonNode getCandle(String ticker, String targetTime) {
         JsonNode body = RestClient.create(kisProperties.getRestUrl())
                 .get()
                 .uri(uriBuilder -> uriBuilder
@@ -93,7 +93,7 @@ public class KisOAuthClient {
                         .queryParam("FID_INPUT_ISCD", ticker)
                         .queryParam("FID_INPUT_HOUR_1", targetTime)
                         .queryParam("FID_PW_DATA_INCU_YN", "N")
-                        .queryParam("FID_ETC_CLS_CODE", index)
+                        .queryParam("FID_ETC_CLS_CODE", "0")
                         .build())
                 .header("content-type", "application/json; charset=utf-8")
                 .header("authorization", "Bearer " + getAccessToken())
@@ -104,7 +104,7 @@ public class KisOAuthClient {
                 .retrieve()
                 .body(JsonNode.class);
 
-//        log.info("candle : {}", body);
+        log.info("candle : {}", body);
         return body;
 
     }
