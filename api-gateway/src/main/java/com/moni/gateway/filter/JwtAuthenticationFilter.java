@@ -48,7 +48,8 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             "/notification-service/v3/api-docs",
             "/payment-service/v3/api-docs",
             "/ai-service/v3/api-docs",
-            "/actuator"
+            "/actuator",
+            "/toss-billing-test.html", "/toss-success.html", "/toss-fail.html"
     );
 
     @PostConstruct
