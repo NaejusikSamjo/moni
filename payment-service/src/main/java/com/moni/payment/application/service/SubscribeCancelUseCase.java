@@ -1,7 +1,7 @@
 package com.moni.payment.application.service;
 
 
-import com.moni.payment.application.dto.commandDto.CancelSubscriptionResult;
+import com.moni.payment.application.dto.command.CancelSubscriptionResult;
 import com.moni.payment.common.exception.PaymentErrorCode;
 import com.moni.payment.common.exception.PaymentException;
 import com.moni.payment.domain.model.Subscription;
