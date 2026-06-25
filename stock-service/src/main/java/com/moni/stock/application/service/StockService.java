@@ -25,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -104,10 +105,10 @@ public class StockService implements StockQueryUseCase {
         int callCount = (int) Math.ceil((double) intervalMin * 30 / 30); // 목표 30봉 기준
 
         List<StockChartResponse.CandleData> rawMinCandles = new ArrayList<>();
-        String targetTime = LocalTime.now().format(DateTimeFormatter.ofPattern("HHmmss"));
+        String targetTime = LocalTime.now(ZoneId.of("Asia/Seoul")).format(DateTimeFormatter.ofPattern("HHmmss"));
 
         for (int i = 0; i < callCount; i++) {
-            JsonNode output2 = kisOAuthClient.getCandle(ticker, targetTime, index.getTime()).path("output2");
+            JsonNode output2 = kisOAuthClient.getCandle(ticker, targetTime).path("output2");
             if (!output2.isArray() || output2.isEmpty()) break;
 
             for (JsonNode node : output2) {
