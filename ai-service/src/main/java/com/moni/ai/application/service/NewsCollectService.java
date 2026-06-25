@@ -1,6 +1,8 @@
 package com.moni.ai.application.service;
 
 import com.moni.ai.domain.entity.NewsEntity;
+import com.moni.ai.domain.enums.ImpactKeyword;
+import com.moni.ai.domain.enums.WatchCompany;
 import com.moni.ai.domain.repository.NewsRepository;
 import com.moni.ai.infrastructure.client.NaverNewsClient;
 import com.moni.ai.presentation.dto.response.NaverNewsResDto;
@@ -27,19 +29,10 @@ public class NewsCollectService {
     private final NewsRepository newsRepository;
     private final NewsFilterService newsFilterService;
     private final VectorStore vectorStore;
-    // 주가 영향 키워드
-    // TODO : DB 또는 외부 파일로 관리 필요
-    private static final List<String> IMPACT_KEYWORDS = List.of(
-            "실적", "수주", "계약", "M&A", "인수", "소송", "과징금",
-            "어닝쇼크", "흑자전환", "적자전환", "구조조정", "유상증자"
-    );
+    // 주가 영향 키워드 & 기업 리스트
+    private static final List<String> IMPACT_KEYWORDS = ImpactKeyword.getAllKeywords();
+    private static final Map<String, String> WATCH_LIST = WatchCompany.toMap();
 
-    // TODO : DB 또는 외부 파일로 관리 필요
-    private static final Map<String, String> WATCH_LIST = Map.of(
-            "005930", "삼성전자",
-            "000660", "SK하이닉스",
-            "005380", "현대차"
-    );
 
     @Scheduled(cron = "0 0 8,18 * * MON-FRI") // 평일 오전 8시, 오후 6시
     public void collectAll() {
