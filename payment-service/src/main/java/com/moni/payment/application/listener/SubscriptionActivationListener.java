@@ -1,7 +1,7 @@
 package com.moni.payment.application.listener;
 
-import com.moni.payment.application.dto.commandDto.ActivateSubscriptionCommand;
-import com.moni.payment.application.service.CommandService.SubscriptionCommandService;
+import com.moni.payment.application.dto.command.ActivateSubscriptionCommand;
+import com.moni.payment.application.service.command.SubscriptionCommandService;
 import com.moni.payment.domain.event.PaymentCompletedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
