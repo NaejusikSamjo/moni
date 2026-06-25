@@ -1,4 +1,3 @@
-# TODO: 운영 배포 시 제거 - 외부 직접 접근 차단 (게이트웨이 8080만 오픈)
 networks:
   default:
     external: true
