@@ -47,6 +47,11 @@ springdoc:
   api-docs:
     path: /v3/api-docs
 
+logging:
+  level:
+    org.springframework.web.filter.ForwardedHeaderFilter: DEBUG
+    org.springframework.security.oauth2: DEBUG
+
 management:
   endpoints:
     web:
