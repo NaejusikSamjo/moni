@@ -6,7 +6,8 @@ import org.springframework.http.HttpStatus;
 
 @RequiredArgsConstructor
 public enum AiErrorCode implements ErrorCode {
-    ;
+    TICKER_NOT_FOUND("AI-001", "분석되지 않는 ticker입니다.",HttpStatus.NOT_FOUND),
+    AI_NOT_FOUND("AI-002", "분석 결과가 없습니다. POST로 먼저 분석을 요청해주세요.",HttpStatus.NOT_FOUND);
 
     private final String code;
     private final String message;
@@ -14,16 +15,16 @@ public enum AiErrorCode implements ErrorCode {
 
     @Override
     public String getCode() {
-        return "";
+        return code;
     }
 
     @Override
     public String getMessage() {
-        return "";
+        return message;
     }
 
     @Override
     public HttpStatus getStatus() {
-        return null;
+        return status;
     }
 }
