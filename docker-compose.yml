@@ -3,9 +3,6 @@ networks:
   default:
     external: true
     name: moni-network
-  moni_infra:
-    external: true
-    name: moni_default
 
 name: moni
 services:
@@ -235,9 +232,6 @@ services:
       OTEL_LOGS_EXPORTER: none
       OTEL_INSTRUMENTATION_LOGBACK_MDC_ENABLED: "true"
       OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=local"
-    networks:
-      - default
-      - moni_infra
     volumes:
       - ./logs/payment-service:/app/logs
     depends_on:

@@ -84,6 +84,11 @@ spring:
               filters:
                 - RewritePath=/payment-service/v3/api-docs, /v3/api-docs
 
+            - id: payment-service-html
+              uri: lb://payment-service
+              predicates:
+                - Path=/toss-billing-test.html, /toss-success.html, /toss-fail.html
+
             - id: ai-service-docs
               uri: lb://ai-service
               predicates:
