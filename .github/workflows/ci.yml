@@ -11,6 +11,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    permissions:
+      actions: write
+      pull-requests: read
+
     env:
       COMMIT_MSG: ${{ github.event.pull_request.title || github.event.head_commit.message || 'no message' }}
       BRANCH: ${{ github.head_ref || github.ref_name }}
@@ -29,6 +33,30 @@ jobs:
 
       - name: Grant execute permission
         run: chmod +x gradlew
+
+      - name: Check stage PR limit
+        id: stage-check
+        if: github.event_name == 'pull_request' && github.base_ref == 'stage'
+        run: |
+          COUNT=$(gh pr list --base stage --state open --json number --jq length)
+          if [ "$COUNT" -gt 1 ]; then
+            echo "exceeded=true" >> $GITHUB_OUTPUT
+            echo "stage 브랜치 동시 PR은 1개만 허용됩니다. 현재 열린 PR: ${COUNT}개"
+            exit 1
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Notify stage limit exceeded
+        if: failure() && steps.stage-check.outputs.exceeded == 'true'
+        uses: ./.github/actions/discord-notify
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          title: "stage PR 동시 배포 제한 초과"
+          color: 15548997
+          message: "stage 브랜치에 이미 열린 PR이 있습니다. 기존 PR 완료 후 다시 시도하세요."
+          branch: ${{ env.BRANCH }}
+          sha: ${{ env.COMMIT_SHA }}
 
       - name: Notify start
         uses: ./.github/actions/discord-notify
