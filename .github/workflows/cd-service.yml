@@ -76,17 +76,10 @@ jobs:
             docker push $ECR_REGISTRY/moni/${SERVICE}:${{ github.sha }}
           done
 
-      - name: Copy compose files to service EC2
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.SERVICE_HOST }}
-          username: ec2-user
-          key: ${{ secrets.SSH_KEY }}
-          proxy_host: ${{ secrets.BASTION_HOST }}
-          proxy_username: ec2-user
-          proxy_key: ${{ secrets.SSH_KEY }}
-          source: "docker-compose.yml,docker-compose.service.prod.yml"
-          target: ~/moni
+      - name: Encode compose files
+        run: |
+          echo "DC=$(base64 -w 0 docker-compose.yml)" >> $GITHUB_ENV
+          echo "DC_PROD=$(base64 -w 0 docker-compose.service.prod.yml)" >> $GITHUB_ENV
 
       - name: Deploy to service EC2
         uses: appleboy/ssh-action@v1.0.3
@@ -97,9 +90,13 @@ jobs:
           proxy_host: ${{ secrets.BASTION_HOST }}
           proxy_username: ec2-user
           proxy_key: ${{ secrets.SSH_KEY }}
+          envs: DC,DC_PROD,ECR_REGISTRY
           script: |
+            mkdir -p ~/moni
+            echo "$DC" | base64 -d > ~/moni/docker-compose.yml
+            echo "$DC_PROD" | base64 -d > ~/moni/docker-compose.service.prod.yml
             aws ecr get-login-password --region ap-northeast-2 | \
-              docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
+              docker login --username AWS --password-stdin $ECR_REGISTRY
             cd ~/moni
             docker-compose -f docker-compose.yml -f docker-compose.service.prod.yml pull
             docker-compose -f docker-compose.yml -f docker-compose.service.prod.yml up -d
