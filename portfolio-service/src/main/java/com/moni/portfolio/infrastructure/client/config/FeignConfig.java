@@ -5,7 +5,7 @@ import feign.RequestInterceptor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 
-public class StockFeignConfig {
+public class FeignConfig {
 
     @Bean
     public RequestInterceptor stockRequestInterceptor(

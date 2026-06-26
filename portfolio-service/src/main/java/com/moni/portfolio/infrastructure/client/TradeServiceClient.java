@@ -1,5 +1,6 @@
 package com.moni.portfolio.infrastructure.client;
 
+import com.moni.portfolio.infrastructure.client.config.FeignConfig;
 import com.moni.portfolio.infrastructure.client.dto.response.TradeAccountResponseDto;
 import com.moni.portfolio.infrastructure.client.dto.response.ExternalApiResponseDto;
 import com.moni.portfolio.infrastructure.client.dto.response.TradeHoldingResponseDto;
@@ -11,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.UUID;
 
-@FeignClient(name = "trade-service")
+@FeignClient(name = "trade-service", configuration = FeignConfig.class)
 public interface TradeServiceClient {
 
     @GetMapping("/api/v1/accounts")
