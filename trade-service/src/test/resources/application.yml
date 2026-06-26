@@ -29,5 +29,3 @@ gateway:
   secret: test-secret
 
 spring.autoconfigure.exclude: org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
-
-//수정
