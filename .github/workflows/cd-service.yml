@@ -2,6 +2,7 @@ name: CD-Service
 
 on:
   workflow_dispatch:
+  workflow_call:
 
 jobs:
   deploy:
@@ -75,30 +76,41 @@ jobs:
             docker push $ECR_REGISTRY/moni/${SERVICE}:${{ github.sha }}
           done
 
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          cat >> ~/.ssh/config << EOF
+          Host bastion
+            HostName ${{ secrets.BASTION_HOST }}
+            User ec2-user
+            IdentityFile ~/.ssh/id_rsa
+            StrictHostKeyChecking no
+          Host service
+            HostName ${{ secrets.SERVICE_HOST }}
+            User ec2-user
+            IdentityFile ~/.ssh/id_rsa
+            ProxyJump bastion
+            StrictHostKeyChecking no
+          EOF
+
       - name: Encode compose files
         run: |
           echo "DC=$(base64 -w 0 docker-compose.yml)" >> $GITHUB_ENV
           echo "DC_PROD=$(base64 -w 0 docker-compose.service.prod.yml)" >> $GITHUB_ENV
 
       - name: Deploy to service EC2
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SERVICE_HOST }}
-          username: ec2-user
-          key: ${{ secrets.SSH_KEY }}
-          proxy_host: ${{ secrets.BASTION_HOST }}
-          proxy_username: ec2-user
-          proxy_key: ${{ secrets.SSH_KEY }}
-          envs: DC,DC_PROD,ECR_REGISTRY
-          script: |
-            mkdir -p ~/moni
-            echo "$DC" | base64 -d > ~/moni/docker-compose.yml
-            echo "$DC_PROD" | base64 -d > ~/moni/docker-compose.service.prod.yml
+        run: |
+          echo "$DC" | ssh service "mkdir -p ~/moni && base64 -d > ~/moni/docker-compose.yml"
+          echo "$DC_PROD" | ssh service "base64 -d > ~/moni/docker-compose.service.prod.yml"
+          ssh service "
             aws ecr get-login-password --region ap-northeast-2 | \
               docker login --username AWS --password-stdin $ECR_REGISTRY
             cd ~/moni
             docker-compose -f docker-compose.yml -f docker-compose.service.prod.yml pull
             docker-compose -f docker-compose.yml -f docker-compose.service.prod.yml up -d
+          "
 
       - name: Notify success
         if: success()
