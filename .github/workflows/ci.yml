@@ -2,10 +2,10 @@ name: CI
 
 on:
   push:
-    branches: [master, develop]
+    branches: [master, develop, stage]
 
   pull_request:
-    branches: [master, develop]
+    branches: [master, develop, stage]
 
 jobs:
   build:

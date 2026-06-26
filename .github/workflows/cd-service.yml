@@ -1,0 +1,127 @@
+name: CD-Service
+
+on:
+  push:
+    branches: [stage]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04-arm
+
+    env:
+      COMMIT_MSG: ${{ github.event.head_commit.message || 'no message' }}
+      BRANCH: ${{ github.ref_name }}
+      COMMIT_SHA: ${{ github.sha }}
+      ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-northeast-2.amazonaws.com
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Notify start
+        uses: ./.github/actions/discord-notify
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          title: "CD 시작"
+          color: 3447003
+          message: ${{ env.COMMIT_MSG }}
+          branch: ${{ env.BRANCH }}
+          sha: ${{ env.COMMIT_SHA }}
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: Grant execute permission
+        run: chmod +x gradlew
+
+      - name: Build
+        run: ./gradlew bootJar -x test
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-northeast-2
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push images
+        run: |
+          SERVICES=(
+            "config-server"
+            "eureka-server"
+            "api-gateway"
+            "user-service"
+            "trade-service"
+            "stock-service"
+            "portfolio-service"
+            "notification-service"
+            "payment-service"
+            "ai-service"
+            "admin-service"
+          )
+          for SERVICE in "${SERVICES[@]}"; do
+            docker build \
+              -f ${SERVICE}/Dockerfile \
+              -t $ECR_REGISTRY/moni/${SERVICE}:latest \
+              -t $ECR_REGISTRY/moni/${SERVICE}:${{ github.sha }} \
+              .
+            docker push $ECR_REGISTRY/moni/${SERVICE}:latest
+            docker push $ECR_REGISTRY/moni/${SERVICE}:${{ github.sha }}
+          done
+
+      - name: Copy compose files to service EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVICE_HOST }}
+          username: ec2-user
+          key: ${{ secrets.SSH_KEY }}
+          proxy_host: ${{ secrets.BASTION_HOST }}
+          proxy_username: ec2-user
+          proxy_key: ${{ secrets.SSH_KEY }}
+          source: "docker-compose.yml,docker-compose.service.prod.yml"
+          target: ~/moni
+
+      - name: Deploy to service EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVICE_HOST }}
+          username: ec2-user
+          key: ${{ secrets.SSH_KEY }}
+          proxy_host: ${{ secrets.BASTION_HOST }}
+          proxy_username: ec2-user
+          proxy_key: ${{ secrets.SSH_KEY }}
+          script: |
+            aws ecr get-login-password --region ap-northeast-2 | \
+              docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
+            cd ~/moni
+            docker-compose -f docker-compose.yml -f docker-compose.service.prod.yml pull
+            docker-compose -f docker-compose.yml -f docker-compose.service.prod.yml up -d
+
+      - name: Notify success
+        if: success()
+        uses: ./.github/actions/discord-notify
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          title: "CD 성공"
+          color: 5763719
+          message: ${{ env.COMMIT_MSG }}
+          branch: ${{ env.BRANCH }}
+          sha: ${{ env.COMMIT_SHA }}
+
+      - name: Notify failure
+        if: failure()
+        uses: ./.github/actions/discord-notify
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          title: "CD 실패"
+          color: 15548997
+          message: ${{ env.COMMIT_MSG }}
+          branch: ${{ env.BRANCH }}
+          sha: ${{ env.COMMIT_SHA }}

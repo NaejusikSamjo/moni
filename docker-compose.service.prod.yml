@@ -1,0 +1,279 @@
+networks:
+  default:
+    external: true
+    name: moni-network
+
+name: moni
+services:
+
+  config-server:
+    image: ${ECR_REGISTRY}/moni/config-server:latest
+    expose:
+      - "8888"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8888/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  eureka-server:
+    image: ${ECR_REGISTRY}/moni/eureka-server:latest
+    ports:
+      - "8761:8761"
+    depends_on:
+      config-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
+  api-gateway:
+    image: ${ECR_REGISTRY}/moni/api-gateway:latest
+    ports:
+      - "8080:8080"
+    environment:
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      GATEWAY_SECRET: ${GATEWAY_SECRET}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+
+  user-service:
+    image: ${ECR_REGISTRY}/moni/user-service:latest
+    expose:
+      - "19090"
+    environment:
+      DB_URL: ${USER_DB_URL}
+      DB_USERNAME: ${USER_DB_USERNAME}
+      DB_PASSWORD: ${USER_DB_PASSWORD}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      JWT_ACCESS_TOKEN_EXPIRATION: ${JWT_ACCESS_TOKEN_EXPIRATION}
+      JWT_REFRESH_TOKEN_EXPIRATION: ${JWT_REFRESH_TOKEN_EXPIRATION}
+      GATEWAY_SECRET: ${GATEWAY_SECRET}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI}
+      KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID}
+      KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET}
+      KAKAO_REDIRECT_URI: ${KAKAO_REDIRECT_URI}
+      SPRING_PROFILES_ACTIVE: prod
+      OTEL_SERVICE_NAME: user-service
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
+      OTEL_INSTRUMENTATION_LOGBACK_MDC_ENABLED: "true"
+      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=local"
+    volumes:
+      - ./logs/user-service:/app/logs
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+
+  trade-service:
+    image: ${ECR_REGISTRY}/moni/trade-service:latest
+    expose:
+      - "19091"
+    environment:
+      DB_URL: ${TRADE_DB_URL}
+      DB_USERNAME: ${TRADE_DB_USERNAME}
+      DB_PASSWORD: ${TRADE_DB_PASSWORD}
+      GATEWAY_SECRET: ${GATEWAY_SECRET}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS}
+      SPRING_PROFILES_ACTIVE: prod
+      OTEL_SERVICE_NAME: trade-service
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
+      OTEL_INSTRUMENTATION_LOGBACK_MDC_ENABLED: "true"
+      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=local"
+    volumes:
+      - ./logs/trade-service:/app/logs
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+
+  stock-service:
+    image: ${ECR_REGISTRY}/moni/stock-service:latest
+    expose:
+      - "19092"
+    environment:
+      DB_URL: ${STOCK_DB_URL}
+      DB_USERNAME: ${STOCK_DB_USERNAME}
+      DB_PASSWORD: ${STOCK_DB_PASSWORD}
+      GATEWAY_SECRET: ${GATEWAY_SECRET}
+      REDIS_NODES: ${REDIS_NODES}
+      REDIS_CLUSTER_PASSWORD: ${REDIS_CLUSTER_PASSWORD}
+      KIS_APP_KEY: ${KIS_APP_KEY}
+      KIS_APP_SECRET: ${KIS_APP_SECRET}
+      KIS_WS_TR_ID: ${KIS_WS_TR_ID}
+      SPRING_PROFILES_ACTIVE: prod
+      OTEL_SERVICE_NAME: stock-service
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
+      OTEL_INSTRUMENTATION_LOGBACK_MDC_ENABLED: "true"
+      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=local"
+    volumes:
+      - ./logs/stock-service:/app/logs
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+
+  portfolio-service:
+    read_only: true
+    tmpfs:
+      - /tmp
+    image: ${ECR_REGISTRY}/moni/portfolio-service:latest
+    expose:
+      - "19093"
+    environment:
+      DB_URL: ${PORTFOLIO_DB_URL}
+      DB_USERNAME: ${PORTFOLIO_DB_USERNAME}
+      DB_PASSWORD: ${PORTFOLIO_DB_PASSWORD}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      GATEWAY_SECRET: ${GATEWAY_SECRET}
+      SPRING_PROFILES_ACTIVE: prod
+      OTEL_SERVICE_NAME: portfolio-service
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
+      OTEL_INSTRUMENTATION_LOGBACK_MDC_ENABLED: "true"
+      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=local"
+    volumes:
+      - ./logs/portfolio-service:/app/logs
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+
+  notification-service:
+    image: ${ECR_REGISTRY}/moni/notification-service:latest
+    expose:
+      - "19094"
+    environment:
+      DB_URL: ${NOTIFICATION_DB_URL}
+      DB_USERNAME: ${NOTIFICATION_DB_USERNAME}
+      DB_PASSWORD: ${NOTIFICATION_DB_PASSWORD}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      SPRING_PROFILES_ACTIVE: prod
+      OTEL_SERVICE_NAME: notification-service
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
+      OTEL_INSTRUMENTATION_LOGBACK_MDC_ENABLED: "true"
+      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=local"
+    volumes:
+      - ./logs/notification-service:/app/logs
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+
+  payment-service:
+    image: ${ECR_REGISTRY}/moni/payment-service:latest
+    expose:
+      - "19095"
+    environment:
+      DB_URL: ${PAYMENT_DB_URL}
+      DB_USERNAME: ${PAYMENT_DB_USERNAME}
+      DB_PASSWORD: ${PAYMENT_DB_PASSWORD}
+      GATEWAY_SECRET: ${GATEWAY_SECRET}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      TOSS_SECRET_KEY: ${TOSS_SECRET_KEY}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS}
+      SPRING_PROFILES_ACTIVE: prod
+      OTEL_SERVICE_NAME: payment-service
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
+      OTEL_INSTRUMENTATION_LOGBACK_MDC_ENABLED: "true"
+      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=local"
+    volumes:
+      - ./logs/payment-service:/app/logs
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+
+  ai-service:
+    image: ${ECR_REGISTRY}/moni/ai-service:latest
+    expose:
+      - "19096"
+    environment:
+      DB_URL: ${AI_DB_URL}
+      DB_USERNAME: ${AI_DB_USERNAME}
+      DB_PASSWORD: ${AI_DB_PASSWORD}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+      GATEWAY_SECRET: ${GATEWAY_SECRET}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      NAVER_CLIENT_ID: ${NAVER_CLIENT_ID}
+      NAVER_CLIENT_SECRET: ${NAVER_CLIENT_SECRET}
+      NAVER_BASE_URL: ${NAVER_BASE_URL}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_EMBEDDING_MODEL: ${OPENAI_EMBEDDING_MODEL}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      SPRING_PROFILES_ACTIVE: prod
+      OTEL_SERVICE_NAME: ai-service
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
+      OTEL_INSTRUMENTATION_LOGBACK_MDC_ENABLED: "true"
+      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=local"
+    volumes:
+      - ./logs/ai-service:/app/logs
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+
+  admin-service:
+    image: ${ECR_REGISTRY}/moni/admin-service:latest
+    ports:
+      - "19097:19097"
+    environment:
+      GATEWAY_SECRET: ${GATEWAY_SECRET}
+      OKTA_CLIENT_ID: ${OKTA_CLIENT_ID}
+      OKTA_CLIENT_SECRET: ${OKTA_CLIENT_SECRET}
+      OKTA_ISSUER_URI: ${OKTA_ISSUER_URI}
+      SPRING_PROFILES_ACTIVE: prod
+      OTEL_SERVICE_NAME: admin-service
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
+      OTEL_INSTRUMENTATION_LOGBACK_MDC_ENABLED: "true"
+      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=local"
+    volumes:
+      - ./logs/admin-service:/app/logs
+    depends_on:
+      eureka-server:
+        condition: service_healthy
