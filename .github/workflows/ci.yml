@@ -12,7 +12,6 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      actions: write
       pull-requests: read
 
     env:
@@ -71,6 +70,16 @@ jobs:
       - name: Build
         run: ./gradlew clean build
 
+      - name: Upload JAR artifacts
+        if: github.event_name == 'pull_request' && github.base_ref == 'stage'
+        uses: actions/upload-artifact@v4
+        with:
+          name: service-jars
+          path: |
+            */build/libs/*.jar
+            !*/build/libs/*-plain.jar
+          retention-days: 1
+
       - name: Notify success
         if: success()
         uses: ./.github/actions/discord-notify
@@ -83,7 +92,7 @@ jobs:
           sha: ${{ env.COMMIT_SHA }}
 
       - name: Notify failure
-        if: failure()
+        if: failure() && steps.stage-check.outputs.exceeded != 'true'
         uses: ./.github/actions/discord-notify
         with:
           webhook: ${{ secrets.DISCORD_WEBHOOK_URL }}

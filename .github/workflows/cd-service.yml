@@ -9,10 +9,10 @@ jobs:
     runs-on: ubuntu-24.04-arm
 
     env:
-      COMMIT_MSG: ${{ github.event.head_commit.message || 'no message' }}
-      BRANCH: ${{ github.ref_name }}
-      COMMIT_SHA: ${{ github.sha }}
-      ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-northeast-2.amazonaws.com
+      COMMIT_MSG: ${{ github.event.pull_request.title || github.event.head_commit.message || 'no message' }}
+      BRANCH: ${{ github.head_ref || github.ref_name }}
+      COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}
 
     steps:
       - name: Checkout
@@ -28,7 +28,15 @@ jobs:
           branch: ${{ env.BRANCH }}
           sha: ${{ env.COMMIT_SHA }}
 
+      - name: Download JAR artifacts
+        id: download-artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: service-jars
+        continue-on-error: true
+
       - name: Setup Java
+        if: steps.download-artifact.outcome == 'failure'
         uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -36,9 +44,11 @@ jobs:
           cache: gradle
 
       - name: Grant execute permission
+        if: steps.download-artifact.outcome == 'failure'
         run: chmod +x gradlew
 
       - name: Build
+        if: steps.download-artifact.outcome == 'failure'
         run: ./gradlew bootJar -x test
 
       - name: Configure AWS credentials
@@ -66,34 +76,48 @@ jobs:
             "ai-service"
             "admin-service"
           )
-          for SERVICE in "${SERVICES[@]}"; do
-            docker build \
-              -f ${SERVICE}/Dockerfile \
-              -t $ECR_REGISTRY/moni/${SERVICE}:latest \
-              -t $ECR_REGISTRY/moni/${SERVICE}:${{ github.sha }} \
-              .
-            docker push $ECR_REGISTRY/moni/${SERVICE}:latest
-            docker push $ECR_REGISTRY/moni/${SERVICE}:${{ github.sha }}
+          BATCH_SIZE=5
+          FAILED=0
+          for ((i=0; i<${#SERVICES[@]}; i+=BATCH_SIZE)); do
+            BATCH=("${SERVICES[@]:i:BATCH_SIZE}")
+            PIDS=()
+            for SERVICE in "${BATCH[@]}"; do
+              (
+                docker build \
+                  -f "${SERVICE}/Dockerfile" \
+                  -t "$ECR_REGISTRY/moni/${SERVICE}:latest" \
+                  -t "$ECR_REGISTRY/moni/${SERVICE}:${{ github.sha }}" \
+                  .
+                docker push "$ECR_REGISTRY/moni/${SERVICE}:latest"
+                docker push "$ECR_REGISTRY/moni/${SERVICE}:${{ github.sha }}"
+              ) &
+              PIDS+=($!)
+            done
+            for PID in "${PIDS[@]}"; do
+              wait "$PID" || FAILED=1
+            done
           done
+          exit $FAILED
 
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          cat >> ~/.ssh/config << EOF
-          Host bastion
-            HostName ${{ secrets.BASTION_HOST }}
-            User ec2-user
-            IdentityFile ~/.ssh/id_rsa
-            StrictHostKeyChecking no
-          Host service
-            HostName ${{ secrets.SERVICE_HOST }}
-            User ec2-user
-            IdentityFile ~/.ssh/id_rsa
-            ProxyJump bastion
-            StrictHostKeyChecking no
-          EOF
+          echo "${{ secrets.BASTION_HOST_KEY }}" >> ~/.ssh/known_hosts
+          echo "${{ secrets.SERVICE_HOST_KEY }}" >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+          printf '%s\n' \
+            'Host bastion' \
+            '  HostName ${{ secrets.BASTION_HOST }}' \
+            '  User ubuntu' \
+            '  IdentityFile ~/.ssh/id_rsa' \
+            'Host service' \
+            '  HostName ${{ secrets.SERVICE_HOST }}' \
+            '  User ec2-user' \
+            '  IdentityFile ~/.ssh/id_rsa' \
+            '  ProxyJump bastion' \
+            >> ~/.ssh/config
 
       - name: Encode compose files
         run: |
@@ -105,6 +129,7 @@ jobs:
           echo "$DC" | ssh service "mkdir -p ~/moni && base64 -d > ~/moni/docker-compose.yml"
           echo "$DC_PROD" | ssh service "base64 -d > ~/moni/docker-compose.service.prod.yml"
           ssh service "
+            docker network create moni-network 2>/dev/null || true
             aws ecr get-login-password --region ap-northeast-2 | \
               docker login --username AWS --password-stdin $ECR_REGISTRY
             cd ~/moni
