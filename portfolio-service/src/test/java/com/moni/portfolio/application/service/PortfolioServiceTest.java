@@ -7,6 +7,7 @@ import com.moni.portfolio.application.calculator.model.HoldingInput;
 import com.moni.portfolio.application.calculator.model.HoldingResult;
 import com.moni.portfolio.application.calculator.model.PortfolioAssetResult;
 import com.moni.portfolio.application.calculator.model.PriceInput;
+import com.moni.portfolio.application.calculator.model.TradeInput;
 import com.moni.portfolio.domain.entity.Portfolio;
 import com.moni.portfolio.domain.exception.PortfolioErrorCode;
 import com.moni.portfolio.domain.repository.PortfolioRepository;
@@ -17,6 +18,7 @@ import com.moni.portfolio.infrastructure.client.dto.response.StockResponseDto;
 import com.moni.portfolio.infrastructure.client.dto.response.TradeAccountResponseDto;
 import com.moni.portfolio.infrastructure.client.dto.response.TradeHoldingResponseDto;
 import com.moni.portfolio.infrastructure.client.dto.response.TradePageResponseDto;
+import com.moni.portfolio.infrastructure.client.dto.response.TradeResponseDto;
 import com.moni.portfolio.presentation.dto.response.PortfolioAssetResponseDto;
 import com.moni.portfolio.presentation.dto.response.PortfolioCreateResponseDto;
 import com.moni.portfolio.presentation.dto.response.PortfolioHoldingsResponseDto;
@@ -137,6 +139,8 @@ class PortfolioServiceTest {
                     .willReturn(success(stock("TICKER-1", "11.00")));
             given(stockServiceClient.getStockDetail("TICKER-2"))
                     .willReturn(success(stock("TICKER-2", "10000")));
+            given(tradeServiceClient.getTrades(USER_ID, 0, 10))
+                    .willReturn(success(page(List.of(trade("BUY", "400000", "DONE")), 0, 1, true)));
 
             AccountInput accountInput = new AccountInput(money("9600000"), INITIAL_PRINCIPAL_AMOUNT);
             List<HoldingInput> holdingInputs = List.of(
@@ -147,6 +151,9 @@ class PortfolioServiceTest {
                     new PriceInput("TICKER-1", money("11.00")),
                     new PriceInput("TICKER-2", money("10000"))
             );
+            List<TradeInput> tradeInputs = List.of(
+                    new TradeInput("BUY", money("400000"), "DONE")
+            );
             PortfolioAssetResult calculated = new PortfolioAssetResult(
                     money("9620033.00"),
                     money("9600000"),
@@ -156,6 +163,8 @@ class PortfolioServiceTest {
                     money("-3.7997"),
                     List.of()
             );
+            given(portfolioCalculator.calculateCashBalance(INITIAL_PRINCIPAL_AMOUNT, tradeInputs))
+                    .willReturn(money("9600000"));
             given(portfolioCalculator.calculateAssets(accountInput, holdingInputs, priceInputs))
                     .willReturn(calculated);
 
@@ -170,7 +179,61 @@ class PortfolioServiceTest {
             assertThat(result.totalProfitLoss()).isEqualByComparingTo("-379967.00");
             assertThat(result.totalReturnRate()).isEqualByComparingTo("-3.7997");
             then(tradeServiceClient).should().getHoldings(USER_ID, 1, 10);
+            then(tradeServiceClient).should().getTrades(USER_ID, 0, 10);
+            then(portfolioCalculator).should().calculateCashBalance(INITIAL_PRINCIPAL_AMOUNT, tradeInputs);
             then(portfolioCalculator).should().calculateAssets(accountInput, holdingInputs, priceInputs);
+        }
+
+        @Test
+        @DisplayName("성공 - 매도 거래 이력을 반영해 예수금을 계산한다")
+        void success_calculate_cash_balance_with_sell_trades() {
+            // given
+            givenPortfolioExists();
+            TradeAccountResponseDto account = new TradeAccountResponseDto(
+                    ACCOUNT_ID,
+                    USER_ID,
+                    money("10000000"),
+                    BigDecimal.ZERO
+            );
+            AccountInput accountInput = new AccountInput(money("12995000"), INITIAL_PRINCIPAL_AMOUNT);
+            List<TradeInput> tradeInputs = List.of(
+                    new TradeInput("BUY", money("590000"), "DONE"),
+                    new TradeInput("SELL", money("3585000"), "DONE")
+            );
+            PortfolioAssetResult calculated = new PortfolioAssetResult(
+                    money("12995000.00"),
+                    money("12995000"),
+                    money("0.00"),
+                    INITIAL_PRINCIPAL_AMOUNT,
+                    money("2995000.00"),
+                    money("29.9500"),
+                    List.of()
+            );
+
+            given(tradeServiceClient.getAccount(USER_ID)).willReturn(success(account));
+            given(tradeServiceClient.getHoldings(USER_ID, 0, 10))
+                    .willReturn(success(page(List.of(), 0, 0, true)));
+            given(tradeServiceClient.getTrades(USER_ID, 0, 10))
+                    .willReturn(success(page(List.of(
+                            trade("BUY", "590000", "DONE"),
+                            trade("SELL", "3585000", "DONE")
+                    ), 0, 1, true)));
+            given(portfolioCalculator.calculateCashBalance(INITIAL_PRINCIPAL_AMOUNT, tradeInputs))
+                    .willReturn(money("12995000"));
+            given(portfolioCalculator.calculateAssets(accountInput, List.of(), List.of()))
+                    .willReturn(calculated);
+
+            // when
+            PortfolioAssetResponseDto result = portfolioService.getAssets(USER_ID);
+
+            // then
+            assertThat(result.totalAsset()).isEqualByComparingTo("12995000.00");
+            assertThat(result.cashBalance()).isEqualByComparingTo("12995000");
+            assertThat(result.totalProfitLoss()).isEqualByComparingTo("2995000.00");
+            assertThat(result.totalReturnRate()).isEqualByComparingTo("29.9500");
+            verifyNoInteractions(stockServiceClient);
+            then(portfolioCalculator).should().calculateCashBalance(INITIAL_PRINCIPAL_AMOUNT, tradeInputs);
+            then(portfolioCalculator).should().calculateAssets(accountInput, List.of(), List.of());
         }
 
         @Test
@@ -198,6 +261,10 @@ class PortfolioServiceTest {
             given(tradeServiceClient.getAccount(USER_ID)).willReturn(success(account));
             given(tradeServiceClient.getHoldings(USER_ID, 0, 10))
                     .willReturn(success(page(List.of(), 0, 0, true)));
+            given(tradeServiceClient.getTrades(USER_ID, 0, 10))
+                    .willReturn(success(page(List.of(), 0, 0, true)));
+            given(portfolioCalculator.calculateCashBalance(INITIAL_PRINCIPAL_AMOUNT, List.of()))
+                    .willReturn(money("10000000"));
             given(portfolioCalculator.calculateAssets(accountInput, List.of(), List.of()))
                     .willReturn(calculated);
 
@@ -628,8 +695,23 @@ class PortfolioServiceTest {
         return new StockResponseDto(ticker, ticker + " 이름", money(price));
     }
 
-    private TradePageResponseDto<TradeHoldingResponseDto> page(
-            List<TradeHoldingResponseDto> content,
+    private TradeResponseDto trade(String tradeType, String totalAmount, String status) {
+        return new TradeResponseDto(
+                UUID.randomUUID(),
+                "TICKER-1",
+                tradeType,
+                1,
+                money(totalAmount),
+                money(totalAmount),
+                null,
+                null,
+                status,
+                null
+        );
+    }
+
+    private <T> TradePageResponseDto<T> page(
+            List<T> content,
             int pageNumber,
             int totalPages,
             boolean last

@@ -6,6 +6,7 @@ import com.moni.portfolio.application.calculator.model.HoldingInput;
 import com.moni.portfolio.application.calculator.model.HoldingResult;
 import com.moni.portfolio.application.calculator.model.PortfolioAssetResult;
 import com.moni.portfolio.application.calculator.model.PriceInput;
+import com.moni.portfolio.application.calculator.model.TradeInput;
 import com.moni.portfolio.domain.exception.PortfolioErrorCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -21,6 +22,57 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class PortfolioCalculatorTest {
 
     private final PortfolioCalculator portfolioCalculator = new PortfolioCalculator();
+
+    @Nested
+    @DisplayName("calculateCashBalance()")
+    class CalculateCashBalance {
+
+        @Test
+        @DisplayName("성공 - 체결 완료된 매수와 매도 거래로 예수금을 계산한다")
+        void success_calculate_with_done_buy_and_sell_trades() {
+            // given
+            List<TradeInput> trades = List.of(
+                    new TradeInput("BUY", money("590000"), "DONE"),
+                    new TradeInput("SELL", money("3585000"), "DONE")
+            );
+
+            // when
+            BigDecimal result = portfolioCalculator.calculateCashBalance(money("10000000"), trades);
+
+            // then
+            assertThat(result).isEqualByComparingTo("12995000");
+        }
+
+        @Test
+        @DisplayName("성공 - 완료되지 않은 거래는 예수금 계산에서 제외한다")
+        void success_ignore_not_done_trades() {
+            // given
+            List<TradeInput> trades = List.of(
+                    new TradeInput("BUY", money("590000"), "PENDING"),
+                    new TradeInput("SELL", money("3585000"), "FAILED")
+            );
+
+            // when
+            BigDecimal result = portfolioCalculator.calculateCashBalance(money("10000000"), trades);
+
+            // then
+            assertThat(result).isEqualByComparingTo("10000000");
+        }
+
+        @Test
+        @DisplayName("실패 - 지원하지 않는 거래 유형이면 예외가 발생한다")
+        void fail_invalid_trade_type() {
+            // given
+            List<TradeInput> trades = List.of(
+                    new TradeInput("UNKNOWN", money("1000"), "DONE")
+            );
+
+            // when & then
+            assertThatThrownBy(() -> portfolioCalculator.calculateCashBalance(money("10000000"), trades))
+                    .isInstanceOfSatisfying(CustomException.class, exception ->
+                            assertThat(exception.getErrorCode()).isEqualTo(PortfolioErrorCode.TRADE_RESPONSE_INVALID));
+        }
+    }
 
     @Nested
     @DisplayName("calculateAssets()")
@@ -44,12 +96,12 @@ class PortfolioCalculatorTest {
             PortfolioAssetResult result = portfolioCalculator.calculateAssets(account, holdings, prices);
 
             // then
-            assertThat(result.totalAsset()).isEqualByComparingTo("110000.00");
-            assertThat(result.cashBalance()).isEqualByComparingTo("30000.00");
+            assertThat(result.totalAsset()).isEqualByComparingTo("120000.00");
+            assertThat(result.cashBalance()).isEqualByComparingTo("40000");
             assertThat(result.stockEvaluationAmount()).isEqualByComparingTo("80000.00");
             assertThat(result.principalAmount()).isEqualByComparingTo("90000");
-            assertThat(result.totalProfitLoss()).isEqualByComparingTo("20000.00");
-            assertThat(result.totalReturnRate()).isEqualByComparingTo("22.2222");
+            assertThat(result.totalProfitLoss()).isEqualByComparingTo("30000.00");
+            assertThat(result.totalReturnRate()).isEqualByComparingTo("33.3333");
             assertThat(result.holdings()).hasSize(2);
 
             HoldingResult firstHolding = result.holdings().get(0);
@@ -68,10 +120,10 @@ class PortfolioCalculatorTest {
         }
 
         @Test
-        @DisplayName("성공 - 계좌 잔액 대신 고정 원금에서 누적 매수 금액을 차감해 예수금을 계산한다")
-        void success_calculate_cash_balance_from_principal_and_purchase_amount() {
+        @DisplayName("성공 - 전달받은 예수금으로 총 평가자산을 계산한다")
+        void success_calculate_total_asset_with_cash_balance() {
             // given
-            AccountInput account = new AccountInput(money("10000000"), money("10000000"));
+            AccountInput account = new AccountInput(money("9410000"), money("10000000"));
             List<HoldingInput> holdings = List.of(
                     new HoldingInput("005930", 10L, money("59000"), money("590000"))
             );
@@ -114,12 +166,8 @@ class PortfolioCalculatorTest {
         void success_zero_principal_amount() {
             // given
             AccountInput account = new AccountInput(money("10000"), BigDecimal.ZERO);
-            List<HoldingInput> holdings = List.of(
-                    new HoldingInput("TICKER-1", 10L, BigDecimal.ZERO, BigDecimal.ZERO)
-            );
-            List<PriceInput> prices = List.of(
-                    new PriceInput("TICKER-1", money("1000"))
-            );
+            List<HoldingInput> holdings = List.of();
+            List<PriceInput> prices = List.of();
 
             // when
             PortfolioAssetResult result = portfolioCalculator.calculateAssets(account, holdings, prices);
