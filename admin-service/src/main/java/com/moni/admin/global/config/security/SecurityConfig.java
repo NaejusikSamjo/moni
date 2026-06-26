@@ -18,10 +18,11 @@ public class SecurityConfig {
             ClientRegistrationRepository clientRegistrationRepository) throws Exception {
         http
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/css/**", "/js/**", "/actuator/health").permitAll()
+                        .requestMatchers("/css/**", "/js/**", "/actuator/health", "/admin/login").permitAll()
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth2 -> oauth2
+                        .loginPage("/admin/login")
                         .defaultSuccessUrl("/admin/dashboard", true)
                 )
                 .logout(logout -> logout
@@ -37,7 +38,7 @@ public class SecurityConfig {
     private LogoutSuccessHandler oidcLogoutSuccessHandler(ClientRegistrationRepository repo) {
         OidcClientInitiatedLogoutSuccessHandler handler =
                 new OidcClientInitiatedLogoutSuccessHandler(repo);
-        handler.setPostLogoutRedirectUri("{baseUrl}");
+        handler.setPostLogoutRedirectUri("{baseUrl}/admin/login?logout=true");
         return handler;
     }
 }
