@@ -9,8 +9,11 @@ import com.moni.trade.holding.domain.entity.Holding;
 import com.moni.trade.holding.domain.exception.HoldingErrorCode;
 import com.moni.trade.holding.domain.repository.HoldingRepository;
 import com.moni.trade.trade.domain.entity.Trade;
+import com.moni.trade.trade.domain.exception.TradeErrorCode;
 import com.moni.trade.trade.domain.repository.TradeRepository;
 import com.moni.trade.trade.infrastructure.client.StockServiceClient;
+import com.moni.trade.trade.infrastructure.client.dto.ExternalApiResponseDto;
+import com.moni.trade.trade.infrastructure.client.dto.StockPriceResponseDto;
 import com.moni.trade.trade.infrastructure.message.TradeEventPublisher;
 import com.moni.trade.trade.infrastructure.message.event.TradeCompletedEvent;
 import com.moni.trade.trade.presentation.dto.request.TradeBuyRequestDto;
@@ -39,7 +42,7 @@ public class TradeService {
     @Transactional
     public TradeResponseDto buyStock(UUID userId, TradeBuyRequestDto request) {
         Account account = getAccountByUserId(userId);
-        BigDecimal currentPrice = stockServiceClient.getStock(request.ticker()).price();
+        BigDecimal currentPrice = getCurrentPrice(request.ticker());
         BigDecimal totalAmount = currentPrice.multiply(BigDecimal.valueOf(request.quantity()));
 
         if (account.getBalance().compareTo(totalAmount) < 0) {
@@ -80,7 +83,7 @@ public class TradeService {
             throw new CustomException(HoldingErrorCode.INSUFFICIENT_QUANTITY);
         }
 
-        BigDecimal currentPrice = stockServiceClient.getStock(request.ticker()).price();
+        BigDecimal currentPrice = getCurrentPrice(request.ticker());
         BigDecimal totalAmount = currentPrice.multiply(BigDecimal.valueOf(request.quantity()));
         BigDecimal profitAmount = currentPrice.subtract(holding.getAveragePrice())
                 .multiply(BigDecimal.valueOf(request.quantity()));
@@ -121,5 +124,15 @@ public class TradeService {
     private Account getAccountByUserId(UUID userId) {
         return accountRepository.findByUserId(userId)
                 .orElseThrow(() -> new CustomException(AccountErrorCode.ACCOUNT_NOT_FOUND));
+    }
+
+    private BigDecimal getCurrentPrice(String ticker) {
+        ExternalApiResponseDto<StockPriceResponseDto> response = stockServiceClient.getStock(ticker);
+        if (response == null || response.data() == null
+                || response.data().price() == null
+                || response.data().price().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new CustomException(TradeErrorCode.STOCK_PRICE_FETCH_FAILED);
+        }
+        return response.data().price();
     }
 }
