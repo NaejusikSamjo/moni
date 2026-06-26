@@ -5,6 +5,7 @@ import com.moni.portfolio.infrastructure.client.dto.response.TradeAccountRespons
 import com.moni.portfolio.infrastructure.client.dto.response.ExternalApiResponseDto;
 import com.moni.portfolio.infrastructure.client.dto.response.TradeHoldingResponseDto;
 import com.moni.portfolio.infrastructure.client.dto.response.TradePageResponseDto;
+import com.moni.portfolio.infrastructure.client.dto.response.TradeResponseDto;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -22,6 +23,13 @@ public interface TradeServiceClient {
 
     @GetMapping("/api/v1/holdings")
     ExternalApiResponseDto<TradePageResponseDto<TradeHoldingResponseDto>> getHoldings(
+            @RequestHeader("X-User-Id") UUID userId,
+            @RequestParam("page") int page,
+            @RequestParam("size") int size
+    );
+
+    @GetMapping("/api/v1/trades")
+    ExternalApiResponseDto<TradePageResponseDto<TradeResponseDto>> getTrades(
             @RequestHeader("X-User-Id") UUID userId,
             @RequestParam("page") int page,
             @RequestParam("size") int size

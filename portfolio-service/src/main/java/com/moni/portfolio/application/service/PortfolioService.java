@@ -7,6 +7,7 @@ import com.moni.portfolio.application.calculator.model.HoldingInput;
 import com.moni.portfolio.application.calculator.model.HoldingResult;
 import com.moni.portfolio.application.calculator.model.PortfolioAssetResult;
 import com.moni.portfolio.application.calculator.model.PriceInput;
+import com.moni.portfolio.application.calculator.model.TradeInput;
 import com.moni.portfolio.domain.entity.Portfolio;
 import com.moni.portfolio.domain.exception.PortfolioErrorCode;
 import com.moni.portfolio.domain.repository.PortfolioRepository;
@@ -17,6 +18,7 @@ import com.moni.portfolio.infrastructure.client.dto.response.StockResponseDto;
 import com.moni.portfolio.infrastructure.client.dto.response.TradeAccountResponseDto;
 import com.moni.portfolio.infrastructure.client.dto.response.TradeHoldingResponseDto;
 import com.moni.portfolio.infrastructure.client.dto.response.TradePageResponseDto;
+import com.moni.portfolio.infrastructure.client.dto.response.TradeResponseDto;
 import com.moni.portfolio.presentation.dto.response.PortfolioAssetResponseDto;
 import com.moni.portfolio.presentation.dto.response.PortfolioCreateResponseDto;
 import com.moni.portfolio.presentation.dto.response.PortfolioHoldingResponseDto;
@@ -71,7 +73,10 @@ public class PortfolioService {
         AccountInput account = getAccount(userId);
         List<HoldingInput> holdings = getHoldings(userId);
         List<PriceInput> prices = getPrices(holdings);
-        PortfolioAssetResult result = portfolioCalculator.calculateAssets(account, holdings, prices);
+        List<TradeInput> trades = getTrades(userId);
+        BigDecimal cashBalance = portfolioCalculator.calculateCashBalance(account.principalAmount(), trades);
+        AccountInput calculatedAccount = new AccountInput(cashBalance, account.principalAmount());
+        PortfolioAssetResult result = portfolioCalculator.calculateAssets(calculatedAccount, holdings, prices);
 
         return PortfolioAssetResponseDto.from(result);
     }
@@ -153,6 +158,44 @@ public class PortfolioService {
         return tradeHoldings.stream()
                 .map(this::toHoldingInput)
                 .toList();
+    }
+
+    private List<TradeInput> getTrades(UUID userId) {
+        TradePageResponseDto<TradeResponseDto> firstPage = getTradePage(userId, DEFAULT_PAGE);
+        List<TradeResponseDto> trades = new ArrayList<>(firstPage.content());
+
+        for (int page = 1; page < firstPage.totalPages(); page++) {
+            TradePageResponseDto<TradeResponseDto> nextPage = getTradePage(userId, page);
+            trades.addAll(nextPage.content());
+        }
+
+        return trades.stream()
+                .map(this::toTradeInput)
+                .toList();
+    }
+
+    private TradePageResponseDto<TradeResponseDto> getTradePage(UUID userId, int page) {
+        TradePageResponseDto<TradeResponseDto> response = requestTradeData(
+                () -> tradeServiceClient.getTrades(userId, page, DEFAULT_SIZE)
+        );
+
+        if (response.content() == null || response.totalPages() < 0) {
+            throw new CustomException(PortfolioErrorCode.TRADE_RESPONSE_INVALID);
+        }
+
+        return response;
+    }
+
+    private TradeInput toTradeInput(TradeResponseDto trade) {
+        if (trade == null) {
+            throw new CustomException(PortfolioErrorCode.TRADE_RESPONSE_INVALID);
+        }
+
+        return new TradeInput(
+                trade.tradeType(),
+                trade.totalAmount(),
+                trade.status()
+        );
     }
 
     private List<PriceInput> getPrices(List<HoldingInput> holdings) {
