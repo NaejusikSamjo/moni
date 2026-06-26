@@ -1,8 +1,7 @@
 name: CD-Service
 
 on:
-  push:
-    branches: [stage]
+  workflow_dispatch:
 
 jobs:
   deploy:

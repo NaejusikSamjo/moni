@@ -54,6 +54,12 @@ jobs:
           branch: ${{ env.BRANCH }}
           sha: ${{ env.COMMIT_SHA }}
 
+      - name: Trigger CD
+        if: success() && github.event_name == 'pull_request' && github.base_ref == 'stage'
+        run: gh workflow run cd-service.yml --ref ${{ github.head_ref }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Notify failure
         if: failure()
         uses: ./.github/actions/discord-notify
