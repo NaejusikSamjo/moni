@@ -36,21 +36,31 @@ public class PortfolioCalculator {
         BigDecimal stockEvaluationAmount = holdingResults.stream()
                 .map(HoldingResult::evaluationAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal cashBalance = calculateCashBalance(account, holdings);
 
         // 총 평가자산과 전체 손익은 계좌 예수금, 주식 평가금액, 투자 원금을 기준으로 계산
-        BigDecimal totalAsset = account.cashBalance().add(stockEvaluationAmount);
+        BigDecimal totalAsset = cashBalance.add(stockEvaluationAmount);
         BigDecimal totalProfitLoss = totalAsset.subtract(account.principalAmount());
         BigDecimal totalReturnRate = calculateRate(totalProfitLoss, account.principalAmount());
 
         return new PortfolioAssetResult(
                 totalAsset.setScale(MONEY_SCALE, RoundingMode.HALF_UP),
-                account.cashBalance(),
+                cashBalance.setScale(MONEY_SCALE, RoundingMode.HALF_UP),
                 stockEvaluationAmount.setScale(MONEY_SCALE, RoundingMode.HALF_UP),
                 account.principalAmount(),
                 totalProfitLoss.setScale(MONEY_SCALE, RoundingMode.HALF_UP),
                 totalReturnRate,
                 holdingResults
         );
+    }
+
+    /** MVP에서는 고정 원금에서 현재 보유 종목의 누적 매수 금액을 차감해 예수금을 산정 */
+    private BigDecimal calculateCashBalance(AccountInput account, List<HoldingInput> holdings) {
+        BigDecimal totalPurchaseAmount = holdings.stream()
+                .map(HoldingInput::totalPurchaseAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return account.principalAmount().subtract(totalPurchaseAmount);
     }
 
     /** 계좌 정보 없이 보유 종목별 평가금액, 평가손익, 수익률, 비중을 계산 */

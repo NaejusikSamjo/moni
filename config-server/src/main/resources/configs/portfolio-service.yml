@@ -44,6 +44,9 @@ springdoc:
   api-docs:
     path: /v3/api-docs
 
+gateway:
+  secret: ${GATEWAY_SECRET}
+
 management:
   endpoints:
     web:

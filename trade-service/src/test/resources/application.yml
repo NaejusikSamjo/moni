@@ -24,3 +24,6 @@ spring:
 eureka:
   client:
     enabled: false
+
+gateway:
+  secret: test-secret
