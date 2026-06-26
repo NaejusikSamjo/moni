@@ -1,12 +1,10 @@
 package com.moni.ai.application.service;
 
-import com.moni.ai.common.exception.AiErrorCode;
+import com.moni.ai.domain.exception.AiErrorCode;
 import com.moni.ai.domain.entity.CompanyIssueAnalysisEntity;
-import com.moni.ai.domain.entity.NewsEntity;
 import com.moni.ai.domain.enums.SentimentEnum;
 import com.moni.ai.domain.enums.WatchCompany;
 import com.moni.ai.domain.repository.CompanyIssueAnalysisRepository;
-import com.moni.ai.domain.repository.NewsRepository;
 import com.moni.ai.presentation.dto.response.CompanyIssueResDto;
 import com.moni.common.error.exception.CustomException;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +15,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.Map;
 import java.util.Optional;
 
 @Service

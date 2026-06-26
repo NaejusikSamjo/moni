@@ -1,4 +1,4 @@
-package com.moni.ai.common.exception;
+package com.moni.ai.global.exception;
 
 import com.moni.common.error.exception.CustomException;
 import com.moni.common.error.exception.ExceptionHandlerSupport;
