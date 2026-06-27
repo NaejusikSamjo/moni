@@ -72,7 +72,7 @@ services:
       OTEL_METRICS_EXPORTER: none
       OTEL_LOGS_EXPORTER: none
       OTEL_INSTRUMENTATION_LOGBACK_MDC_ENABLED: "true"
-      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=local"
+      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=prod"
     volumes:
       - ./logs/user-service:/app/logs
     depends_on:
@@ -100,7 +100,7 @@ services:
       OTEL_METRICS_EXPORTER: none
       OTEL_LOGS_EXPORTER: none
       OTEL_INSTRUMENTATION_LOGBACK_MDC_ENABLED: "true"
-      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=local"
+      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=prod"
     volumes:
       - ./logs/trade-service:/app/logs
     depends_on:
@@ -129,7 +129,7 @@ services:
       OTEL_METRICS_EXPORTER: none
       OTEL_LOGS_EXPORTER: none
       OTEL_INSTRUMENTATION_LOGBACK_MDC_ENABLED: "true"
-      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=local"
+      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=prod"
     volumes:
       - ./logs/stock-service:/app/logs
     depends_on:
@@ -159,7 +159,7 @@ services:
       OTEL_METRICS_EXPORTER: none
       OTEL_LOGS_EXPORTER: none
       OTEL_INSTRUMENTATION_LOGBACK_MDC_ENABLED: "true"
-      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=local"
+      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=prod"
     volumes:
       - ./logs/portfolio-service:/app/logs
     depends_on:
@@ -185,7 +185,7 @@ services:
       OTEL_METRICS_EXPORTER: none
       OTEL_LOGS_EXPORTER: none
       OTEL_INSTRUMENTATION_LOGBACK_MDC_ENABLED: "true"
-      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=local"
+      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=prod"
     volumes:
       - ./logs/notification-service:/app/logs
     depends_on:
@@ -214,7 +214,7 @@ services:
       OTEL_METRICS_EXPORTER: none
       OTEL_LOGS_EXPORTER: none
       OTEL_INSTRUMENTATION_LOGBACK_MDC_ENABLED: "true"
-      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=local"
+      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=prod"
     volumes:
       - ./logs/payment-service:/app/logs
     depends_on:
@@ -247,7 +247,7 @@ services:
       OTEL_METRICS_EXPORTER: none
       OTEL_LOGS_EXPORTER: none
       OTEL_INSTRUMENTATION_LOGBACK_MDC_ENABLED: "true"
-      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=local"
+      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=prod"
     volumes:
       - ./logs/ai-service:/app/logs
     depends_on:
@@ -271,7 +271,7 @@ services:
       OTEL_METRICS_EXPORTER: none
       OTEL_LOGS_EXPORTER: none
       OTEL_INSTRUMENTATION_LOGBACK_MDC_ENABLED: "true"
-      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=local"
+      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=prod"
     volumes:
       - ./logs/admin-service:/app/logs
     depends_on:
