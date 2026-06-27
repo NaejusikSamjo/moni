@@ -14,6 +14,10 @@ jobs:
     permissions:
       pull-requests: read
 
+    outputs:
+      changed_services: ${{ steps.detect.outputs.changed_services }}
+      has_changes: ${{ steps.detect.outputs.has_changes }}
+
     env:
       COMMIT_MSG: ${{ github.event.pull_request.title || github.event.head_commit.message || 'no message' }}
       BRANCH: ${{ github.head_ref || github.ref_name }}
@@ -22,6 +26,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          fetch-depth: ${{ github.event_name == 'pull_request' && github.base_ref == 'stage' && '0' || '1' }}
 
       - name: Setup Java
         uses: actions/setup-java@v5
@@ -70,6 +76,44 @@ jobs:
       - name: Build
         run: ./gradlew clean build
 
+      - name: Detect changed services
+        id: detect
+        if: github.event_name == 'pull_request' && github.base_ref == 'stage'
+        run: |
+          ALL="config-server eureka-server api-gateway user-service trade-service stock-service portfolio-service notification-service payment-service ai-service admin-service"
+
+          CHANGED=$(git diff --name-only origin/stage...HEAD)
+
+          if echo "$CHANGED" | grep -qE "^(common/|common-logging/|build\.gradle$|settings\.gradle$|gradle/)"; then
+            CHANGED_SERVICES="$ALL"
+          else
+            CHANGED_SERVICES=""
+            for SERVICE in $ALL; do
+              if echo "$CHANGED" | grep -q "^${SERVICE}/"; then
+                CHANGED_SERVICES="$CHANGED_SERVICES $SERVICE"
+              fi
+            done
+
+            # config-server/src/main/resources/configs/<서비스명>.yml 변경 시
+            # 해당 서비스도 재시작해야 새 설정을 적용받음
+            while IFS= read -r FILE; do
+              SERVICE_NAME=$(basename "$FILE" .yml)
+              if [[ " $ALL " == *" $SERVICE_NAME "* ]] && [[ " $CHANGED_SERVICES " != *" $SERVICE_NAME "* ]]; then
+                CHANGED_SERVICES="$CHANGED_SERVICES $SERVICE_NAME"
+              fi
+            done < <(echo "$CHANGED" | grep "^config-server/src/main/resources/configs/")
+
+            CHANGED_SERVICES="${CHANGED_SERVICES# }"
+          fi
+
+          echo "changed_services=$CHANGED_SERVICES" >> $GITHUB_OUTPUT
+          if [ -n "$CHANGED_SERVICES" ]; then
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          fi
+          echo "Changed: $CHANGED_SERVICES"
+
       - name: Upload JAR artifacts
         if: github.event_name == 'pull_request' && github.base_ref == 'stage'
         uses: actions/upload-artifact@v7
@@ -104,6 +148,11 @@ jobs:
 
   deploy:
     needs: build
-    if: github.event_name == 'pull_request' && github.base_ref == 'stage'
+    if: >
+      github.event_name == 'pull_request' &&
+      github.base_ref == 'stage' &&
+      needs.build.outputs.has_changes == 'true'
     uses: ./.github/workflows/cd-service.yml
+    with:
+      changed_services: ${{ needs.build.outputs.changed_services }}
     secrets: inherit
