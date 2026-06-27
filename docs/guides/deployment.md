@@ -97,6 +97,7 @@ CI에서 `git diff origin/stage...HEAD`로 변경된 파일을 분석해 배포 
 
 - `common/`, `common-logging/` — 공통 모듈 변경
 - 루트 `build.gradle`, `settings.gradle`, `gradle/` — 빌드 설정 변경
+- `.github/` — 워크플로우 변경 시 실제 배포 환경에서 검증
 
 **서비스 개별 감지**
 
@@ -116,6 +117,7 @@ config-server만 재시작해서는 실행 중인 서비스가 새 설정을 적
 배포 후 변경된 서비스의 `/actuator/health` 엔드포인트를 확인합니다.  
 api-gateway를 거치지 않고 서비스 EC2 내부에서 `localhost:PORT`로 직접 요청합니다.
 
+- Docker 컨테이너 내부에서 curl을 실행합니다 (`docker exec moni-<서비스>-1 curl ...`)
 - 15초 간격으로 최대 12회 재시도 (최대 3분 대기)
 - 모든 서비스가 동시에 시작되므로 실질적인 대기 시간은 가장 늦게 뜨는 서비스 1개의 시작 시간과 같습니다
 - 재시도 안에 응답하지 않으면 해당 서비스를 실패로 처리하고 롤백을 진행합니다
