@@ -151,7 +151,7 @@ jobs:
             PORT=${PORTS[$SERVICE]}
             OK=false
             for i in $(seq 1 12); do
-              if ssh service "curl -sf http://localhost:${PORT}/actuator/health > /dev/null 2>&1"; then
+              if ssh service "docker exec moni-${SERVICE}-1 curl -sf http://localhost:${PORT}/actuator/health > /dev/null 2>&1"; then
                 echo "✓ ${SERVICE} (${i}번째 시도)"
                 OK=true
                 break
