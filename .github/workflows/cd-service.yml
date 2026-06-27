@@ -145,7 +145,7 @@ jobs:
       - name: Health check
         id: health-check
         run: |
-          declare -A PORTS=([config-server]=8888 [eureka-server]=8761 [api-gateway]=8080 [user-service]=19090 [trade-service]=19091 [stock-service]=19092 [portfolio-service]=19093 [notification-service]=19094 [payment-service]=19095 [ai-service]=19096 [admin-service]=19097)
+          { declare -A PORTS=([config-server]=8888 [eureka-server]=8761 [api-gateway]=8080 [user-service]=19090 [trade-service]=19091 [stock-service]=19092 [portfolio-service]=19093 [notification-service]=19094 [payment-service]=19095 [ai-service]=19096 [admin-service]=19097); } 2>/dev/null
           FAILED=()
           for SERVICE in ${{ env.CHANGED_SERVICES }}; do
             PORT=${PORTS[$SERVICE]}
