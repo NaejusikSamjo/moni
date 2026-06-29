@@ -7,9 +7,7 @@ name: moni
 services:
 
   config-server:
-    build:
-      context: .
-      dockerfile: config-server/Dockerfile
+    image: ${ECR_REGISTRY}/moni/config-server:latest
     expose:
       - "8888"
     healthcheck:
@@ -20,9 +18,7 @@ services:
       start_period: 30s
 
   eureka-server:
-    build:
-      context: .
-      dockerfile: eureka-server/Dockerfile
+    image: ${ECR_REGISTRY}/moni/eureka-server:latest
     ports:
       - "8761:8761"
     depends_on:
@@ -36,9 +32,7 @@ services:
       start_period: 60s
 
   api-gateway:
-    build:
-      context: .
-      dockerfile: api-gateway/Dockerfile
+    image: ${ECR_REGISTRY}/moni/api-gateway:latest
     ports:
       - "8080:8080"
     environment:
@@ -50,9 +44,7 @@ services:
         condition: service_healthy
 
   user-service:
-    build:
-      context: .
-      dockerfile: user-service/Dockerfile
+    image: ${ECR_REGISTRY}/moni/user-service:latest
     expose:
       - "19090"
     environment:
@@ -80,7 +72,7 @@ services:
       OTEL_METRICS_EXPORTER: none
       OTEL_LOGS_EXPORTER: none
       OTEL_INSTRUMENTATION_LOGBACK_MDC_ENABLED: "true"
-      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=local"
+      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=prod"
     volumes:
       - ./logs/user-service:/app/logs
     depends_on:
@@ -88,9 +80,7 @@ services:
         condition: service_healthy
 
   trade-service:
-    build:
-      context: .
-      dockerfile: trade-service/Dockerfile
+    image: ${ECR_REGISTRY}/moni/trade-service:latest
     expose:
       - "19091"
     environment:
@@ -110,7 +100,7 @@ services:
       OTEL_METRICS_EXPORTER: none
       OTEL_LOGS_EXPORTER: none
       OTEL_INSTRUMENTATION_LOGBACK_MDC_ENABLED: "true"
-      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=local"
+      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=prod"
     volumes:
       - ./logs/trade-service:/app/logs
     depends_on:
@@ -118,9 +108,7 @@ services:
         condition: service_healthy
 
   stock-service:
-    build:
-      context: .
-      dockerfile: stock-service/Dockerfile
+    image: ${ECR_REGISTRY}/moni/stock-service:latest
     expose:
       - "19092"
     environment:
@@ -141,7 +129,7 @@ services:
       OTEL_METRICS_EXPORTER: none
       OTEL_LOGS_EXPORTER: none
       OTEL_INSTRUMENTATION_LOGBACK_MDC_ENABLED: "true"
-      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=local"
+      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=prod"
     volumes:
       - ./logs/stock-service:/app/logs
     depends_on:
@@ -152,9 +140,7 @@ services:
     read_only: true
     tmpfs:
       - /tmp
-    build:
-      context: .
-      dockerfile: portfolio-service/Dockerfile
+    image: ${ECR_REGISTRY}/moni/portfolio-service:latest
     expose:
       - "19093"
     environment:
@@ -173,7 +159,7 @@ services:
       OTEL_METRICS_EXPORTER: none
       OTEL_LOGS_EXPORTER: none
       OTEL_INSTRUMENTATION_LOGBACK_MDC_ENABLED: "true"
-      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=local"
+      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=prod"
     volumes:
       - ./logs/portfolio-service:/app/logs
     depends_on:
@@ -181,9 +167,7 @@ services:
         condition: service_healthy
 
   notification-service:
-    build:
-      context: .
-      dockerfile: notification-service/Dockerfile
+    image: ${ECR_REGISTRY}/moni/notification-service:latest
     expose:
       - "19094"
     environment:
@@ -201,7 +185,7 @@ services:
       OTEL_METRICS_EXPORTER: none
       OTEL_LOGS_EXPORTER: none
       OTEL_INSTRUMENTATION_LOGBACK_MDC_ENABLED: "true"
-      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=local"
+      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=prod"
     volumes:
       - ./logs/notification-service:/app/logs
     depends_on:
@@ -209,9 +193,7 @@ services:
         condition: service_healthy
 
   payment-service:
-    build:
-      context: .
-      dockerfile: payment-service/Dockerfile
+    image: ${ECR_REGISTRY}/moni/payment-service:latest
     expose:
       - "19095"
     environment:
@@ -232,7 +214,7 @@ services:
       OTEL_METRICS_EXPORTER: none
       OTEL_LOGS_EXPORTER: none
       OTEL_INSTRUMENTATION_LOGBACK_MDC_ENABLED: "true"
-      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=local"
+      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=prod"
     volumes:
       - ./logs/payment-service:/app/logs
     depends_on:
@@ -240,9 +222,7 @@ services:
         condition: service_healthy
 
   ai-service:
-    build:
-      context: .
-      dockerfile: ai-service/Dockerfile
+    image: ${ECR_REGISTRY}/moni/ai-service:latest
     expose:
       - "19096"
     environment:
@@ -267,7 +247,7 @@ services:
       OTEL_METRICS_EXPORTER: none
       OTEL_LOGS_EXPORTER: none
       OTEL_INSTRUMENTATION_LOGBACK_MDC_ENABLED: "true"
-      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=local"
+      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=prod"
     volumes:
       - ./logs/ai-service:/app/logs
     depends_on:
@@ -275,9 +255,7 @@ services:
         condition: service_healthy
 
   admin-service:
-    build:
-      context: .
-      dockerfile: admin-service/Dockerfile
+    image: ${ECR_REGISTRY}/moni/admin-service:latest
     ports:
       - "19097:19097"
     environment:
@@ -293,7 +271,7 @@ services:
       OTEL_METRICS_EXPORTER: none
       OTEL_LOGS_EXPORTER: none
       OTEL_INSTRUMENTATION_LOGBACK_MDC_ENABLED: "true"
-      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=local"
+      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=prod"
     volumes:
       - ./logs/admin-service:/app/logs
     depends_on:

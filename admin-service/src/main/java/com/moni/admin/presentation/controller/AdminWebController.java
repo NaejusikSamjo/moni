@@ -34,6 +34,14 @@ public class AdminWebController {
     @ModelAttribute("errorMsg")
     public String errorMsg() { return null; }
 
+    @GetMapping("/login")
+    public String login(@RequestParam(required = false) String logout, Model model) {
+        if (logout != null) {
+            model.addAttribute("logoutMsg", "로그아웃 되었습니다.");
+        }
+        return "admin/login";
+    }
+
     @GetMapping("/dashboard")
     public String dashboard(Model model) {
         try {

@@ -1,0 +1,214 @@
+name: CD-Service
+
+on:
+  workflow_dispatch:
+    inputs:
+      changed_services:
+        description: '배포할 서비스 (공백 구분, 비우면 전체 배포)'
+        required: false
+        default: ''
+  workflow_call:
+    inputs:
+      changed_services:
+        type: string
+        required: false
+        default: ''
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04-arm
+
+    env:
+      COMMIT_MSG: ${{ github.event.pull_request.title || github.event.head_commit.message || 'no message' }}
+      BRANCH: ${{ github.head_ref || github.ref_name }}
+      COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}
+      CHANGED_SERVICES: ${{ inputs.changed_services || 'config-server eureka-server api-gateway user-service trade-service stock-service portfolio-service notification-service payment-service ai-service admin-service' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Notify start
+        uses: ./.github/actions/discord-notify
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          title: "CD 시작"
+          color: 3447003
+          message: ${{ env.COMMIT_MSG }}
+          branch: ${{ env.BRANCH }}
+          sha: ${{ env.COMMIT_SHA }}
+
+      - name: Download JAR artifacts
+        id: download-artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: service-jars
+        continue-on-error: true
+
+      - name: Setup Java
+        if: steps.download-artifact.outcome == 'failure'
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: Grant execute permission
+        if: steps.download-artifact.outcome == 'failure'
+        run: chmod +x gradlew
+
+      - name: Build
+        if: steps.download-artifact.outcome == 'failure'
+        run: ./gradlew bootJar -x test
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6.1.0
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-northeast-2
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push images
+        run: |
+          SERVICES=(${{ env.CHANGED_SERVICES }})
+          BATCH_SIZE=5
+          FAILED=0
+          for ((i=0; i<${#SERVICES[@]}; i+=BATCH_SIZE)); do
+            BATCH=("${SERVICES[@]:i:BATCH_SIZE}")
+            PIDS=()
+            for SERVICE in "${BATCH[@]}"; do
+              (
+                docker build \
+                  -f "${SERVICE}/Dockerfile" \
+                  -t "$ECR_REGISTRY/moni/${SERVICE}:latest" \
+                  -t "$ECR_REGISTRY/moni/${SERVICE}:${{ github.sha }}" \
+                  .
+                docker push "$ECR_REGISTRY/moni/${SERVICE}:latest"
+                docker push "$ECR_REGISTRY/moni/${SERVICE}:${{ github.sha }}"
+              ) &
+              PIDS+=($!)
+            done
+            for PID in "${PIDS[@]}"; do
+              wait "$PID" || FAILED=1
+            done
+          done
+          exit $FAILED
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          echo "${{ secrets.BASTION_HOST_KEY }}" >> ~/.ssh/known_hosts
+          echo "${{ secrets.SERVICE_HOST_KEY }}" >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+          printf '%s\n' \
+            'Host bastion' \
+            '  HostName ${{ secrets.BASTION_HOST }}' \
+            '  User ubuntu' \
+            '  IdentityFile ~/.ssh/id_rsa' \
+            'Host service' \
+            '  HostName ${{ secrets.SERVICE_HOST }}' \
+            '  User ec2-user' \
+            '  IdentityFile ~/.ssh/id_rsa' \
+            '  ProxyJump bastion' \
+            >> ~/.ssh/config
+
+      - name: Encode compose files
+        run: |
+          echo "DC=$(base64 -w 0 docker-compose.yml)" >> $GITHUB_ENV
+          echo "DC_PROD=$(base64 -w 0 docker-compose.service.prod.yml)" >> $GITHUB_ENV
+
+      - name: Save pre-deploy state
+        run: |
+          PREV=$(ssh service "cat ~/moni/.deployed-sha 2>/dev/null || true")
+          echo "PREV_SHA=${PREV}" >> $GITHUB_ENV
+
+      - name: Deploy to service EC2
+        run: |
+          echo "$DC" | ssh service "mkdir -p ~/moni && base64 -d > ~/moni/docker-compose.yml"
+          echo "$DC_PROD" | ssh service "base64 -d > ~/moni/docker-compose.service.prod.yml"
+          ssh service "
+            docker network create moni-network 2>/dev/null || true
+            aws ecr get-login-password --region ap-northeast-2 | \
+              docker login --username AWS --password-stdin $ECR_REGISTRY
+            cd ~/moni
+            docker-compose -f docker-compose.yml -f docker-compose.service.prod.yml pull ${{ env.CHANGED_SERVICES }}
+            docker-compose -f docker-compose.yml -f docker-compose.service.prod.yml up -d --no-deps ${{ env.CHANGED_SERVICES }}
+            echo \"${{ github.sha }}\" > ~/moni/.deployed-sha
+          "
+
+      - name: Health check
+        id: health-check
+        run: |
+          declare -A PORTS
+          for pair in ${{ secrets.HEALTH_CHECK_PORTS }}; do
+            IFS='=' read -r svc port <<< "$pair"
+            PORTS[$svc]=$port
+          done
+          FAILED=()
+          for SERVICE in ${{ env.CHANGED_SERVICES }}; do
+            PORT=${PORTS[$SERVICE]}
+            OK=false
+            for i in $(seq 1 12); do
+              if ssh service "docker exec moni-${SERVICE}-1 curl -sf http://localhost:${PORT}/actuator/health > /dev/null 2>&1"; then
+                echo "✓ ${SERVICE} (${i}번째 시도)"
+                OK=true
+                break
+              fi
+              echo "  ${SERVICE}: 대기 중... (${i}/12)"
+              sleep 15
+            done
+            $OK || FAILED+=($SERVICE)
+          done
+          if [ ${#FAILED[@]} -gt 0 ]; then
+            echo "Health check failed: ${FAILED[*]}"
+            exit 1
+          fi
+
+      - name: Rollback
+        if: failure() && steps.health-check.conclusion == 'failure'
+        run: |
+          if [ -z "$PREV_SHA" ]; then
+            echo "No previous SHA, rollback skipped"
+            exit 1
+          fi
+          echo "Rolling back to ${PREV_SHA}..."
+          for SERVICE in ${{ env.CHANGED_SERVICES }}; do
+            if ssh service "docker pull $ECR_REGISTRY/moni/${SERVICE}:${PREV_SHA} && docker tag $ECR_REGISTRY/moni/${SERVICE}:${PREV_SHA} $ECR_REGISTRY/moni/${SERVICE}:latest"; then
+              echo "✓ ${SERVICE} rolled back"
+            else
+              echo "✗ ${SERVICE}: image not found in ECR"
+            fi
+          done
+          ssh service "
+            cd ~/moni
+            docker-compose -f docker-compose.yml -f docker-compose.service.prod.yml up -d --no-deps ${{ env.CHANGED_SERVICES }}
+            echo \"${PREV_SHA}\" > ~/moni/.deployed-sha
+          "
+
+      - name: Notify success
+        if: success()
+        uses: ./.github/actions/discord-notify
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          title: "CD 성공"
+          color: 5763719
+          message: ${{ env.COMMIT_MSG }}
+          branch: ${{ env.BRANCH }}
+          sha: ${{ env.COMMIT_SHA }}
+
+      - name: Notify failure
+        if: failure()
+        uses: ./.github/actions/discord-notify
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          title: "CD 실패"
+          color: 15548997
+          message: ${{ env.COMMIT_MSG }}
+          branch: ${{ env.BRANCH }}
+          sha: ${{ env.COMMIT_SHA }}
