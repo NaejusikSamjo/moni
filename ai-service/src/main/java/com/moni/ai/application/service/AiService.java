@@ -39,8 +39,8 @@ public class AiService {
                 .findTopByTickerAndExpiredAtAfterOrderByCreatedAtDesc(ticker, LocalDateTime.now());
 
         if (cached.isPresent()) {
-            log.info("[{}] 캐시된 분석 결과 반환", ticker);
-            return CompanyIssueResDto.toDto(cached.get());
+            log.info("[{}] 분석 결과 존재", ticker);
+            throw new CustomException(AiErrorCode.ANALYSIS_ALREADY_EXISTS);
         }
 
 
