@@ -9,7 +9,6 @@ dependencies {
     implementation 'io.micrometer:micrometer-registry-prometheus'
     implementation 'com.fasterxml.uuid:java-uuid-generator:5.1.0'
     implementation project(':common')
-    implementation project(':common-logging')
     runtimeOnly 'org.postgresql:postgresql'
     testRuntimeOnly 'com.h2database:h2'
     testImplementation testFixtures(project(':common'))

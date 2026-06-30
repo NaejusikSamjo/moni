@@ -1,20 +1,41 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
+    <conversionRule conversionWord="clr" converterClass="org.springframework.boot.logging.logback.ColorConverter"/>
+
     <springProperty scope="context" name="appName" source="spring.application.name" defaultValue="trade-service"/>
+    <springProperty scope="context" name="logPath" source="logging.file.path" defaultValue="./logs"/>
 
-    <include resource="logback/base-console.xml"/>
-    <include resource="logback/base-json-file.xml"/>
-
-    <springProfile name="prod">
-        <root level="INFO">
+    <springProfile name="!prod">
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+                <pattern>%clr(%d{HH:mm:ss.SSS}){faint} %clr([%thread]){faint} %clr(%-5level){highlight} %clr(%logger{36}){cyan} traceId=%clr(%X{trace_id:-}){blue} spanId=%X{span_id:-} - %msg%n</pattern>
+            </encoder>
+        </appender>
+        <root level="DEBUG">
             <appender-ref ref="CONSOLE"/>
-            <appender-ref ref="FILE_JSON"/>
         </root>
     </springProfile>
 
-    <springProfile name="!prod">
-        <root level="DEBUG">
+    <springProfile name="prod">
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+                <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} traceId=%X{trace_id:-} spanId=%X{span_id:-} - %msg%n</pattern>
+            </encoder>
+        </appender>
+        <appender name="FILE_JSON" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <file>${logPath}/${appName}.log</file>
+            <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+                <fileNamePattern>${logPath}/${appName}.%d{yyyy-MM-dd}.log</fileNamePattern>
+                <maxHistory>7</maxHistory>
+                <totalSizeCap>1GB</totalSizeCap>
+            </rollingPolicy>
+            <encoder class="org.springframework.boot.logging.logback.StructuredLogEncoder">
+                <format>logstash</format>
+            </encoder>
+        </appender>
+        <root level="INFO">
             <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="FILE_JSON"/>
         </root>
     </springProfile>
 </configuration>
