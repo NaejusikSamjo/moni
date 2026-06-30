@@ -8,3 +8,9 @@ toss:
   payments:
     base-url: https://api.tosspayments.com
     secret-key: ${TOSS_SECRET_KEY:test_sk_placeholder}
+
+logging:
+  structured:
+    format:
+      console: logstash
+      file: logstash

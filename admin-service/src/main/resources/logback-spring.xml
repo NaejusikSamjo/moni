@@ -2,7 +2,7 @@
 <configuration>
     <conversionRule conversionWord="clr" converterClass="org.springframework.boot.logging.logback.ColorConverter"/>
 
-    <springProperty scope="context" name="appName" source="spring.application.name" defaultValue="stock-service"/>
+    <springProperty scope="context" name="appName" source="spring.application.name" defaultValue="admin-service"/>
     <springProperty scope="context" name="logPath" source="logging.file.path" defaultValue="./logs"/>
 
     <springProfile name="!prod">
