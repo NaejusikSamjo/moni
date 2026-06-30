@@ -16,14 +16,17 @@ scrape_configs:
         labels:
           job: moni
           __path__: /var/log/services/**/*.log
+    relabel_configs:
+      - source_labels: [__path__]
+        regex: '/var/log/services/([^/]+)/.*'
+        target_label: service
+        replacement: '$1'
     pipeline_stages:
       - json:
           expressions:
             level: level
-            service: service
       - labels:
           level:
-          service:
       - drop:
           source: level
           expression: "(?i)^(info|debug|trace)$"
