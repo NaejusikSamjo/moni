@@ -1,7 +1,6 @@
 rootProject.name = 'moni'
 
 include 'common'
-include 'common-logging'
 include 'config-server'
 include 'eureka-server'
 include 'api-gateway'
