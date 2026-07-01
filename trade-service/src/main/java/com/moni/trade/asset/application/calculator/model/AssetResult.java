@@ -1,9 +1,9 @@
-package com.moni.portfolio.application.calculator.model;
+package com.moni.trade.asset.application.calculator.model;
 
 import java.math.BigDecimal;
 import java.util.List;
 
-public record PortfolioAssetResult(
+public record AssetResult(
         BigDecimal totalAsset,
         BigDecimal cashBalance,
         BigDecimal stockEvaluationAmount,
