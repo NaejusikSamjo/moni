@@ -7,6 +7,7 @@ import com.moni.ai.infrastructure.client.LlmAnalysisResponse;
 import com.moni.ai.infrastructure.client.LlmClient;
 import com.moni.ai.presentation.dto.request.PortfolioAnalysisRequestDto;
 import com.moni.ai.presentation.dto.response.PortfolioAnalysisResponseDto;
+import com.moni.ai.presentation.dto.response.PortfolioTendencyAnalysisResponseDto;
 import com.moni.common.error.exception.CustomException;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.MDC;
@@ -26,11 +27,15 @@ public class PortfolioAnalysisService {
         try {
             LlmAnalysisRequest llmRequest = promptBuilder.build(request);
             LlmAnalysisResponse llmResponse = llmClient.analyzePortfolio(llmRequest);
-            validateLlmResponse(llmResponse);
+            validateLlmResponse(request, llmResponse);
 
             return new PortfolioAnalysisResponseDto(
                     request.analysisId(),
                     llmResponse.summary(),
+                    PortfolioTendencyAnalysisResponseDto.from(
+                            request.tendencyAnalysis(),
+                            llmResponse.tendencyAnalysis()
+                    ),
                     llmResponse.recommendation()
             );
         } finally {
@@ -38,12 +43,24 @@ public class PortfolioAnalysisService {
         }
     }
 
-    private void validateLlmResponse(LlmAnalysisResponse response) {
+    private void validateLlmResponse(PortfolioAnalysisRequestDto request, LlmAnalysisResponse response) {
         if (response == null
                 || response.summary() == null
                 || response.summary().isBlank()
                 || response.recommendation() == null
                 || response.recommendation().isBlank()) {
+            throw new CustomException(AiErrorCode.PORTFOLIO_LLM_RESPONSE_INVALID);
+        }
+
+        if (request.tendencyAnalysis() == null) {
+            return;
+        }
+
+        if (response.tendencyAnalysis() == null
+                || response.tendencyAnalysis().summary() == null
+                || response.tendencyAnalysis().summary().isBlank()
+                || response.tendencyAnalysis().recommendation() == null
+                || response.tendencyAnalysis().recommendation().isBlank()) {
             throw new CustomException(AiErrorCode.PORTFOLIO_LLM_RESPONSE_INVALID);
         }
     }

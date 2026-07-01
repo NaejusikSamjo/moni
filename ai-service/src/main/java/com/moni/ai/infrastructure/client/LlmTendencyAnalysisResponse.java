@@ -1,8 +1,7 @@
 package com.moni.ai.infrastructure.client;
 
-public record LlmAnalysisResponse(
+public record LlmTendencyAnalysisResponse(
         String summary,
-        LlmTendencyAnalysisResponse tendencyAnalysis,
         String recommendation
 ) {
 }

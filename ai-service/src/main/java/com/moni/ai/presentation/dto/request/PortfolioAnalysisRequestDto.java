@@ -1,5 +1,6 @@
 package com.moni.ai.presentation.dto.request;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -35,6 +36,9 @@ public record PortfolioAnalysisRequestDto(
         List<PortfolioSectorAnalysisRequestDto> sectorAnalyses,
 
         @NotEmpty
-        List<PortfolioHoldingRequestDto> holdings
+        List<PortfolioHoldingRequestDto> holdings,
+
+        @Valid
+        PortfolioTendencyAnalysisRequestDto tendencyAnalysis
 ) {
 }
