@@ -1,13 +1,13 @@
-package com.moni.portfolio.application.calculator;
+package com.moni.trade.asset.application.calculator;
 
 import com.moni.common.error.exception.CustomException;
-import com.moni.portfolio.application.calculator.model.AccountInput;
-import com.moni.portfolio.application.calculator.model.HoldingInput;
-import com.moni.portfolio.application.calculator.model.HoldingResult;
-import com.moni.portfolio.application.calculator.model.PortfolioAssetResult;
-import com.moni.portfolio.application.calculator.model.PriceInput;
-import com.moni.portfolio.application.calculator.model.TradeInput;
-import com.moni.portfolio.domain.exception.PortfolioErrorCode;
+import com.moni.trade.asset.application.calculator.model.AccountInput;
+import com.moni.trade.asset.application.calculator.model.AssetResult;
+import com.moni.trade.asset.application.calculator.model.HoldingInput;
+import com.moni.trade.asset.application.calculator.model.HoldingResult;
+import com.moni.trade.asset.application.calculator.model.PriceInput;
+import com.moni.trade.asset.application.calculator.model.TradeInput;
+import com.moni.trade.asset.domain.exception.AssetErrorCode;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -17,9 +17,8 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-/** 외부 서비스에서 조회한 계좌, 보유 종목, 현재가 데이터를 기반으로 포트폴리오 평가 값을 계산 */
 @Component
-public class PortfolioCalculator {
+public class AssetCalculator {
 
     private static final int MONEY_SCALE = 2; // 금액은 소수점 둘째 자리까지 반올림
     private static final int RATE_SCALE = 4; // 수익률과 비중은 퍼센트 기준 소수점 넷째 자리까지 반올림
@@ -29,7 +28,7 @@ public class PortfolioCalculator {
     private static final String TRADE_STATUS_DONE = "DONE";
 
     /** 보유 종목별 평가 결과를 계산한 뒤 전체 자산 요약 결과 반환 */
-    public PortfolioAssetResult calculateAssets(
+    public AssetResult calculateAssets(
             AccountInput account,
             List<HoldingInput> holdings,
             List<PriceInput> prices
@@ -46,7 +45,7 @@ public class PortfolioCalculator {
         BigDecimal totalProfitLoss = totalAsset.subtract(account.principalAmount());
         BigDecimal totalReturnRate = calculateRate(totalProfitLoss, account.principalAmount());
 
-        return new PortfolioAssetResult(
+        return new AssetResult(
                 totalAsset.setScale(MONEY_SCALE, RoundingMode.HALF_UP),
                 account.cashBalance(),
                 stockEvaluationAmount.setScale(MONEY_SCALE, RoundingMode.HALF_UP),
@@ -97,7 +96,7 @@ public class PortfolioCalculator {
         PriceInput price = priceMap.get(holding.ticker());
 
         if (price == null) {
-            throw new CustomException(PortfolioErrorCode.STOCK_PRICE_NOT_FOUND);
+            throw new CustomException(AssetErrorCode.STOCK_PRICE_NOT_FOUND);
         }
 
         BigDecimal quantity = BigDecimal.valueOf(holding.quantity());
@@ -123,21 +122,21 @@ public class PortfolioCalculator {
                 || trade.tradeType() == null
                 || trade.totalAmount() == null
                 || trade.status() == null) {
-            throw new CustomException(PortfolioErrorCode.TRADE_RESPONSE_INVALID);
+            throw new CustomException(AssetErrorCode.TRADE_RESPONSE_INVALID);
         }
 
-        return TRADE_STATUS_DONE.equalsIgnoreCase(trade.status());
+        return TRADE_STATUS_DONE.equalsIgnoreCase(trade.status().toString());
     }
 
     private BigDecimal calculateCashBalance(BigDecimal cashBalance, TradeInput trade) {
-        if (TRADE_TYPE_BUY.equalsIgnoreCase(trade.tradeType())) {
+        if (TRADE_TYPE_BUY.equalsIgnoreCase(trade.tradeType().toString())) {
             return cashBalance.subtract(trade.totalAmount());
         }
-        if (TRADE_TYPE_SELL.equalsIgnoreCase(trade.tradeType())) {
+        if (TRADE_TYPE_SELL.equalsIgnoreCase(trade.tradeType().toString())) {
             return cashBalance.add(trade.totalAmount());
         }
 
-        throw new CustomException(PortfolioErrorCode.TRADE_RESPONSE_INVALID);
+        throw new CustomException(AssetErrorCode.TRADE_RESPONSE_INVALID);
     }
 
     /** numerator / denominator * 100 형태의 퍼센트 값을 계산 */

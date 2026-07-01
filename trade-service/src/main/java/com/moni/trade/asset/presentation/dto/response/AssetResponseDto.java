@@ -1,12 +1,12 @@
-package com.moni.portfolio.presentation.dto.response;
+package com.moni.trade.asset.presentation.dto.response;
 
-import com.moni.portfolio.application.calculator.model.PortfolioAssetResult;
+import com.moni.trade.asset.application.calculator.model.AssetResult;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.math.BigDecimal;
 
 @Schema(description = "포트폴리오 자산 조회 응답")
-public record PortfolioAssetResponseDto(
+public record AssetResponseDto(
 
         @Schema(description = "총 평가자산", example = "10500000.00")
         BigDecimal totalAsset,
@@ -26,8 +26,8 @@ public record PortfolioAssetResponseDto(
         @Schema(description = "누적 수익률(%)", example = "5.0000")
         BigDecimal totalReturnRate
 ) {
-    public static PortfolioAssetResponseDto from(PortfolioAssetResult result) {
-        return new PortfolioAssetResponseDto(
+    public static AssetResponseDto from(AssetResult result) {
+        return new AssetResponseDto(
                 result.totalAsset(),
                 result.cashBalance(),
                 result.stockEvaluationAmount(),

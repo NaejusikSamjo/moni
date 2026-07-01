@@ -1,14 +1,14 @@
-package com.moni.portfolio.presentation.dto.response;
+package com.moni.trade.asset.presentation.dto.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.List;
 
 @Schema(description = "보유 종목 현황 조회 응답")
-public record PortfolioHoldingsResponseDto(
+public record AssetHoldingsResponseDto(
 
         @Schema(description = "보유 종목 목록")
-        List<PortfolioHoldingResponseDto> content,
+        List<AssetHoldingResponseDto> content,
 
         @Schema(description = "현재 페이지 번호", example = "0")
         int page,

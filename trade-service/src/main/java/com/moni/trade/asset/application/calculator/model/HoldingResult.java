@@ -1,4 +1,4 @@
-package com.moni.portfolio.application.calculator.model;
+package com.moni.trade.asset.application.calculator.model;
 
 import java.math.BigDecimal;
 
