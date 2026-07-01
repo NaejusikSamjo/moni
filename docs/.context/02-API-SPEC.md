@@ -8,27 +8,30 @@
 
 ## 1. USER (user-service, 담당: 동원)
 
-| 기능                    | URL                                      | Method | 비고                                                                            |
-|-----------------------|------------------------------------------|--------|-------------------------------------------------------------------------------|
-| 회원가입                  | `/api/v1/auth/signup`                    | POST   |                                                                               |
-| 로그인                   | `/api/v1/auth/login`                     | POST   |                                                                               |
-| 로그아웃                  | `/api/v1/auth/logout`                    | POST   |                                                                               |
-| 토큰 재발급                | `/api/v1/auth/refresh`                   | POST   |                                                                               |
-| 소셜 로그인 URL 생성         | `/api/v1/auth/social/login-url`          | POST   | Body: provider, codeChallenge, state — 프론트가 생성한 PKCE 값을 받아 OAuth URL 반환       |
-| 소셜 로그인 (Google/Kakao) | `/api/v1/auth/social/login`              | POST   | Body: provider, code, codeVerifier — Authorization Code + PKCE 흐름, 서비스 JWT 발급 |
-| 내 정보 조회               | `/api/v1/users/me`                       | GET    |                                                                               |
-| 내 정보 수정               | `/api/v1/users/me`                       | PATCH  | name, nickname, phone만 수정 가능. 비밀번호 변경은 별도 엔드포인트 사용                            |
-| 비밀번호 변경               | `/api/v1/users/me/password`              | POST   | Body: currentPassword, newPassword. 현재 비밀번호 확인 후 변경                           |
-| 회원 탈퇴                 | `/api/v1/users/me`                       | DELETE |                                                                               |
-| 투자 성향 등록              | `/api/v1/users/me/tendency`              | POST   |                                                                               |
-| 투자 성향 조회              | `/api/v1/users/me/tendency`              | GET    |                                                                               |
-| 투자 성향 수정              | `/api/v1/users/me/tendency`              | PUT    |                                                                               |
-| 관심사 등록                | `/api/v1/users/me/interests`             | POST   |                                                                               |
-| 관심사 조회                | `/api/v1/users/me/interests`             | GET    |                                                                               |
-| 관심사 수정                | `/api/v1/users/me/interests`             | PUT    |                                                                               |
-| 관심종목 추가               | `/api/v1/users/me/watchlist/{stockCode}` | PUT    | stockCode: 6자리 숫자 (국내 주식 한정)                                                  |
-| 관심종목 삭제               | `/api/v1/users/me/watchlist/{stockCode}` | DELETE | stockCode: 6자리 숫자 (국내 주식 한정)                                                  |
-| 관심종목 목록 조회            | `/api/v1/users/me/watchlist`             | GET    |                                                                               |
+| 기능                    | URL                                           | Method | 비고                                                                                                     |
+|-----------------------|-----------------------------------------------|--------|--------------------------------------------------------------------------------------------------------|
+| 회원가입                  | `/api/v1/auth/signup`                         | POST   |                                                                                                        |
+| 로그인                   | `/api/v1/auth/login`                          | POST   | OAuth 전용(비밀번호 미설정) 유저는 로그인 불가. LOGIN_FAILED 반환                                                         |
+| 로그아웃                  | `/api/v1/auth/logout`                         | POST   |                                                                                                        |
+| 토큰 재발급                | `/api/v1/auth/refresh`                        | POST   |                                                                                                        |
+| 소셜 로그인 URL 생성         | `/api/v1/auth/social/login-url`               | POST   | Body: provider, codeChallenge, state — 프론트가 생성한 PKCE 값을 받아 OAuth URL 반환                                |
+| 소셜 로그인 (Google/Kakao) | `/api/v1/auth/social/login`                   | POST   | Body: provider, code, codeVerifier — Authorization Code + PKCE 흐름, 서비스 JWT 발급                         |
+| 내 정보 조회               | `/api/v1/users/me`                            | GET    | Response에 `profile`(이모지 or S3 URL), `oauthProvider`, `integrated` 포함                                  |
+| 내 정보 수정               | `/api/v1/users/me`                            | PATCH  | name, nickname, phone만 수정 가능. 비밀번호·프로필 변경은 별도 엔드포인트 사용                                                 |
+| 비밀번호 변경               | `/api/v1/users/me/password`                   | POST   | Body: currentPassword, newPassword. 현재 비밀번호 확인 후 변경                                                   |
+| 회원 탈퇴                 | `/api/v1/users/me`                            | DELETE | Body(optional): `{ "password": "..." }`. 비밀번호 설정 유저는 필수, OAuth 전용 유저는 생략 가능                           |
+| 통합 회원 전환              | `/api/v1/users/me/integrate`                  | POST   | OAuth 가입 유저 전용. Body: `{ "password": "..." }`. 비밀번호 설정 + integrated=true. 이후 이메일/비밀번호 로그인 가능          |
+| 프로필 Presigned URL 발급  | `/api/v1/users/me/profile/presigned-url`      | GET    | Query: `extension` (jpg/jpeg/png/webp). Response: `{ presignedUrl, s3Url }`. 유효시간 10분                 |
+| 프로필 수정                | `/api/v1/users/me/profile`                    | PATCH  | Body: `{ "profile": "😀" }` 또는 `{ "profile": "https://cdn.moni.my/..." }`. 이모지·CDN URL 모두 허용          |
+| 투자 성향 등록              | `/api/v1/users/me/tendency`                   | POST   |                                                                                                        |
+| 투자 성향 조회              | `/api/v1/users/me/tendency`                   | GET    |                                                                                                        |
+| 투자 성향 수정              | `/api/v1/users/me/tendency`                   | PUT    |                                                                                                        |
+| 관심사 등록                | `/api/v1/users/me/interests`                  | POST   |                                                                                                        |
+| 관심사 조회                | `/api/v1/users/me/interests`                  | GET    |                                                                                                        |
+| 관심사 수정                | `/api/v1/users/me/interests`                  | PUT    |                                                                                                        |
+| 관심종목 추가               | `/api/v1/users/me/watchlist/{stockCode}`      | PUT    | stockCode: 영문/숫자 6자리 (`^[A-Za-z0-9]{6}$`)                                                             |
+| 관심종목 삭제               | `/api/v1/users/me/watchlist/{stockCode}`      | DELETE | stockCode: 영문/숫자 6자리                                                                                   |
+| 관심종목 목록 조회            | `/api/v1/users/me/watchlist`                  | GET    |                                                                                                        |
 
 ---
 

@@ -61,6 +61,12 @@ public class User extends BaseEntity implements Persistable<UUID> {
     @Column(name = "status", length = 10, nullable = false)
     private UserStatus status;
 
+    @Column(name = "profile", columnDefinition = "TEXT")
+    private String profile;
+
+    @Column(name = "integrated", nullable = false)
+    private boolean integrated = false;
+
     @Column(name = "suspended_reason", columnDefinition = "TEXT")
     private String suspendedReason;
 
@@ -106,6 +112,15 @@ public class User extends BaseEntity implements Persistable<UUID> {
         if (name != null) this.name = name;
         if (nickname != null) this.nickname = nickname;
         if (phone != null) this.phone = phone;
+    }
+
+    public void updateProfileImage(String profile) {
+        this.profile = profile;
+    }
+
+    public void integrate(String encodedPassword) {
+        this.password = encodedPassword;
+        this.integrated = true;
     }
 
     public void updatePassword(String encodedPassword) {
