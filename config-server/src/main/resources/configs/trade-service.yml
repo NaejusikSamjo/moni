@@ -50,6 +50,9 @@ management:
   endpoint:
     health:
       show-details: always
+  health:
+    kafka:
+      enabled: false
   metrics:
     tags:
       application: ${spring.application.name}
