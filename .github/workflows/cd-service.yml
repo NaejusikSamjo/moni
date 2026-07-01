@@ -122,6 +122,8 @@ jobs:
         run: |
           echo "DC=$(base64 -w 0 docker-compose.yml)" >> $GITHUB_ENV
           echo "DC_PROD=$(base64 -w 0 docker-compose.service.prod.yml)" >> $GITHUB_ENV
+          echo "DC_ALLOY=$(base64 -w 0 docker-compose.alloy.yml)" >> $GITHUB_ENV
+          echo "ALLOY_CFG=$(base64 -w 0 monitor/alloy/config.sidecar.alloy)" >> $GITHUB_ENV
 
       - name: Save pre-deploy state
         run: |
@@ -140,6 +142,14 @@ jobs:
             docker-compose -f docker-compose.yml -f docker-compose.service.prod.yml pull ${{ env.CHANGED_SERVICES }}
             docker-compose -f docker-compose.yml -f docker-compose.service.prod.yml up -d --no-deps ${{ env.CHANGED_SERVICES }}
             echo \"${{ github.sha }}\" > ~/moni/.deployed-sha
+          "
+          echo "$DC_ALLOY" | ssh service "base64 -d > ~/moni/docker-compose.alloy.yml"
+          ssh service "mkdir -p ~/moni/monitor/alloy"
+          echo "$ALLOY_CFG" | ssh service "base64 -d > ~/moni/monitor/alloy/config.sidecar.alloy"
+          ssh service "
+            cd ~/moni
+            LOKI_URL=${{ secrets.LOKI_URL }} \
+              docker compose -f docker-compose.alloy.yml up -d --no-recreate
           "
 
       - name: Health check
