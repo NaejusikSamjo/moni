@@ -2,9 +2,8 @@ package com.moni.ai;
 
 import com.moni.ai.application.service.AiService;
 import com.moni.ai.application.service.AsyncNewsCollectService;
-import com.moni.ai.application.service.NewsCollectScheduler;
+import com.moni.ai.application.service.NewsService;
 import com.moni.ai.application.service.NewsCollectService;
-import com.moni.ai.domain.entity.NewsEntity;
 import com.moni.ai.domain.enums.ImpactKeyword;
 import com.moni.ai.domain.enums.WatchCompany;
 import com.moni.ai.domain.repository.NewsRepository;
@@ -22,21 +21,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.util.List;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -58,7 +47,7 @@ class NaverNewsClientIntegrationTest {
     private AsyncNewsCollectService asyncNewsCollectService;
 
     @Autowired
-    private NewsCollectScheduler newsCollectScheduler;
+    private NewsService newsService;
 
     @Autowired
     private VectorStore vectorStore;
@@ -71,7 +60,7 @@ class NaverNewsClientIntegrationTest {
     void 병렬_처리_성능_검증() {
         // when
         long start = System.currentTimeMillis();
-        newsCollectScheduler.collectAll();  // 실제 Naver API 호출
+        newsService.collectAll();  // 실제 Naver API 호출
         long elapsed = System.currentTimeMillis() - start;
 
         // 순차 처리 예상 시간: 기업수 × 키워드수 × 평균응답시간(300ms)

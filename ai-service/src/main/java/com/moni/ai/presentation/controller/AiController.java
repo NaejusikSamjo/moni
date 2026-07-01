@@ -1,11 +1,12 @@
 package com.moni.ai.presentation.controller;
 
 import com.moni.ai.application.service.AiService;
-import com.moni.ai.application.service.NewsCollectScheduler;
+import com.moni.ai.application.service.NewsService;
 import com.moni.ai.application.service.NewsCollectService;
 import com.moni.ai.presentation.controller.docs.AiControllerDocs;
 import com.moni.ai.presentation.dto.request.IssueAnalysisReqDto;
 import com.moni.ai.presentation.dto.response.CompanyIssueResDto;
+import com.moni.ai.presentation.dto.response.WatchCompanyResDto;
 import com.moni.common.response.GlobalResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +17,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/ai")
 @RequiredArgsConstructor
@@ -23,7 +26,7 @@ public class AiController implements AiControllerDocs {
 
     private final AiService aiService;
     private final NewsCollectService newsCollectService;
-    private final NewsCollectScheduler newsCollectScheduler;
+    private final NewsService newsService;
 
     @PostMapping("/{ticker}/issue-analysis")
     public ResponseEntity<GlobalResponse<CompanyIssueResDto>> createIssueAnalysis(
@@ -47,7 +50,12 @@ public class AiController implements AiControllerDocs {
 
     @PostMapping("/news/fetch")
     public ResponseEntity<GlobalResponse<String>> createNewsVector(){
-        newsCollectScheduler.collectAll();
+        newsService.collectAll();
         return ResponseEntity.ok(GlobalResponse.success(201, "success"));
+    }
+
+    @GetMapping("")
+    public ResponseEntity<GlobalResponse<List<WatchCompanyResDto>>> getWatchCompany(){
+        return ResponseEntity.ok(GlobalResponse.success(200,newsService.getWatchList()));
     }
 }

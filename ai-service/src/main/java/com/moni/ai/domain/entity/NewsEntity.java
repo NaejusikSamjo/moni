@@ -27,7 +27,6 @@ public class NewsEntity extends IdAudit{
     @Column(name="title",nullable=false)
     private String title;
 
-    // TODO: sa문서 반영
     @Column(name = "company_name", length = 50)
     private String companyName;
 
