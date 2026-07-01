@@ -57,7 +57,7 @@ public class PortfolioRiskCalculator {
 
         BigDecimal score = normalizePercent(topHoldingWeight).multiply(TOP_HOLDING_WEIGHT)
                 .add(normalizePercent(topSectorWeight).multiply(TOP_SECTOR_WEIGHT))
-                .add(stockAllocationRate.multiply(STOCK_ALLOCATION_WEIGHT))
+                .add(normalizePercent(stockAllocationRate).multiply(STOCK_ALLOCATION_WEIGHT))
                 .add(holdingCountRisk.multiply(HOLDING_COUNT_WEIGHT));
 
         return score.setScale(0, RoundingMode.HALF_UP).intValue();
