@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 public record StockResponseDto(
         String ticker,
         String name,
-        BigDecimal price
+        BigDecimal price,
+        String sectorName
 ) {
 }

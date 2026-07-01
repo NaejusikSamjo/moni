@@ -13,11 +13,15 @@ public class FeignConfig {
     ) {
         return template -> {
             template.header("X-Gateway-Secret", gatewaySecret);
-            SecurityUtil.getCurrentUserId()
-                    .ifPresent(userId -> template.header("X-User-Id", userId.toString()));
-            SecurityUtil.getCurrentUserRole()
-                    .filter(role -> !role.isBlank())
-                    .ifPresent(role -> template.header("X-User-Role", role));
+            if (!template.headers().containsKey("X-User-Id")) {
+                SecurityUtil.getCurrentUserId()
+                        .ifPresent(userId -> template.header("X-User-Id", userId.toString()));
+            }
+            if (!template.headers().containsKey("X-User-Role")) {
+                SecurityUtil.getCurrentUserRole()
+                        .filter(role -> !role.isBlank())
+                        .ifPresent(role -> template.header("X-User-Role", role));
+            }
         };
     }
 }
