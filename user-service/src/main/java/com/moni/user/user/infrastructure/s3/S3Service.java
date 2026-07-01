@@ -27,9 +27,6 @@ public class S3Service {
     @Value("${cloud.aws.s3.bucket}")
     private String bucket;
 
-    @Value("${cloud.aws.s3.region}")
-    private String region;
-
     @Value("${cloud.aws.cloudfront.domain}")
     private String cloudfrontDomain;
 
@@ -45,7 +42,7 @@ public class S3Service {
                     .build();
 
             PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
-                    .signatureDuration(Duration.ofMinutes(10))
+                    .signatureDuration(Duration.ofMinutes(3))
                     .putObjectRequest(putObjectRequest)
                     .build();
 
