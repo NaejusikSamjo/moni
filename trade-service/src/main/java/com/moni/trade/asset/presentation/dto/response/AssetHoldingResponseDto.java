@@ -1,12 +1,12 @@
-package com.moni.portfolio.presentation.dto.response;
+package com.moni.trade.asset.presentation.dto.response;
 
-import com.moni.portfolio.application.calculator.model.HoldingResult;
+import com.moni.trade.asset.application.calculator.model.HoldingResult;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.math.BigDecimal;
 
 @Schema(description = "보유 종목 평가 응답")
-public record PortfolioHoldingResponseDto(
+public record AssetHoldingResponseDto(
 
         @Schema(description = "종목 코드", example = "005930")
         String ticker,
@@ -32,8 +32,8 @@ public record PortfolioHoldingResponseDto(
         @Schema(description = "포트폴리오 내 비중(%)", example = "60.0000")
         BigDecimal weight
 ) {
-    public static PortfolioHoldingResponseDto from(HoldingResult result) {
-        return new PortfolioHoldingResponseDto(
+    public static AssetHoldingResponseDto from(HoldingResult result) {
+        return new AssetHoldingResponseDto(
                 result.ticker(),
                 result.quantity(),
                 result.averagePurchasePrice(),
