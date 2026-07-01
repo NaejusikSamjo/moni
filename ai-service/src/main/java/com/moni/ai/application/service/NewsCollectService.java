@@ -19,6 +19,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 @RequiredArgsConstructor
@@ -31,15 +32,8 @@ public class NewsCollectService {
     private final VectorStore vectorStore;
     // 주가 영향 키워드 & 기업 리스트
     private static final List<String> IMPACT_KEYWORDS = ImpactKeyword.getAllKeywords();
-    private static final Map<String, String> WATCH_LIST = WatchCompany.toMap();
 
 
-    @Scheduled(cron = "0 0 8,18 * * MON-FRI") // 평일 오전 8시, 오후 6시
-    public void collectAll() {
-        log.info("뉴스 수집 스케줄러 시작");
-        WATCH_LIST.forEach(this::collectByTicker);
-        log.info("뉴스 수집 스케줄러 완료");
-    }
 
     @Transactional
     public void collectByTicker(String ticker, String companyName) {

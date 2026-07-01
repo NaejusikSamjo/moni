@@ -1,6 +1,7 @@
 package com.moni.ai.presentation.controller;
 
 import com.moni.ai.application.service.AiService;
+import com.moni.ai.application.service.NewsCollectScheduler;
 import com.moni.ai.application.service.NewsCollectService;
 import com.moni.ai.presentation.controller.docs.AiControllerDocs;
 import com.moni.ai.presentation.dto.request.IssueAnalysisReqDto;
@@ -22,6 +23,7 @@ public class AiController implements AiControllerDocs {
 
     private final AiService aiService;
     private final NewsCollectService newsCollectService;
+    private final NewsCollectScheduler newsCollectScheduler;
 
     @PostMapping("/{ticker}/issue-analysis")
     public ResponseEntity<GlobalResponse<CompanyIssueResDto>> createIssueAnalysis(
@@ -45,7 +47,7 @@ public class AiController implements AiControllerDocs {
 
     @PostMapping("/news/fetch")
     public ResponseEntity<GlobalResponse<String>> createNewsVector(){
-        newsCollectService.collectAll();
+        newsCollectScheduler.collectAll();
         return ResponseEntity.ok(GlobalResponse.success(201, "success"));
     }
 }

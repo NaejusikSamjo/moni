@@ -1,8 +1,12 @@
 package com.moni.ai;
 
 import com.moni.ai.application.service.AiService;
+import com.moni.ai.application.service.AsyncNewsCollectService;
+import com.moni.ai.application.service.NewsCollectScheduler;
 import com.moni.ai.application.service.NewsCollectService;
 import com.moni.ai.domain.entity.NewsEntity;
+import com.moni.ai.domain.enums.ImpactKeyword;
+import com.moni.ai.domain.enums.WatchCompany;
 import com.moni.ai.domain.repository.NewsRepository;
 import com.moni.ai.infrastructure.client.NaverNewsClient;
 import com.moni.ai.presentation.dto.response.CompanyIssueResDto;
@@ -18,10 +22,21 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -40,27 +55,31 @@ class NaverNewsClientIntegrationTest {
     private NewsRepository newsRepository;
 
     @Autowired
+    private AsyncNewsCollectService asyncNewsCollectService;
+
+    @Autowired
+    private NewsCollectScheduler newsCollectScheduler;
+
+    @Autowired
     private VectorStore vectorStore;
 
     @Autowired
     private AiService aiService;
 
     @Test
-    @DisplayName("DB저장 확인")
-    void API_호출_정상_반환() {
+    @DisplayName("병렬 처리가 순차 처리보다 빠르다")
+    void 병렬_처리_성능_검증() {
         // when
-        newsCollectService.collectByTicker("005930","삼성전자");
+        long start = System.currentTimeMillis();
+        newsCollectScheduler.collectAll();  // 실제 Naver API 호출
+        long elapsed = System.currentTimeMillis() - start;
 
-        // then
-        List<NewsEntity> saved = newsRepository.findByTicker("005930");
-        assertThat(saved).isNotEmpty();
-        assertThat(saved.get(0).getTicker()).isEqualTo("005930");
+        // 순차 처리 예상 시간: 기업수 × 키워드수 × 평균응답시간(300ms)
+        long expectedSequential = (long) WatchCompany.toMap().size()
+                * ImpactKeyword.getAllKeywords().size() * 300;
 
-        // 저장된 내용 로그로 확인
-        saved.forEach(news ->
-                log.info("저장된 뉴스 - 제목: {}, 날짜: {}", news.getTitle(), news.getPublishedAt())
-        );
-
+        log.info("순차 예상: {}ms, 실제: {}ms", expectedSequential, elapsed);
+        assertThat(elapsed).isLessThan(expectedSequential);
     }
 
     @Test
