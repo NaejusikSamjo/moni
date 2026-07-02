@@ -21,6 +21,7 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.util.UUID;
 
+/** 현재 sector 기반으로 AI 분석 X (해당 Entity 사용 X) */
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)

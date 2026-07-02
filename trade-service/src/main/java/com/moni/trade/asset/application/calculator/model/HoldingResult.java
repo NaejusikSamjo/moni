@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 
 public record HoldingResult(
         String ticker,
+        String name,
         Long quantity,
         BigDecimal averagePurchasePrice,
         BigDecimal currentPrice,
@@ -15,6 +16,7 @@ public record HoldingResult(
     public HoldingResult withWeight(BigDecimal weight) {
         return new HoldingResult(
                 ticker,
+                name,
                 quantity,
                 averagePurchasePrice,
                 currentPrice,
