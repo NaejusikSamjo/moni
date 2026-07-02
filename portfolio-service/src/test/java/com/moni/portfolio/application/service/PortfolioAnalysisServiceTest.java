@@ -10,11 +10,13 @@ import com.moni.portfolio.domain.enums.AnalysisStatus;
 import com.moni.portfolio.domain.exception.PortfolioErrorCode;
 import com.moni.portfolio.domain.repository.PortfolioAnalysisRepository;
 import com.moni.portfolio.domain.repository.PortfolioRepository;
+import com.moni.portfolio.infrastructure.client.PaymentServiceClient;
 import com.moni.portfolio.infrastructure.client.TradeServiceClient;
 import com.moni.portfolio.infrastructure.client.UserServiceClient;
 import com.moni.portfolio.infrastructure.client.dto.request.AiPortfolioAnalysisRequestDto;
 import com.moni.portfolio.infrastructure.client.dto.request.AiPortfolioTendencyAnalysisRequestDto;
 import com.moni.portfolio.infrastructure.client.dto.response.ExternalApiResponseDto;
+import com.moni.portfolio.infrastructure.client.dto.response.SubscriptionStatusResponseDto;
 import com.moni.portfolio.infrastructure.client.dto.response.TradeAssetHoldingResponseDto;
 import com.moni.portfolio.infrastructure.client.dto.response.TradeAssetHoldingsResponseDto;
 import com.moni.portfolio.infrastructure.client.dto.response.TradeAssetResponseDto;
@@ -31,6 +33,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -67,6 +70,9 @@ class PortfolioAnalysisServiceTest {
     private UserServiceClient userServiceClient;
 
     @Mock
+    private PaymentServiceClient paymentServiceClient;
+
+    @Mock
     private PortfolioAnalysisAsyncExecutor portfolioAnalysisAsyncExecutor;
 
     @InjectMocks
@@ -87,7 +93,8 @@ class PortfolioAnalysisServiceTest {
                     "STABLE"
             );
 
-            given(portfolioRepository.findByUserId(USER_ID)).willReturn(Optional.of(portfolio));
+            given(portfolioRepository.findByUserIdForUpdate(USER_ID)).willReturn(Optional.of(portfolio));
+            givenAnalysisPolicyAllowed(freePlan());
             given(tradeServiceClient.getAssets(USER_ID))
                     .willReturn(success(new TradeAssetResponseDto(
                             new BigDecimal("10000000.00"),
@@ -188,7 +195,8 @@ class PortfolioAnalysisServiceTest {
         void fail_empty_holdings() {
             // given
             Portfolio portfolio = portfolio();
-            given(portfolioRepository.findByUserId(USER_ID)).willReturn(Optional.of(portfolio));
+            given(portfolioRepository.findByUserIdForUpdate(USER_ID)).willReturn(Optional.of(portfolio));
+            givenAnalysisPolicyAllowed(freePlan());
             given(tradeServiceClient.getAssets(USER_ID))
                     .willReturn(success(new TradeAssetResponseDto(
                             new BigDecimal("10000000.00"),
@@ -218,12 +226,152 @@ class PortfolioAnalysisServiceTest {
             then(portfolioAnalysisAsyncExecutor).should(never())
                     .requestAiAnalysis(any(UUID.class), any(AiPortfolioAnalysisRequestDto.class));
         }
+
+        @Test
+        @DisplayName("실패 - 오늘 이미 분석을 요청했으면 추가 요청할 수 없다")
+        void fail_daily_limit_exceeded() {
+            // given
+            Portfolio portfolio = portfolio();
+            given(portfolioRepository.findByUserIdForUpdate(USER_ID)).willReturn(Optional.of(portfolio));
+            given(portfolioAnalysisRepository.existsByPortfolioIdAndUpdatedAtBetween(
+                    any(UUID.class),
+                    any(LocalDateTime.class),
+                    any(LocalDateTime.class)
+            )).willReturn(true);
+
+            // when & then
+            assertThatThrownBy(() -> portfolioAnalysisService.requestAnalysis(USER_ID))
+                    .isInstanceOfSatisfying(CustomException.class, exception ->
+                            assertThat(exception.getErrorCode())
+                                    .isEqualTo(PortfolioErrorCode.PORTFOLIO_ANALYSIS_DAILY_LIMIT_EXCEEDED));
+
+            then(paymentServiceClient).should(never()).getSubscriptionStatus(USER_ID);
+            then(tradeServiceClient).should(never()).getAssets(USER_ID);
+            then(portfolioAnalysisRepository).should(never()).save(any(PortfolioAnalysis.class));
+        }
+
+        @Test
+        @DisplayName("실패 - 무료 플랜은 계정당 최대 5번까지만 분석을 요청할 수 있다")
+        void fail_free_plan_limit_exceeded() {
+            // given
+            Portfolio portfolio = portfolio();
+            ReflectionTestUtils.setField(portfolio, "aiAnalysisCount", 5L);
+            given(portfolioRepository.findByUserIdForUpdate(USER_ID)).willReturn(Optional.of(portfolio));
+            givenAnalysisPolicyAllowed(freePlan());
+
+            // when & then
+            assertThatThrownBy(() -> portfolioAnalysisService.requestAnalysis(USER_ID))
+                    .isInstanceOfSatisfying(CustomException.class, exception ->
+                            assertThat(exception.getErrorCode())
+                                    .isEqualTo(PortfolioErrorCode.PORTFOLIO_ANALYSIS_FREE_LIMIT_EXCEEDED));
+
+            then(tradeServiceClient).should(never()).getAssets(USER_ID);
+            then(portfolioAnalysisRepository).should(never()).save(any(PortfolioAnalysis.class));
+        }
+
+        @Test
+        @DisplayName("성공 - 유료 플랜은 누적 5회를 초과해도 하루 1회 조건만 만족하면 분석을 요청할 수 있다")
+        void success_paid_plan_over_free_limit() {
+            // given
+            Portfolio portfolio = portfolio();
+            ReflectionTestUtils.setField(portfolio, "aiAnalysisCount", 5L);
+            UserTendencyResponseDto userTendency = new UserTendencyResponseDto(
+                    UUID.fromString("00000000-0000-0000-0000-000000000010"),
+                    33,
+                    "STABLE"
+            );
+
+            given(portfolioRepository.findByUserIdForUpdate(USER_ID)).willReturn(Optional.of(portfolio));
+            givenAnalysisPolicyAllowed(paidPlan());
+            given(tradeServiceClient.getAssets(USER_ID))
+                    .willReturn(success(new TradeAssetResponseDto(
+                            new BigDecimal("10000000.00"),
+                            new BigDecimal("5841500.00"),
+                            new BigDecimal("4158500.00"),
+                            new BigDecimal("10000000.00"),
+                            new BigDecimal("-177500.00"),
+                            new BigDecimal("-1.7750")
+                    )));
+            given(tradeServiceClient.getAssetHoldings(USER_ID, 0, 10, "evaluationAmount,desc"))
+                    .willReturn(success(new TradeAssetHoldingsResponseDto(
+                            List.of(holding(
+                                    "000660",
+                                    "SK하이닉스",
+                                    10L,
+                                    "220000.00",
+                                    "210000.00",
+                                    "2100000.00",
+                                    "-100000.00",
+                                    "-4.5455",
+                                    "100.00"
+                            )),
+                            0,
+                            10,
+                            1,
+                            1,
+                            "evaluationAmount,desc"
+                    )));
+            given(userServiceClient.getTendency(USER_ID)).willReturn(success(userTendency));
+            given(portfolioRiskCalculator.calculate(
+                    any(UserTendencyResponseDto.class),
+                    any(BigDecimal.class),
+                    any(BigDecimal.class),
+                    any(BigDecimal.class),
+                    anyInt()
+            )).willReturn(new TendencySuitabilityResult(
+                    TendencyType.STABLE,
+                    33,
+                    TendencyType.AGGRESSIVE,
+                    90,
+                    43,
+                    "주의"
+            ));
+            given(portfolioAnalysisRepository.save(any(PortfolioAnalysis.class)))
+                    .willAnswer(invocation -> {
+                        PortfolioAnalysis analysis = invocation.getArgument(0);
+                        ReflectionTestUtils.setField(analysis, "id", ANALYSIS_ID);
+                        return analysis;
+                    });
+
+            // when
+            PortfolioAnalysisCreateResponseDto result = portfolioAnalysisService.requestAnalysis(USER_ID);
+
+            // then
+            assertThat(result.analysisId()).isEqualTo(ANALYSIS_ID);
+            assertThat(portfolio.getAiAnalysisCount()).isEqualTo(6L);
+            then(portfolioAnalysisAsyncExecutor).should()
+                    .requestAiAnalysis(any(UUID.class), any(AiPortfolioAnalysisRequestDto.class));
+        }
     }
 
     private Portfolio portfolio() {
         Portfolio portfolio = Portfolio.create(USER_ID);
         ReflectionTestUtils.setField(portfolio, "id", PORTFOLIO_ID);
         return portfolio;
+    }
+
+    private void givenAnalysisPolicyAllowed(SubscriptionStatusResponseDto subscriptionStatus) {
+        given(portfolioAnalysisRepository.existsByPortfolioIdAndUpdatedAtBetween(
+                any(UUID.class),
+                any(LocalDateTime.class),
+                any(LocalDateTime.class)
+        )).willReturn(false);
+        given(paymentServiceClient.getSubscriptionStatus(USER_ID))
+                .willReturn(success(subscriptionStatus));
+    }
+
+    private SubscriptionStatusResponseDto freePlan() {
+        return new SubscriptionStatusResponseDto(false, null, null, null, null);
+    }
+
+    private SubscriptionStatusResponseDto paidPlan() {
+        return new SubscriptionStatusResponseDto(
+                true,
+                UUID.fromString("00000000-0000-0000-0000-000000000020"),
+                "ACTIVE",
+                null,
+                9900L
+        );
     }
 
     private TradeAssetHoldingResponseDto holding(
