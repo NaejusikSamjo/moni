@@ -28,6 +28,7 @@ public class NewsService {
 
     private final AsyncNewsCollectService asyncNewsCollectService;
     private final NewsCollectService newsCollectService;
+    private final MarketNewsCollectService marketNewsCollectService;
     private final NewsRepository newsRepository;
 
     private static final Map<String, String> WATCH_LIST = WatchCompany.toMap();
@@ -45,6 +46,13 @@ public class NewsService {
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
 
         log.info("뉴스 수집 스케줄러 완료");
+    }
+
+    @Scheduled(cron = "0 0 9,19 * * MON-FRI")
+    public void collectMarketAll(){
+        log.info("마켓 뉴스 스케줄러 시작");
+        marketNewsCollectService.collectMarketNews();
+        log.info("마켓 뉴스 스케줄러 완료");
     }
 
     public List<WatchCompanyResDto> getWatchList() {
