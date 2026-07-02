@@ -14,11 +14,16 @@ import com.moni.user.user.domain.repository.InterestRepository;
 import com.moni.user.user.domain.repository.TendencyRepository;
 import com.moni.user.user.domain.repository.UserRepository;
 import com.moni.user.user.domain.repository.WatchlistRepository;
+import com.moni.user.user.infrastructure.s3.S3Service;
 import com.moni.user.user.presentation.dto.request.ChangePasswordRequest;
 import com.moni.user.user.presentation.dto.request.InterestRequest;
+import com.moni.user.user.presentation.dto.request.ProfileUpdateRequest;
+import com.moni.user.user.presentation.dto.request.IntegrateRequest;
 import com.moni.user.user.presentation.dto.request.TendencyRequest;
 import com.moni.user.user.presentation.dto.request.UserUpdateRequest;
+import com.moni.user.user.presentation.dto.request.WithdrawRequest;
 import com.moni.user.user.presentation.dto.response.InterestResponse;
+import com.moni.user.user.presentation.dto.response.PresignedUrlResponse;
 import com.moni.user.user.presentation.dto.response.TendencyResponse;
 import com.moni.user.user.presentation.dto.response.UserResponse;
 import com.moni.user.user.presentation.dto.response.WatchlistResponse;
@@ -42,6 +47,7 @@ public class UserService {
     private final WatchlistRepository watchlistRepository;
     private final PasswordEncoder passwordEncoder;
     private final TokenService tokenService;
+    private final S3Service s3Service;
 
     // 내 정보 조회/수정
     @Transactional(readOnly = true)
@@ -66,6 +72,21 @@ public class UserService {
     }
 
     @Transactional
+    public void integrate(UUID userId, IntegrateRequest request) {
+        validateOwnership(userId);
+        User user = getUserById(userId);
+
+        if (user.getOauthProvider() == null) {
+            throw new CustomException(UserErrorCode.NOT_OAUTH_ACCOUNT);
+        }
+        if (user.isIntegrated()) {
+            throw new CustomException(UserErrorCode.ALREADY_INTEGRATED);
+        }
+
+        user.integrate(passwordEncoder.encode(request.getPassword()));
+    }
+
+    @Transactional
     public void changePassword(UUID userId, ChangePasswordRequest request) {
         validateOwnership(userId);
         User user = getUserById(userId);
@@ -81,9 +102,19 @@ public class UserService {
     }
 
     @Transactional
-    public void withdraw(UUID userId, String deletedBy) {
+    public void withdraw(UUID userId, WithdrawRequest request, String deletedBy) {
         validateOwnership(userId);
         User user = getUserById(userId);
+
+        if (user.getPassword() != null) {
+            if (request.getPassword() == null || request.getPassword().isBlank()) {
+                throw new CustomException(UserErrorCode.PASSWORD_REQUIRED);
+            }
+            if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+                throw new CustomException(UserErrorCode.PASSWORD_WRONG);
+            }
+        }
+
         user.withdraw("본인 요청", deletedBy);
         tokenService.deleteRefreshToken(userId);
         log.info("[USER] 회원 탈퇴 완료 - userId={}", userId);
@@ -179,6 +210,24 @@ public class UserService {
         Watchlist watchlist = watchlistRepository.findByUserIdAndStockCodeAndDeletedAtIsNull(userId, stockCode)
                 .orElseThrow(() -> new CustomException(UserErrorCode.WATCHLIST_NOT_FOUND));
         watchlist.delete(userId.toString());
+    }
+
+    // 프로필 이미지
+    @Transactional(readOnly = true)
+    public PresignedUrlResponse getPresignedUrl(UUID userId, String extension) {
+        validateOwnership(userId);
+        getUserById(userId);
+        S3Service.PresignedUrlResult result = s3Service.generatePresignedUrl(userId, extension);
+        return PresignedUrlResponse.of(result.presignedUrl(), result.s3Url());
+    }
+
+    @Transactional
+    public UserResponse updateProfileImage(UUID userId, ProfileUpdateRequest request) {
+        validateOwnership(userId);
+        User user = getUserById(userId);
+        s3Service.deleteIfS3Url(user.getProfile());
+        user.updateProfileImage(request.getProfile());
+        return UserResponse.from(user);
     }
 
     // 공통 유틸

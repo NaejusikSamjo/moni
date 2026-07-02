@@ -48,6 +48,14 @@ oauth:
 gateway:
   secret: ${GATEWAY_SECRET}
 
+cloud:
+  aws:
+    s3:
+      bucket: log-bucket-samzo-moni
+      region: ap-northeast-2
+    cloudfront:
+      domain: ${CLOUDFRONT_DOMAIN}
+
 springdoc:
   api-docs:
     path: /v3/api-docs

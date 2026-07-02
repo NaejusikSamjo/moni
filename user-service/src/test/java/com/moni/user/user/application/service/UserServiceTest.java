@@ -12,8 +12,10 @@ import com.moni.user.user.domain.repository.InterestRepository;
 import com.moni.user.user.domain.repository.TendencyRepository;
 import com.moni.user.user.domain.repository.UserRepository;
 import com.moni.user.user.domain.repository.WatchlistRepository;
+import com.moni.user.user.infrastructure.s3.S3Service;
 import com.moni.user.user.presentation.dto.request.TendencyRequest;
 import com.moni.user.user.presentation.dto.request.UserUpdateRequest;
+import com.moni.user.user.presentation.dto.request.WithdrawRequest;
 import com.moni.user.user.presentation.dto.response.TendencyResponse;
 import com.moni.user.user.presentation.dto.response.UserResponse;
 import org.junit.jupiter.api.AfterEach;
@@ -60,6 +62,9 @@ class UserServiceTest {
 
     @Mock
     private TokenService tokenService;
+
+    @Mock
+    private S3Service s3Service;
 
     @InjectMocks
     private UserService userService;
@@ -213,9 +218,13 @@ class UserServiceTest {
         void withdraw_success() {
             // given
             given(userRepository.findByIdAndDeletedAtIsNull(userId)).willReturn(Optional.of(mockUser));
+            given(passwordEncoder.matches("currentPassword", "encodedPassword")).willReturn(true);
+
+            WithdrawRequest request = new WithdrawRequest();
+            ReflectionTestUtils.setField(request, "password", "currentPassword");
 
             // when
-            userService.withdraw(userId, userId.toString());
+            userService.withdraw(userId, request, userId.toString());
 
             // then
             verify(tokenService).deleteRefreshToken(userId);

@@ -18,6 +18,9 @@ public class UserResponse {
     private String name;
     private String nickname;
     private String phone;
+    private String profile;
+    private String oauthProvider;
+    private boolean integrated;
     private UserRole role;
     private UserStatus status;
     private LocalDateTime createdAt;
@@ -29,6 +32,9 @@ public class UserResponse {
                 .name(user.getName())
                 .nickname(user.getNickname())
                 .phone(user.getPhone())
+                .profile(user.getProfile())
+                .oauthProvider(user.getOauthProvider() != null ? user.getOauthProvider().name() : null)
+                .integrated(user.isIntegrated())
                 .role(user.getRole())
                 .status(user.getStatus())
                 .createdAt(user.getCreatedAt())
