@@ -71,7 +71,7 @@
 
 ---
 
-## 2. 모의 투자 서비스 (trade-service, 담당: 동민)
+## 2. 모의 투자 서비스 (trade-service, 담당: 동민/설아)
 
 | 기능              | URL                                 | Method | 비고               |
 |-----------------|-------------------------------------|--------|------------------|
@@ -113,24 +113,26 @@
 
 ## 4. 포트폴리오 (portfolio-service, 담당: 설아)
 
-| 기능             | URL                                                      | Method  | 비고                                                                               |
-|----------------|----------------------------------------------------------|---------|----------------------------------------------------------------------------------|
-| 포트폴리오 생성       | `/api/v1/portfolio`                                      | POST    |                                                                                  |
-| ~~수익률 계산~~     | ~~`/api/v1/portfolio/returns`~~                          | ~~GET~~ | 현재 누적 수익률은 **자산 조회**에서 제공 (필요 시 복구)                                              |
-| ~~종목별 손익~~     | ~~`/api/v1/portfolio/holdings/{stockCode}/profit-loss`~~ | ~~GET~~ | **보유 종목 현황**에서 평가손익·수익률을 제공 (필요 시 복구)                                            |
-| AI 포트폴리오 분석 요청 | `/api/v1/portfolio/ai-analysis`                          | POST    | 내부적으로 ai-service의 `/api/v1/ai/portfolio/analysis` 호출(Feign, Authorization 헤더 전달) |
-| AI 포트폴리오 분석 조회 | `/api/v1/portfolio/ai-analysis/latest`                   | GET     |                                                                                  |
+| 기능                | URL                                                     | Method | 비고                                                                            |
+|-------------------|---------------------------------------------------------|--------|-------------------------------------------------------------------------------|
+| 포트폴리오 생성          | `/api/v1/portfolio`                                     | POST   |                                                                               |
+| ~~수익률 계산~~        | ~~`/api/v1/portfolio/returns`~~                         | ~~GET~~  | 현재 누적 수익률은 **자산 조회**에서 제공 (필요 시 복구)                                    |
+| ~~종목별 손익~~        | ~~`/api/v1/portfolio/holdings/{stockCode}/profit-loss`~~ | ~~GET~~    | **보유 종목 현황**에서 평가손익·수익률을 제공 (필요 시 복구)                               |
+| AI 포트폴리오 분석 요청    | `/api/v1/portfolio/ai-analysis`                         | POST   | 내부적으로 ai-service의 `/api/v1/ai/portfolio/analysis` 호출(Feign, Authorization 헤더 전달) |
+| AI 포트폴리오 분석 최신 조회 | `/api/v1/portfolio/ai-analysis/latest`                  | GET    |                                                                               |
+| AI 포트폴리오 분석 단건 조회 | `/api/v1/portfolio/ai-analysis/{analysisId}`            | GET    |                                                                               |
+| AI 포트폴리오 분석 전체 조회 | `/api/v1/portfolio/ai-analysis?page=&size=`                   | GET    |                                                                         |
 
 ---
 
 ## 5. AI 서비스 (ai-service, 담당: 지은/설아)
 
-| 기능          | URL                                            | Method | 비고                                                             |
-|-------------|------------------------------------------------|--------|----------------------------------------------------------------|
-| 기업 이슈 분석    | `/api/v1/ai/stocks/{stockCode}/issue-analysis` | GET    |                                                                |
-| 뉴스 요약 조회    | `/api/v1/ai/stocks/{stockCode}/news-summary`   | GET    |                                                                |
-| 포트폴리오 AI 분석 | `/api/v1/ai/portfolio/analysis`                | POST   | header: `Authorization` 필요. portfolio-service가 호출하는 내부 API     |
-| 뉴스 fetch    | `/api/v1/ai/news/fetch`                        | POST   | 스케줄러 또는 매니저용. body 예: `{"stockCode": "..."}` → 특정 종목 뉴스만 fetch |
+| 기능          | URL                                            | Method | 비고                                                                  |
+|-------------|------------------------------------------------|--------|---------------------------------------------------------------------|
+| 기업 이슈 분석    | `/api/v1/ai/stocks/{stockCode}/issue-analysis` | GET    |                                                                     |
+| 뉴스 요약 조회    | `/api/v1/ai/stocks/{stockCode}/news-summary`   | GET    |                                                                     |
+| 포트폴리오 AI 분석 | `/api/v1/ai/portfolio/analysis`                | POST   | header: `Authorization` 필요. portfolio-service가 호출하는 내부 API / 담당: 설아 |
+| 뉴스 fetch    | `/api/v1/ai/news/fetch`                        | POST   | 스케줄러 또는 매니저용. body 예: `{"stockCode": "..."}` → 특정 종목 뉴스만 fetch      |
 
 ---
 

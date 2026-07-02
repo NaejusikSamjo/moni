@@ -76,7 +76,7 @@ services:
       OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=prod"
       JAVA_TOOL_OPTIONS: "-javaagent:/opt/otel/opentelemetry-javaagent.jar -Dotel.instrumentation.logback-mdc.enabled=true"
     volumes:
-      - ./logs/user-service:/app/logs
+      - /var/log/services/user-service:/app/logs
     depends_on:
       eureka-server:
         condition: service_healthy
@@ -105,7 +105,7 @@ services:
       OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=prod"
       JAVA_TOOL_OPTIONS: "-javaagent:/opt/otel/opentelemetry-javaagent.jar -Dotel.instrumentation.logback-mdc.enabled=true"
     volumes:
-      - ./logs/trade-service:/app/logs
+      - /var/log/services/trade-service:/app/logs
     depends_on:
       eureka-server:
         condition: service_healthy
@@ -135,7 +135,7 @@ services:
       OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=prod"
       JAVA_TOOL_OPTIONS: "-javaagent:/opt/otel/opentelemetry-javaagent.jar -Dotel.instrumentation.logback-mdc.enabled=true"
     volumes:
-      - ./logs/stock-service:/app/logs
+      - /var/log/services/stock-service:/app/logs
     depends_on:
       eureka-server:
         condition: service_healthy
@@ -166,7 +166,7 @@ services:
       OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=prod"
       JAVA_TOOL_OPTIONS: "-javaagent:/opt/otel/opentelemetry-javaagent.jar -Dotel.instrumentation.logback-mdc.enabled=true"
     volumes:
-      - ./logs/portfolio-service:/app/logs
+      - /var/log/services/portfolio-service:/app/logs
     depends_on:
       eureka-server:
         condition: service_healthy
@@ -193,7 +193,7 @@ services:
       OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=prod"
       JAVA_TOOL_OPTIONS: "-javaagent:/opt/otel/opentelemetry-javaagent.jar -Dotel.instrumentation.logback-mdc.enabled=true"
     volumes:
-      - ./logs/notification-service:/app/logs
+      - /var/log/services/notification-service:/app/logs
     depends_on:
       eureka-server:
         condition: service_healthy
@@ -223,7 +223,7 @@ services:
       OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=prod"
       JAVA_TOOL_OPTIONS: "-javaagent:/opt/otel/opentelemetry-javaagent.jar -Dotel.instrumentation.logback-mdc.enabled=true"
     volumes:
-      - ./logs/payment-service:/app/logs
+      - /var/log/services/payment-service:/app/logs
     depends_on:
       eureka-server:
         condition: service_healthy
@@ -257,7 +257,7 @@ services:
       OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=prod"
       JAVA_TOOL_OPTIONS: "-javaagent:/opt/otel/opentelemetry-javaagent.jar -Dotel.instrumentation.logback-mdc.enabled=true"
     volumes:
-      - ./logs/ai-service:/app/logs
+      - /var/log/services/ai-service:/app/logs
     depends_on:
       eureka-server:
         condition: service_healthy
@@ -282,7 +282,7 @@ services:
       OTEL_RESOURCE_ATTRIBUTES: "service.namespace=moni,deployment.environment=prod"
       JAVA_TOOL_OPTIONS: "-javaagent:/opt/otel/opentelemetry-javaagent.jar -Dotel.instrumentation.logback-mdc.enabled=true"
     volumes:
-      - ./logs/admin-service:/app/logs
+      - /var/log/services/admin-service:/app/logs
     depends_on:
       eureka-server:
         condition: service_healthy

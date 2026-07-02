@@ -107,6 +107,7 @@ public class AssetCalculator {
 
         return new HoldingResult(
                 holding.ticker(),
+                price.name(),
                 holding.quantity(),
                 holding.averagePurchasePrice(),
                 price.currentPrice(),
