@@ -14,12 +14,12 @@ import com.moni.trade.trade.domain.repository.TradeRepository;
 import com.moni.trade.trade.infrastructure.client.StockServiceClient;
 import com.moni.trade.trade.infrastructure.client.dto.ExternalApiResponseDto;
 import com.moni.trade.trade.infrastructure.client.dto.StockPriceResponseDto;
-import com.moni.trade.trade.infrastructure.message.TradeEventPublisher;
 import com.moni.trade.trade.infrastructure.message.event.TradeCompletedEvent;
 import com.moni.trade.trade.presentation.dto.request.TradeBuyRequestDto;
 import com.moni.trade.trade.presentation.dto.request.TradeSellRequestDto;
 import com.moni.trade.trade.presentation.dto.response.TradeResponseDto;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,7 +37,7 @@ public class TradeService {
     private final AccountRepository accountRepository;
     private final HoldingRepository holdingRepository;
     private final StockServiceClient stockServiceClient;
-    private final TradeEventPublisher tradeEventPublisher;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Transactional
     public TradeResponseDto buyStock(UUID userId, TradeBuyRequestDto request) {
@@ -64,7 +64,7 @@ public class TradeService {
 
         trade.complete();
 
-        tradeEventPublisher.publishTradeCompleted(new TradeCompletedEvent(
+        applicationEventPublisher.publishEvent(new TradeCompletedEvent(
                 trade.getId(), account.getId(), trade.getTicker(),
                 trade.getTradeType(), trade.getQuantity(), trade.getPrice(),
                 trade.getTotalAmount(), null, null
@@ -104,7 +104,7 @@ public class TradeService {
 
         trade.complete();
 
-        tradeEventPublisher.publishTradeCompleted(new TradeCompletedEvent(
+        applicationEventPublisher.publishEvent(new TradeCompletedEvent(
                 trade.getId(), account.getId(), trade.getTicker(),
                 trade.getTradeType(), trade.getQuantity(), trade.getPrice(),
                 trade.getTotalAmount(), profitAmount, profitRate

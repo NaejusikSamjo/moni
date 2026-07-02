@@ -54,7 +54,8 @@ public class AuthService {
         if (user.getStatus() == UserStatus.DELETED) {
             throw new CustomException(AuthErrorCode.USER_DELETED);
         }
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+        if (user.getPassword() == null
+                || !passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new CustomException(AuthErrorCode.LOGIN_FAILED);
         }
 
