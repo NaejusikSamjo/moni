@@ -2,6 +2,7 @@ package com.moni.portfolio.application.policy;
 
 import com.moni.common.error.exception.CustomException;
 import com.moni.portfolio.domain.entity.Portfolio;
+import com.moni.portfolio.domain.enums.SubscriptionStatus;
 import com.moni.portfolio.domain.exception.PortfolioErrorCode;
 import com.moni.portfolio.domain.repository.PortfolioAnalysisRepository;
 import com.moni.portfolio.infrastructure.client.PaymentServiceClient;
@@ -151,7 +152,7 @@ class PortfolioAnalysisPolicyServiceTest {
         return new SubscriptionStatusResponseDto(
                 true,
                 UUID.fromString("00000000-0000-0000-0000-000000000020"),
-                "ACTIVE",
+                SubscriptionStatus.ACTIVE,
                 null,
                 9900L
         );
