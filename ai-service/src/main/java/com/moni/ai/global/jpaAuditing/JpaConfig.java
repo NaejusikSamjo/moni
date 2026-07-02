@@ -1,4 +1,4 @@
-package com.moni.ai.common.jpaAuditing;
+package com.moni.ai.global.jpaAuditing;
 
 import com.moni.common.security.AuditorAwareImpl;
 import org.springframework.context.annotation.Bean;

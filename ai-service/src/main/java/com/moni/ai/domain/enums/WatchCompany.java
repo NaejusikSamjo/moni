@@ -1,6 +1,6 @@
 package com.moni.ai.domain.enums;
 
-import com.moni.ai.common.exception.AiErrorCode;
+import com.moni.ai.domain.exception.AiErrorCode;
 import com.moni.common.error.exception.CustomException;
 import lombok.Getter;
 

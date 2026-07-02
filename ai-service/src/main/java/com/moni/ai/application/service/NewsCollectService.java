@@ -1,6 +1,6 @@
 package com.moni.ai.application.service;
 
-import com.moni.ai.common.exception.AiErrorCode;
+import com.moni.ai.domain.exception.AiErrorCode;
 import com.moni.ai.domain.entity.NewsEntity;
 import com.moni.ai.domain.enums.ImpactKeyword;
 import com.moni.ai.domain.enums.WatchCompany;
@@ -8,13 +8,11 @@ import com.moni.ai.domain.repository.NewsRepository;
 import com.moni.ai.infrastructure.client.NaverNewsClient;
 import com.moni.ai.presentation.dto.request.NewsCreateReqDto;
 import com.moni.ai.presentation.dto.response.NaverNewsResDto;
-import com.moni.ai.presentation.dto.response.NewsCreateResDto;
 import com.moni.common.error.exception.CustomException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import org.springframework.transaction.annotation.Transactional;
@@ -24,7 +22,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 @Service
 @RequiredArgsConstructor

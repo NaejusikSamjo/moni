@@ -1,13 +1,11 @@
 package com.moni.ai.application.service;
 
-import com.moni.ai.common.exception.AiErrorCode;
 import com.moni.ai.domain.entity.NewsEntity;
 import com.moni.ai.domain.enums.WatchCompany;
 import com.moni.ai.domain.repository.NewsRepository;
 import com.moni.ai.presentation.dto.request.NewsCreateReqDto;
 import com.moni.ai.presentation.dto.response.NewsCreateResDto;
 import com.moni.ai.presentation.dto.response.WatchCompanyResDto;
-import com.moni.common.error.exception.CustomException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.document.Document;
