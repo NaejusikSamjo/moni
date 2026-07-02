@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.UUID;
 
 @Service
@@ -21,6 +22,7 @@ import java.util.UUID;
 public class PortfolioAnalysisPolicyService {
 
     private static final long FREE_PLAN_AI_ANALYSIS_LIMIT = 5L;
+    private static final ZoneId ANALYSIS_DAILY_LIMIT_ZONE = ZoneId.of("Asia/Seoul");
 
     private final PortfolioAnalysisRepository portfolioAnalysisRepository;
     private final PaymentServiceClient paymentServiceClient;
@@ -33,7 +35,7 @@ public class PortfolioAnalysisPolicyService {
     }
 
     private void validateDailyAnalysisLimit(Portfolio portfolio) {
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(ANALYSIS_DAILY_LIMIT_ZONE);
         LocalDateTime startDateTime = today.atStartOfDay();
         LocalDateTime endDateTime = today.plusDays(1).atStartOfDay();
         if (portfolioAnalysisRepository.existsByPortfolioIdAndUpdatedAtBetween(
