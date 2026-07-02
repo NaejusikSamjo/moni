@@ -344,10 +344,10 @@ FeignClient 호출에는 timeout을 명시하고 Resilience4j Circuit Breaker + 
 
 | 파일                                | 역할                                                                             |
 |:----------------------------------|:-------------------------------------------------------------------------------|
-| `docker-compose.infra.yml`        | DB(PostgreSQL), Redis Cluster, Kafka, Zookeeper                                |
+| `docker-compose.infra.yml`        | DB(PostgreSQL), Redis, Redis Cluster, Kafka, Zookeeper                         |
 | `docker-compose.yml`              | 애플리케이션 서비스 — 로컬 개발용 (소스 빌드 기반)                                                 |
 | `docker-compose.service.prod.yml` | 운영 배포용 — ECR 이미지 + OTEL javaagent + prod profile (`docker-compose.yml`과 함께 사용) |
-| `docker-compose.monitor.yml`      | Tempo · Loki · Promtail · Prometheus · Grafana (로컬 개발용)                        |
+| `docker-compose.monitor.yml`      | Tempo · Loki · Promtail · Prometheus · Grafana — 모니터링 전용 EC2에서 실행              |
 | `docker-compose.alloy.yml`        | Grafana Alloy — 메트릭·로그·트레이스 수집, Loki·Prometheus·Tempo로 전송 (운영용)                |
 
 ---
