@@ -4,7 +4,6 @@ import com.moni.common.error.exception.CustomException;
 import com.moni.portfolio.domain.entity.Portfolio;
 import com.moni.portfolio.domain.exception.PortfolioErrorCode;
 import com.moni.portfolio.domain.repository.PortfolioRepository;
-import com.moni.portfolio.infrastructure.client.StockServiceClient;
 import com.moni.portfolio.presentation.dto.response.PortfolioCreateResponseDto;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -22,7 +21,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verifyNoInteractions;
 
 @DisplayName("PortfolioService 테스트")
 @ExtendWith(MockitoExtension.class)
@@ -32,9 +30,6 @@ class PortfolioServiceTest {
 
     @Mock
     private PortfolioRepository portfolioRepository;
-
-    @Mock
-    private StockServiceClient stockServiceClient;
 
     @InjectMocks
     private PortfolioService portfolioService;
@@ -57,7 +52,6 @@ class PortfolioServiceTest {
             // then
             assertThat(result.userId()).isEqualTo(USER_ID);
             then(portfolioRepository).should().save(any(Portfolio.class));
-            verifyNoInteractions(stockServiceClient);
         }
 
         @Test
@@ -74,7 +68,6 @@ class PortfolioServiceTest {
 
             then(portfolioRepository).should().existsByUserId(USER_ID);
             then(portfolioRepository).should(never()).save(any(Portfolio.class));
-            verifyNoInteractions(stockServiceClient);
         }
     }
 }

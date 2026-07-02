@@ -16,6 +16,7 @@ import java.time.LocalDateTime;
 public class KisOAuthClient {
 
     private final KisProperties kisProperties;
+    private final RestClient kisRestClient;
 
     private String approvalKey;
     private String accessToken;
@@ -30,7 +31,7 @@ public class KisOAuthClient {
     public synchronized String getApprovalKey() {
         if (approvalKey != null) return approvalKey;
 
-        ApprovalKeyResponse response = RestClient.create(kisProperties.getRestUrl())
+        ApprovalKeyResponse response = kisRestClient
                 .post()
                 .uri("/oauth2/Approval")
                 .header("content-type", "application/json")
@@ -47,7 +48,7 @@ public class KisOAuthClient {
     public synchronized String getAccessToken() {
         if (accessToken != null && LocalDateTime.now().isBefore(tokenExpiry)) return accessToken;
 
-        AccessTokenResponse response = RestClient.create(kisProperties.getRestUrl())
+        AccessTokenResponse response = kisRestClient
                 .post()
                 .uri("/oauth2/tokenP")
                 .header("content-type", "application/json")
@@ -63,7 +64,7 @@ public class KisOAuthClient {
 
     public synchronized JsonNode getThemeInfo(String themeCode) {
 
-        JsonNode body = RestClient.create(kisProperties.getRestUrl())
+        JsonNode body = kisRestClient
                 .get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/uapi/domestic-stock/v1/quotations/inquire-index-price")
@@ -85,7 +86,7 @@ public class KisOAuthClient {
     }
 
     public synchronized JsonNode getCandle(String ticker, String targetTime) {
-        JsonNode body = RestClient.create(kisProperties.getRestUrl())
+        JsonNode body = kisRestClient
                 .get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/uapi/domestic-stock/v1/quotations/inquire-time-itemchartprice")
@@ -110,7 +111,7 @@ public class KisOAuthClient {
     }
 
     public JsonNode getCurrentPrice(String ticker) {
-        JsonNode body = RestClient.create(kisProperties.getRestUrl())
+        JsonNode body = kisRestClient
                 .get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/uapi/domestic-stock/v1/quotations/inquire-price")
@@ -132,7 +133,7 @@ public class KisOAuthClient {
 
     public JsonNode getVolumeRank () {
 
-        JsonNode body = RestClient.create(kisProperties.getRestUrl())
+        JsonNode body = kisRestClient
                 .get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/uapi/domestic-stock/v1/quotations/volume-rank")
