@@ -12,7 +12,7 @@
 FROM amazoncorretto:21-alpine
 WORKDIR /app
 RUN apk add --no-cache curl
-RUN curl -L -o /app/otel-javaagent.jar \
+RUN mkdir -p /opt/otel && curl -L -o /opt/otel/opentelemetry-javaagent.jar \
     https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v2.29.0/opentelemetry-javaagent.jar
 COPY stock-service/build/libs/*.jar app.jar
-ENTRYPOINT ["java", "-javaagent:/app/otel-javaagent.jar", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar"]

@@ -46,6 +46,8 @@
 | Config            | Spring Cloud Config Server (`config-server/src/main/resources/configs/*.yml`) |
 | DB                | PostgreSQL (서비스별 분리)                                                          |
 | 인증                | OAuth + JWT (사용자), Okta OIDC (관리자)                                            |
+| 파일 스토리지           | AWS S3 (프로필 이미지 저장, Presigned URL 방식)                                         |
+| CDN               | AWS CloudFront (cdn.moni.my, OAC 적용 — S3 직접 접근 차단)                            |
 | 인프라               | Docker / Docker Compose                                                       |
 | 비동기 메시징           | Kafka                                                                         |
 | 캐시                | Redis                                                                         |
@@ -76,18 +78,20 @@
 
 ### 인프라
 
-| 인프라             | 포트(호스트) | 설명                    |
-|-----------------|---------|-----------------------|
-| user-db         | 25432   | 회원 DB (PostgreSQL)    |
-| portfolio-db    | 25433   | 포트폴리오 DB (PostgreSQL) |
-| stock-db        | 25434   | 시세 DB (PostgreSQL)    |
-| notification-db | 25435   | 알림 DB (PostgreSQL)    |
-| trade-db        | 25436   | 거래 DB (PostgreSQL)    |
-| payment-db      | 25437   | 결제 DB (PostgreSQL)    |
-| ai-db           | 25438   | AI DB (PostgreSQL)    |
-| redis           | 26379   | 캐시 / 세션               |
-| zookeeper       | 22181   | Kafka 코디네이션           |
-| kafka           | 29092   | 메시지 브로커               |
+| 인프라             | 포트(호스트) | 설명                                                  |
+|-----------------|---------|-----------------------------------------------------|
+| user-db         | 25432   | 회원 DB (PostgreSQL)                                  |
+| portfolio-db    | 25433   | 포트폴리오 DB (PostgreSQL)                               |
+| stock-db        | 25434   | 시세 DB (PostgreSQL)                                  |
+| notification-db | 25435   | 알림 DB (PostgreSQL)                                  |
+| trade-db        | 25436   | 거래 DB (PostgreSQL)                                  |
+| payment-db      | 25437   | 결제 DB (PostgreSQL)                                  |
+| ai-db           | 25438   | AI DB (PostgreSQL)                                  |
+| redis           | 26379   | 캐시 / 세션                                             |
+| zookeeper       | 22181   | Kafka 코디네이션                                         |
+| kafka           | 29092   | 메시지 브로커                                             |
+| S3              | -       | 프로필 이미지 스토리지 (log-bucket-samzo-moni, profiles/* 경로) |
+| CloudFront      | -       | 이미지 CDN (cdn.moni.my, OAC로 S3 비공개 접근)               |
 
 > `docker-compose.infra.yml`에서 DB 계정/비밀번호는 `.env`(`.env.example` 참고)의 환경변수로
 > 주입됩니다. 새 인프라 컴포넌트를 추가할 때도 동일한 패턴(서비스별 컨테이너 + named volume +

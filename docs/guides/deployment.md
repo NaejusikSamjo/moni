@@ -66,6 +66,7 @@ PR 단계에서 CI 통과 후 배포하면 문제 발생 시 해당 브랜치에
 | `SERVICE_HOST_KEY`      | Service EC2 SSH host key (known_hosts 등록용)     |
 | `SSH_KEY`               | Service EC2 접속용 PEM (Bastion을 통한 ProxyJump 사용) |
 | `DISCORD_WEBHOOK_URL`   | Discord 알림 웹훅 URL                              |
+| `HEALTH_CHECK_PORTS`    | 헬스체크 포트 매핑 (`서비스=포트` 공백 구분)                    |
 
 > `BASTION_HOST_KEY`, `SERVICE_HOST_KEY`는 `ssh-keyscan -t ed25519 -H <IP>` 결과를 그대로 저장합니다.
 

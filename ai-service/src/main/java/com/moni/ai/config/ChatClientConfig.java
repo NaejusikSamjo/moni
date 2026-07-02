@@ -7,6 +7,7 @@ import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 
 @Configuration
 @RequiredArgsConstructor
@@ -14,6 +15,7 @@ public class ChatClientConfig {
 
     private final VectorStore vectorStore;
 
+    @Primary
     @Bean
     public ChatClient chatClient(ChatClient.Builder builder){
 
@@ -40,6 +42,11 @@ public class ChatClientConfig {
                 )
                 .defaultAdvisors(qnaAdvisor)
                 .build();
+    }
+
+    @Bean(name = "portfolioChatClient")
+    public ChatClient portfolioChatClient(ChatClient.Builder builder) {
+        return builder.build();
     }
 
     private SearchRequest searchRequestDecision(){

@@ -7,9 +7,13 @@ import com.moni.common.security.SecurityUtil;
 import com.moni.user.user.application.service.UserService;
 import com.moni.user.user.presentation.dto.request.ChangePasswordRequest;
 import com.moni.user.user.presentation.dto.request.InterestRequest;
+import com.moni.user.user.presentation.dto.request.ProfileUpdateRequest;
+import com.moni.user.user.presentation.dto.request.IntegrateRequest;
 import com.moni.user.user.presentation.dto.request.TendencyRequest;
 import com.moni.user.user.presentation.dto.request.UserUpdateRequest;
+import com.moni.user.user.presentation.dto.request.WithdrawRequest;
 import com.moni.user.user.presentation.dto.response.InterestResponse;
+import com.moni.user.user.presentation.dto.response.PresignedUrlResponse;
 import com.moni.user.user.presentation.dto.response.TendencyResponse;
 import com.moni.user.user.presentation.dto.response.UserResponse;
 import com.moni.user.user.presentation.dto.response.WatchlistResponse;
@@ -18,6 +22,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.RequestParam;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -59,6 +64,14 @@ public class UserController {
         return ResponseEntity.ok(GlobalResponse.success(HttpStatus.OK.value(), userService.updateMe(userId, request)));
     }
 
+    @Operation(summary = "통합 회원 전환 (OAuth 가입 유저 전용)")
+    @PostMapping("/me/integrate")
+    public ResponseEntity<Void> integrate(@RequestBody @Valid IntegrateRequest request) {
+        UUID userId = currentUserId();
+        userService.integrate(userId, request);
+        return ResponseEntity.noContent().build();
+    }
+
     @Operation(summary = "비밀번호 변경")
     @PostMapping("/me/password")
     public ResponseEntity<Void> changePassword(@RequestBody @Valid ChangePasswordRequest request) {
@@ -67,12 +80,33 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "회원 탈퇴")
+    @Operation(summary = "회원 탈퇴 (비밀번호 설정 유저는 비밀번호 검증 필요)")
     @DeleteMapping("/me")
-    public ResponseEntity<Void> withdraw() {
+    public ResponseEntity<Void> withdraw(@RequestBody(required = false) WithdrawRequest request) {
         UUID userId = currentUserId();
-        userService.withdraw(userId, userId.toString());
+        userService.withdraw(userId, request != null ? request : new WithdrawRequest(), userId.toString());
         return ResponseEntity.noContent().build();
+    }
+
+    // 프로필 이미지
+
+    @Operation(summary = "프로필 업로드용 Presigned URL 발급")
+    @GetMapping("/me/profile/presigned-url")
+    public ResponseEntity<GlobalResponse<PresignedUrlResponse>> getPresignedUrl(
+            @RequestParam @Pattern(regexp = "^(jpg|jpeg|png|webp)$",
+                    message = "지원하지 않는 파일 형식입니다. (jpg, jpeg, png, webp)") String extension) {
+        UUID userId = currentUserId();
+        return ResponseEntity.ok(GlobalResponse.success(HttpStatus.OK.value(),
+                userService.getPresignedUrl(userId, extension)));
+    }
+
+    @Operation(summary = "프로필 수정 (이모지 또는 S3 URL)")
+    @PatchMapping("/me/profile")
+    public ResponseEntity<GlobalResponse<UserResponse>> updateProfileImage(
+            @RequestBody @Valid ProfileUpdateRequest request) {
+        UUID userId = currentUserId();
+        return ResponseEntity.ok(GlobalResponse.success(HttpStatus.OK.value(),
+                userService.updateProfileImage(userId, request)));
     }
 
     // 투자 성향
@@ -132,7 +166,7 @@ public class UserController {
     @Operation(summary = "관심종목 추가")
     @PutMapping("/me/watchlist/{stockCode}")
     public ResponseEntity<GlobalResponse<WatchlistResponse>> addWatchlist(
-            @PathVariable @Pattern(regexp = "^\\d{6}$", message = "종목코드는 6자리 숫자여야 합니다.") String stockCode) {
+            @PathVariable @Pattern(regexp = "^[A-Za-z0-9]{6}$", message = "종목코드는 영문/숫자 6자리여야 합니다.") String stockCode) {
         UUID userId = currentUserId();
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(GlobalResponse.success(HttpStatus.CREATED.value(), userService.addWatchlist(userId, stockCode)));
@@ -148,7 +182,7 @@ public class UserController {
     @Operation(summary = "관심종목 삭제")
     @DeleteMapping("/me/watchlist/{stockCode}")
     public ResponseEntity<Void> removeWatchlist(
-            @PathVariable @Pattern(regexp = "^\\d{6}$", message = "종목코드는 6자리 숫자여야 합니다.") String stockCode) {
+            @PathVariable @Pattern(regexp = "^[A-Za-z0-9]{6}$", message = "종목코드는 영문/숫자 6자리여야 합니다.") String stockCode) {
         UUID userId = currentUserId();
         userService.removeWatchlist(userId, stockCode);
         return ResponseEntity.noContent().build();

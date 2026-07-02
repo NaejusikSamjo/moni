@@ -3,3 +3,9 @@ spring:
     name: admin-service
   config:
     import: optional:configserver:http://config-server:8888
+
+logging:
+  structured:
+    format:
+      console: logstash
+      file: logstash
