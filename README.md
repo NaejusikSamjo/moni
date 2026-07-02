@@ -4,7 +4,7 @@
 
   <h1>moni · 모니</h1>
 
-![개발기간](https://img.shields.io/badge/개발_기간-2026.03_~_2026.07.13-0057FF?style=flat&labelColor=111111)
+![개발기간](https://img.shields.io/badge/개발_기간-2026.06_~_2026.07.13-0057FF?style=flat&labelColor=111111)
 
   <p>MSA 기반 복잡한 금융 지표와 뉴스를 AI가 쉽게 풀어주는 초보자 친화적 모의 투자 플랫폼
 
