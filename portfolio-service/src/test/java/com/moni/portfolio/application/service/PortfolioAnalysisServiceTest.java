@@ -4,19 +4,18 @@ import com.moni.common.error.exception.CustomException;
 import com.moni.portfolio.application.analysis.PortfolioRiskCalculator;
 import com.moni.portfolio.application.analysis.TendencySuitabilityResult;
 import com.moni.portfolio.application.analysis.TendencyType;
+import com.moni.portfolio.application.policy.PortfolioAnalysisPolicyService;
 import com.moni.portfolio.domain.entity.Portfolio;
 import com.moni.portfolio.domain.entity.PortfolioAnalysis;
 import com.moni.portfolio.domain.enums.AnalysisStatus;
 import com.moni.portfolio.domain.exception.PortfolioErrorCode;
 import com.moni.portfolio.domain.repository.PortfolioAnalysisRepository;
 import com.moni.portfolio.domain.repository.PortfolioRepository;
-import com.moni.portfolio.infrastructure.client.PaymentServiceClient;
 import com.moni.portfolio.infrastructure.client.TradeServiceClient;
 import com.moni.portfolio.infrastructure.client.UserServiceClient;
 import com.moni.portfolio.infrastructure.client.dto.request.AiPortfolioAnalysisRequestDto;
 import com.moni.portfolio.infrastructure.client.dto.request.AiPortfolioTendencyAnalysisRequestDto;
 import com.moni.portfolio.infrastructure.client.dto.response.ExternalApiResponseDto;
-import com.moni.portfolio.infrastructure.client.dto.response.SubscriptionStatusResponseDto;
 import com.moni.portfolio.infrastructure.client.dto.response.TradeAssetHoldingResponseDto;
 import com.moni.portfolio.infrastructure.client.dto.response.TradeAssetHoldingsResponseDto;
 import com.moni.portfolio.infrastructure.client.dto.response.TradeAssetResponseDto;
@@ -33,7 +32,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -44,6 +42,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.never;
 
 @DisplayName("PortfolioAnalysisService 테스트")
@@ -61,6 +60,9 @@ class PortfolioAnalysisServiceTest {
     private PortfolioAnalysisRepository portfolioAnalysisRepository;
 
     @Mock
+    private PortfolioAnalysisPolicyService portfolioAnalysisPolicyService;
+
+    @Mock
     private PortfolioRiskCalculator portfolioRiskCalculator;
 
     @Mock
@@ -68,9 +70,6 @@ class PortfolioAnalysisServiceTest {
 
     @Mock
     private UserServiceClient userServiceClient;
-
-    @Mock
-    private PaymentServiceClient paymentServiceClient;
 
     @Mock
     private PortfolioAnalysisAsyncExecutor portfolioAnalysisAsyncExecutor;
@@ -94,7 +93,6 @@ class PortfolioAnalysisServiceTest {
             );
 
             given(portfolioRepository.findByUserIdForUpdate(USER_ID)).willReturn(Optional.of(portfolio));
-            givenAnalysisPolicyAllowed(freePlan());
             given(tradeServiceClient.getAssets(USER_ID))
                     .willReturn(success(new TradeAssetResponseDto(
                             new BigDecimal("10000000.00"),
@@ -165,6 +163,7 @@ class PortfolioAnalysisServiceTest {
             assertThat(result.analysisId()).isEqualTo(ANALYSIS_ID);
             assertThat(result.status()).isEqualTo(AnalysisStatus.PENDING);
             assertThat(portfolio.getAiAnalysisCount()).isEqualTo(1L);
+            then(portfolioAnalysisPolicyService).should().validateRequest(USER_ID, portfolio);
 
             ArgumentCaptor<AiPortfolioAnalysisRequestDto> aiRequestCaptor =
                     ArgumentCaptor.forClass(AiPortfolioAnalysisRequestDto.class);
@@ -196,7 +195,6 @@ class PortfolioAnalysisServiceTest {
             // given
             Portfolio portfolio = portfolio();
             given(portfolioRepository.findByUserIdForUpdate(USER_ID)).willReturn(Optional.of(portfolio));
-            givenAnalysisPolicyAllowed(freePlan());
             given(tradeServiceClient.getAssets(USER_ID))
                     .willReturn(success(new TradeAssetResponseDto(
                             new BigDecimal("10000000.00"),
@@ -233,11 +231,9 @@ class PortfolioAnalysisServiceTest {
             // given
             Portfolio portfolio = portfolio();
             given(portfolioRepository.findByUserIdForUpdate(USER_ID)).willReturn(Optional.of(portfolio));
-            given(portfolioAnalysisRepository.existsByPortfolioIdAndUpdatedAtBetween(
-                    any(UUID.class),
-                    any(LocalDateTime.class),
-                    any(LocalDateTime.class)
-            )).willReturn(true);
+            willThrow(new CustomException(PortfolioErrorCode.PORTFOLIO_ANALYSIS_DAILY_LIMIT_EXCEEDED))
+                    .given(portfolioAnalysisPolicyService)
+                    .validateRequest(USER_ID, portfolio);
 
             // when & then
             assertThatThrownBy(() -> portfolioAnalysisService.requestAnalysis(USER_ID))
@@ -245,7 +241,6 @@ class PortfolioAnalysisServiceTest {
                             assertThat(exception.getErrorCode())
                                     .isEqualTo(PortfolioErrorCode.PORTFOLIO_ANALYSIS_DAILY_LIMIT_EXCEEDED));
 
-            then(paymentServiceClient).should(never()).getSubscriptionStatus(USER_ID);
             then(tradeServiceClient).should(never()).getAssets(USER_ID);
             then(portfolioAnalysisRepository).should(never()).save(any(PortfolioAnalysis.class));
         }
@@ -257,7 +252,9 @@ class PortfolioAnalysisServiceTest {
             Portfolio portfolio = portfolio();
             ReflectionTestUtils.setField(portfolio, "aiAnalysisCount", 5L);
             given(portfolioRepository.findByUserIdForUpdate(USER_ID)).willReturn(Optional.of(portfolio));
-            givenAnalysisPolicyAllowed(freePlan());
+            willThrow(new CustomException(PortfolioErrorCode.PORTFOLIO_ANALYSIS_FREE_LIMIT_EXCEEDED))
+                    .given(portfolioAnalysisPolicyService)
+                    .validateRequest(USER_ID, portfolio);
 
             // when & then
             assertThatThrownBy(() -> portfolioAnalysisService.requestAnalysis(USER_ID))
@@ -270,11 +267,10 @@ class PortfolioAnalysisServiceTest {
         }
 
         @Test
-        @DisplayName("성공 - 유료 플랜은 누적 5회를 초과해도 하루 1회 조건만 만족하면 분석을 요청할 수 있다")
-        void success_paid_plan_over_free_limit() {
+        @DisplayName("성공 - 정책 검증을 통과하면 분석을 요청할 수 있다")
+        void success_policy_allowed() {
             // given
             Portfolio portfolio = portfolio();
-            ReflectionTestUtils.setField(portfolio, "aiAnalysisCount", 5L);
             UserTendencyResponseDto userTendency = new UserTendencyResponseDto(
                     UUID.fromString("00000000-0000-0000-0000-000000000010"),
                     33,
@@ -282,7 +278,6 @@ class PortfolioAnalysisServiceTest {
             );
 
             given(portfolioRepository.findByUserIdForUpdate(USER_ID)).willReturn(Optional.of(portfolio));
-            givenAnalysisPolicyAllowed(paidPlan());
             given(tradeServiceClient.getAssets(USER_ID))
                     .willReturn(success(new TradeAssetResponseDto(
                             new BigDecimal("10000000.00"),
@@ -338,7 +333,7 @@ class PortfolioAnalysisServiceTest {
 
             // then
             assertThat(result.analysisId()).isEqualTo(ANALYSIS_ID);
-            assertThat(portfolio.getAiAnalysisCount()).isEqualTo(6L);
+            assertThat(portfolio.getAiAnalysisCount()).isEqualTo(1L);
             then(portfolioAnalysisAsyncExecutor).should()
                     .requestAiAnalysis(any(UUID.class), any(AiPortfolioAnalysisRequestDto.class));
         }
@@ -348,30 +343,6 @@ class PortfolioAnalysisServiceTest {
         Portfolio portfolio = Portfolio.create(USER_ID);
         ReflectionTestUtils.setField(portfolio, "id", PORTFOLIO_ID);
         return portfolio;
-    }
-
-    private void givenAnalysisPolicyAllowed(SubscriptionStatusResponseDto subscriptionStatus) {
-        given(portfolioAnalysisRepository.existsByPortfolioIdAndUpdatedAtBetween(
-                any(UUID.class),
-                any(LocalDateTime.class),
-                any(LocalDateTime.class)
-        )).willReturn(false);
-        given(paymentServiceClient.getSubscriptionStatus(USER_ID))
-                .willReturn(success(subscriptionStatus));
-    }
-
-    private SubscriptionStatusResponseDto freePlan() {
-        return new SubscriptionStatusResponseDto(false, null, null, null, null);
-    }
-
-    private SubscriptionStatusResponseDto paidPlan() {
-        return new SubscriptionStatusResponseDto(
-                true,
-                UUID.fromString("00000000-0000-0000-0000-000000000020"),
-                "ACTIVE",
-                null,
-                9900L
-        );
     }
 
     private TradeAssetHoldingResponseDto holding(
