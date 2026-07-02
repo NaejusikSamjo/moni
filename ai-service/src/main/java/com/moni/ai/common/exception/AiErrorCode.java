@@ -7,7 +7,12 @@ import org.springframework.http.HttpStatus;
 @RequiredArgsConstructor
 public enum AiErrorCode implements ErrorCode {
     TICKER_NOT_FOUND("AI-001", "분석되지 않는 ticker입니다.",HttpStatus.NOT_FOUND),
-    AI_NOT_FOUND("AI-002", "분석 결과가 없습니다. POST로 먼저 분석을 요청해주세요.",HttpStatus.NOT_FOUND);
+    AI_NOT_FOUND("AI-002", "분석 결과가 없습니다. POST로 먼저 분석을 요청해주세요.",HttpStatus.NOT_FOUND),
+    PORTFOLIO_ANALYSIS_REQUEST_INVALID("AI-003", "포트폴리오 분석 요청값이 올바르지 않습니다.", HttpStatus.BAD_REQUEST),
+    PORTFOLIO_LLM_TIMEOUT("AI-004", "포트폴리오 분석 LLM 응답 시간이 초과되었습니다.", HttpStatus.GATEWAY_TIMEOUT),
+    PORTFOLIO_LLM_PROVIDER_FAILED("AI-005", "포트폴리오 분석 LLM 호출 중 오류가 발생했습니다.", HttpStatus.BAD_GATEWAY),
+    PORTFOLIO_LLM_RESPONSE_INVALID("AI-006", "포트폴리오 분석 LLM 응답 구조가 올바르지 않습니다.", HttpStatus.BAD_GATEWAY),
+    ;
 
     private final String code;
     private final String message;
