@@ -1,0 +1,29 @@
+# service-ec2에서 실행하는 Alloy 사이드카
+# 역할: 서비스 로그 파일 → monitoring-ec2 Loki 전송
+#
+# CI/CD(cd-service.yml)가 자동으로 배포한다.
+# 이미 실행 중인 경우 --no-recreate로 재시작하지 않는다.
+networks:
+  default:
+    name: moni-network
+    external: true
+
+services:
+  alloy-sidecar:
+    image: grafana/alloy:latest
+    container_name: moni-alloy-sidecar
+    restart: unless-stopped
+    command: ["run", "--server.http.listen-addr=0.0.0.0:12345", "/etc/alloy/config.alloy"]
+    volumes:
+      - ./monitor/alloy/config.sidecar.alloy:/etc/alloy/config.alloy:ro
+      - /var/log/services:/var/log/services:ro
+    ports:
+      - "127.0.0.1:12346:12345"
+    environment:
+      LOKI_URL: ${LOKI_URL}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:12345/-/ready || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
