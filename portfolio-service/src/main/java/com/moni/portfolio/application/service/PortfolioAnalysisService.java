@@ -10,12 +10,14 @@ import com.moni.portfolio.domain.entity.PortfolioAnalysis;
 import com.moni.portfolio.domain.exception.PortfolioErrorCode;
 import com.moni.portfolio.domain.repository.PortfolioAnalysisRepository;
 import com.moni.portfolio.domain.repository.PortfolioRepository;
+import com.moni.portfolio.infrastructure.client.PaymentServiceClient;
 import com.moni.portfolio.infrastructure.client.TradeServiceClient;
 import com.moni.portfolio.infrastructure.client.UserServiceClient;
 import com.moni.portfolio.infrastructure.client.dto.request.AiPortfolioAnalysisRequestDto;
 import com.moni.portfolio.infrastructure.client.dto.request.AiPortfolioHoldingRequestDto;
 import com.moni.portfolio.infrastructure.client.dto.request.AiPortfolioTendencyAnalysisRequestDto;
 import com.moni.portfolio.infrastructure.client.dto.response.ExternalApiResponseDto;
+import com.moni.portfolio.infrastructure.client.dto.response.SubscriptionStatusResponseDto;
 import com.moni.portfolio.infrastructure.client.dto.response.TradeAssetHoldingResponseDto;
 import com.moni.portfolio.infrastructure.client.dto.response.TradeAssetHoldingsResponseDto;
 import com.moni.portfolio.infrastructure.client.dto.response.TradeAssetResponseDto;
@@ -34,6 +36,8 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -47,6 +51,7 @@ public class PortfolioAnalysisService {
     private static final int DEFAULT_PAGE = 0;
     private static final int DEFAULT_SIZE = 10;
     private static final int MAX_SIZE = 50;
+    private static final long FREE_PLAN_AI_ANALYSIS_LIMIT = 5L;
     private static final BigDecimal CONCENTRATION_THRESHOLD = new BigDecimal("60.00");
     private static final String DEFAULT_ASSET_HOLDINGS_SORT = "evaluationAmount,desc";
 
@@ -55,11 +60,13 @@ public class PortfolioAnalysisService {
     private final PortfolioRiskCalculator portfolioRiskCalculator;
     private final TradeServiceClient tradeServiceClient;
     private final UserServiceClient userServiceClient;
+    private final PaymentServiceClient paymentServiceClient;
     private final PortfolioAnalysisAsyncExecutor portfolioAnalysisAsyncExecutor;
 
     @Transactional
     public PortfolioAnalysisCreateResponseDto requestAnalysis(UUID userId) {
-        Portfolio portfolio = findPortfolio(userId);
+        Portfolio portfolio = findPortfolioForUpdate(userId);
+        validateAnalysisRequestPolicy(userId, portfolio);
         PortfolioAnalysisSnapshot snapshot = createSnapshot(userId);
 
         PortfolioAnalysis analysis = PortfolioAnalysis.request(
@@ -102,6 +109,41 @@ public class PortfolioAnalysisService {
                 .map(this::toResponse);
 
         return new PageRes<>(analyses);
+    }
+
+    private void validateAnalysisRequestPolicy(UUID userId, Portfolio portfolio) {
+        validateDailyAnalysisLimit(portfolio);
+        if (!isPaidPlan(userId) && portfolio.getAiAnalysisCount() >= FREE_PLAN_AI_ANALYSIS_LIMIT) {
+            throw new CustomException(PortfolioErrorCode.PORTFOLIO_ANALYSIS_FREE_LIMIT_EXCEEDED);
+        }
+    }
+
+    private void validateDailyAnalysisLimit(Portfolio portfolio) {
+        LocalDate today = LocalDate.now();
+        LocalDateTime startDateTime = today.atStartOfDay();
+        LocalDateTime endDateTime = today.plusDays(1).atStartOfDay();
+        if (portfolioAnalysisRepository.existsByPortfolioIdAndUpdatedAtBetween(
+                portfolio.getId(),
+                startDateTime,
+                endDateTime
+        )) {
+            throw new CustomException(PortfolioErrorCode.PORTFOLIO_ANALYSIS_DAILY_LIMIT_EXCEEDED);
+        }
+    }
+
+    private boolean isPaidPlan(UUID userId) {
+        try {
+            ExternalApiResponseDto<SubscriptionStatusResponseDto> response =
+                    paymentServiceClient.getSubscriptionStatus(userId);
+            if (response == null || response.data() == null) {
+                throw new CustomException(PortfolioErrorCode.PAYMENT_RESPONSE_INVALID);
+            }
+            return response.data().isPaidPlan();
+        } catch (RetryableException exception) {
+            throw new CustomException(PortfolioErrorCode.PAYMENT_SERVICE_TIMEOUT);
+        } catch (FeignException exception) {
+            throw new CustomException(PortfolioErrorCode.PAYMENT_SERVICE_ERROR);
+        }
     }
 
     private PortfolioAnalysisSnapshot createSnapshot(UUID userId) {
@@ -221,6 +263,11 @@ public class PortfolioAnalysisService {
 
     private Portfolio findPortfolio(UUID userId) {
         return portfolioRepository.findByUserId(userId)
+                .orElseThrow(() -> new CustomException(PortfolioErrorCode.PORTFOLIO_NOT_FOUND));
+    }
+
+    private Portfolio findPortfolioForUpdate(UUID userId) {
+        return portfolioRepository.findByUserIdForUpdate(userId)
                 .orElseThrow(() -> new CustomException(PortfolioErrorCode.PORTFOLIO_NOT_FOUND));
     }
 

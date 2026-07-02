@@ -30,6 +30,11 @@ public class PortfolioRepositoryImpl implements PortfolioRepository {
     }
 
     @Override
+    public Optional<Portfolio> findByUserIdForUpdate(UUID userId) {
+        return portfolioJpaRepository.findByUserIdForUpdate(userId);
+    }
+
+    @Override
     public boolean existsByUserId(UUID userId) {
         return portfolioJpaRepository.existsByUserId(userId);
     }
