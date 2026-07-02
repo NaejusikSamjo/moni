@@ -149,7 +149,7 @@ jobs:
           ssh service "
             cd ~/moni
             LOKI_URL=${{ secrets.LOKI_URL }} \
-              docker compose -f docker-compose.alloy.yml up -d --no-recreate
+              docker-compose -f docker-compose.alloy.yml up -d --no-recreate
           "
 
       - name: Health check
