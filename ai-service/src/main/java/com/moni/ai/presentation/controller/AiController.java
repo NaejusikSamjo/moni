@@ -5,9 +5,13 @@ import com.moni.ai.application.service.NewsService;
 import com.moni.ai.application.service.NewsCollectService;
 import com.moni.ai.presentation.controller.docs.AiControllerDocs;
 import com.moni.ai.presentation.dto.request.IssueAnalysisReqDto;
+import com.moni.ai.presentation.dto.request.NewsCreateReqDto;
 import com.moni.ai.presentation.dto.response.CompanyIssueResDto;
+import com.moni.ai.presentation.dto.response.NewsCreateResDto;
 import com.moni.ai.presentation.dto.response.WatchCompanyResDto;
 import com.moni.common.response.GlobalResponse;
+import jakarta.validation.Valid;
+import jakarta.ws.rs.HttpMethod;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -58,4 +62,12 @@ public class AiController implements AiControllerDocs {
     public ResponseEntity<GlobalResponse<List<WatchCompanyResDto>>> getWatchCompany(){
         return ResponseEntity.ok(GlobalResponse.success(200,newsService.getWatchList()));
     }
+
+    @PostMapping("/news/ticker")
+    public ResponseEntity<GlobalResponse<NewsCreateResDto>> createNews(
+            @RequestBody @Valid NewsCreateReqDto newsCreateReqDto
+            ){
+        return ResponseEntity.ok(GlobalResponse.success(201,newsService.createNews(newsCreateReqDto)));
+    }
+
 }

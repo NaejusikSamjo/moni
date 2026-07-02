@@ -7,7 +7,11 @@ import org.springframework.http.HttpStatus;
 @RequiredArgsConstructor
 public enum AiErrorCode implements ErrorCode {
     TICKER_NOT_FOUND("AI-001", "분석되지 않는 ticker입니다.",HttpStatus.NOT_FOUND),
-    AI_NOT_FOUND("AI-002", "분석 결과가 없습니다. POST로 먼저 분석을 요청해주세요.",HttpStatus.NOT_FOUND);
+    AI_NOT_FOUND("AI-002", "분석 결과가 없습니다. POST로 먼저 분석을 요청해주세요.",HttpStatus.NOT_FOUND),
+    COMPANY_NAME_MISMATCH("AI-003", "ticker와 회사명이 일치하지 않습니다.", HttpStatus.BAD_REQUEST),
+    NEWS_ALREADY_EXISTS("AI-004", "이미 등록된 뉴스입니다.", HttpStatus.CONFLICT),
+    ANALYSIS_ALREADY_EXISTS("AI-005", "이미 분석된 기업입니다. GET으로 기업분석을 반환하세요.", HttpStatus.CONFLICT);
+
 
     private final String code;
     private final String message;

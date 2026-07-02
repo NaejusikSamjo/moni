@@ -1,9 +1,16 @@
 package com.moni.ai.application.service;
 
+import com.moni.ai.common.exception.AiErrorCode;
+import com.moni.ai.domain.entity.NewsEntity;
 import com.moni.ai.domain.enums.WatchCompany;
+import com.moni.ai.domain.repository.NewsRepository;
+import com.moni.ai.presentation.dto.request.NewsCreateReqDto;
+import com.moni.ai.presentation.dto.response.NewsCreateResDto;
 import com.moni.ai.presentation.dto.response.WatchCompanyResDto;
+import com.moni.common.error.exception.CustomException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.document.Document;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +27,8 @@ import java.util.concurrent.CompletableFuture;
 public class NewsService {
 
     private final AsyncNewsCollectService asyncNewsCollectService;
+    private final NewsCollectService newsCollectService;
+    private final NewsRepository newsRepository;
 
     private static final Map<String, String> WATCH_LIST = WatchCompany.toMap();
 
@@ -42,5 +51,20 @@ public class NewsService {
         return Arrays.stream(WatchCompany.values())
                 .map(WatchCompanyResDto::from)
                 .toList();
+    }
+
+    @Transactional
+    public NewsCreateResDto createNews(NewsCreateReqDto request){
+        log.info("new생성 시작");
+        //1. DB저장
+        NewsEntity saved = newsCollectService.createNews(request);
+        log.info("news저장 완료");
+        //  2. 벡터 저장
+        List<Document> documents = newsCollectService.toDocuments(saved);
+        newsCollectService.addDocumentsVectorStore(documents);
+        log.info("벡터 저장 완료");
+
+        // 5. 반환
+        return NewsCreateResDto.from(saved);
     }
 }

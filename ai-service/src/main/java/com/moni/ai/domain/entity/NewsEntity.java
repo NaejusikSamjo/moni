@@ -36,7 +36,7 @@ public class NewsEntity extends IdAudit{
     @Column(name="source",length=50,nullable = false)
     private String source;
 
-    @Column(name="url",nullable = false)
+    @Column(name="url",nullable = false, unique = true)
     private String url;
 
 
