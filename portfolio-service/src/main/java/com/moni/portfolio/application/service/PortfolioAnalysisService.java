@@ -7,16 +7,13 @@ import com.moni.portfolio.application.analysis.TendencyType;
 import com.moni.portfolio.application.analysis.TendencySuitabilityResult;
 import com.moni.portfolio.domain.entity.Portfolio;
 import com.moni.portfolio.domain.entity.PortfolioAnalysis;
-import com.moni.portfolio.domain.entity.PortfolioSectorAnalysis;
 import com.moni.portfolio.domain.exception.PortfolioErrorCode;
 import com.moni.portfolio.domain.repository.PortfolioAnalysisRepository;
 import com.moni.portfolio.domain.repository.PortfolioRepository;
-import com.moni.portfolio.domain.repository.PortfolioSectorAnalysisRepository;
 import com.moni.portfolio.infrastructure.client.TradeServiceClient;
 import com.moni.portfolio.infrastructure.client.UserServiceClient;
 import com.moni.portfolio.infrastructure.client.dto.request.AiPortfolioAnalysisRequestDto;
 import com.moni.portfolio.infrastructure.client.dto.request.AiPortfolioHoldingRequestDto;
-import com.moni.portfolio.infrastructure.client.dto.request.AiPortfolioSectorAnalysisRequestDto;
 import com.moni.portfolio.infrastructure.client.dto.request.AiPortfolioTendencyAnalysisRequestDto;
 import com.moni.portfolio.infrastructure.client.dto.response.ExternalApiResponseDto;
 import com.moni.portfolio.infrastructure.client.dto.response.TradeAssetHoldingResponseDto;
@@ -37,15 +34,10 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -55,16 +47,11 @@ public class PortfolioAnalysisService {
     private static final int DEFAULT_PAGE = 0;
     private static final int DEFAULT_SIZE = 10;
     private static final int MAX_SIZE = 50;
-    private static final int MONEY_SCALE = 2;
-    private static final int RATE_SCALE = 2;
-    private static final BigDecimal HUNDRED = new BigDecimal("100");
     private static final BigDecimal CONCENTRATION_THRESHOLD = new BigDecimal("60.00");
-    private static final String DEFAULT_SECTOR_NAME = "미분류";
     private static final String DEFAULT_ASSET_HOLDINGS_SORT = "evaluationAmount,desc";
 
     private final PortfolioRepository portfolioRepository;
     private final PortfolioAnalysisRepository portfolioAnalysisRepository;
-    private final PortfolioSectorAnalysisRepository portfolioSectorAnalysisRepository;
     private final PortfolioRiskCalculator portfolioRiskCalculator;
     private final TradeServiceClient tradeServiceClient;
     private final UserServiceClient userServiceClient;
@@ -82,7 +69,6 @@ public class PortfolioAnalysisService {
         );
         PortfolioAnalysis savedAnalysis = portfolioAnalysisRepository.save(analysis);
         portfolio.increaseAiAnalysisCount();
-        saveSectorAnalyses(savedAnalysis, snapshot.sectorAnalyses());
 
         requestAiAnalysisAfterCommit(
                 savedAnalysis.getId(),
@@ -128,11 +114,7 @@ public class PortfolioAnalysisService {
         List<PortfolioHoldingSnapshot> holdingSnapshots = holdings.stream()
                 .map(this::toHoldingSnapshot)
                 .toList();
-        List<PortfolioSectorSnapshot> sectorSnapshots = createSectorSnapshots(holdingSnapshots);
-        BigDecimal concentrationScore = sectorSnapshots.stream()
-                .map(PortfolioSectorSnapshot::weight)
-                .max(Comparator.naturalOrder())
-                .orElse(BigDecimal.ZERO.setScale(RATE_SCALE, RoundingMode.HALF_UP));
+        BigDecimal concentrationScore = calculateHoldingConcentrationScore(holdingSnapshots);
         AiPortfolioTendencyAnalysisRequestDto tendencyAnalysis =
                 createTendencyAnalysis(userId, asset, concentrationScore, holdingSnapshots);
 
@@ -141,7 +123,6 @@ public class PortfolioAnalysisService {
                 asset.totalReturnRate(),
                 concentrationScore,
                 CONCENTRATION_THRESHOLD,
-                sectorSnapshots,
                 holdingSnapshots,
                 tendencyAnalysis
         );
@@ -158,15 +139,10 @@ public class PortfolioAnalysisService {
             return null;
         }
 
-        BigDecimal topHoldingWeight = holdingSnapshots.stream()
-                .map(PortfolioHoldingSnapshot::weight)
-                .max(BigDecimal::compareTo)
-                .orElse(BigDecimal.ZERO);
         TendencySuitabilityResult result = portfolioRiskCalculator.calculate(
                 userTendency,
                 asset.totalAsset(),
                 asset.stockEvaluationAmount(),
-                topHoldingWeight,
                 concentrationScore,
                 holdingSnapshots.size()
         );
@@ -208,7 +184,6 @@ public class PortfolioAnalysisService {
         return new PortfolioHoldingSnapshot(
                 holding.ticker(),
                 holding.stockName(),
-                DEFAULT_SECTOR_NAME,
                 holding.quantity(),
                 holding.averagePurchasePrice(),
                 holding.currentPrice(),
@@ -219,37 +194,11 @@ public class PortfolioAnalysisService {
         );
     }
 
-    private List<PortfolioSectorSnapshot> createSectorSnapshots(List<PortfolioHoldingSnapshot> holdings) {
-        BigDecimal totalEvaluationAmount = holdings.stream()
-                .map(PortfolioHoldingSnapshot::evaluationAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        Map<String, BigDecimal> evaluationAmountBySector = holdings.stream()
-                .collect(Collectors.groupingBy(
-                        PortfolioHoldingSnapshot::sectorName,
-                        LinkedHashMap::new,
-                        Collectors.reducing(BigDecimal.ZERO, PortfolioHoldingSnapshot::evaluationAmount, BigDecimal::add)
-                ));
-
-        return evaluationAmountBySector.entrySet().stream()
-                .map(entry -> new PortfolioSectorSnapshot(
-                        entry.getKey(),
-                        calculateRate(entry.getValue(), totalEvaluationAmount),
-                        entry.getValue().setScale(MONEY_SCALE, RoundingMode.HALF_UP)
-                ))
-                .toList();
-    }
-
-    private void saveSectorAnalyses(PortfolioAnalysis analysis, List<PortfolioSectorSnapshot> sectorSnapshots) {
-        List<PortfolioSectorAnalysis> sectorAnalyses = sectorSnapshots.stream()
-                .map(sector -> PortfolioSectorAnalysis.create(
-                        analysis,
-                        sector.sectorName(),
-                        sector.weight(),
-                        sector.evaluationAmount()
-                ))
-                .toList();
-        portfolioSectorAnalysisRepository.saveAll(sectorAnalyses);
+    private BigDecimal calculateHoldingConcentrationScore(List<PortfolioHoldingSnapshot> holdings) {
+        return holdings.stream()
+                .map(PortfolioHoldingSnapshot::weight)
+                .max(BigDecimal::compareTo)
+                .orElse(BigDecimal.ZERO);
     }
 
     private void requestAiAnalysisAfterCommit(UUID analysisId, AiPortfolioAnalysisRequestDto request) {
@@ -267,9 +216,7 @@ public class PortfolioAnalysisService {
     }
 
     private PortfolioAnalysisResponseDto toResponse(PortfolioAnalysis analysis) {
-        List<PortfolioSectorAnalysis> sectorAnalyses =
-                portfolioSectorAnalysisRepository.findAllByAnalysisId(analysis.getId());
-        return PortfolioAnalysisResponseDto.from(analysis, sectorAnalyses);
+        return PortfolioAnalysisResponseDto.from(analysis);
     }
 
     private Portfolio findPortfolio(UUID userId) {
@@ -352,16 +299,6 @@ public class PortfolioAnalysisService {
         }
     }
 
-    private BigDecimal calculateRate(BigDecimal numerator, BigDecimal denominator) {
-        if (denominator == null || denominator.compareTo(BigDecimal.ZERO) == 0) {
-            return BigDecimal.ZERO.setScale(RATE_SCALE, RoundingMode.HALF_UP);
-        }
-
-        return numerator
-                .multiply(HUNDRED)
-                .divide(denominator, RATE_SCALE, RoundingMode.HALF_UP);
-    }
-
     private int resolvePage(int page) {
         if (page < 0) {
             return DEFAULT_PAGE;
@@ -381,7 +318,6 @@ public class PortfolioAnalysisService {
             BigDecimal totalReturnRate,
             BigDecimal concentrationScore,
             BigDecimal concentrationThreshold,
-            List<PortfolioSectorSnapshot> sectorAnalyses,
             List<PortfolioHoldingSnapshot> holdings,
             AiPortfolioTendencyAnalysisRequestDto tendencyAnalysis
     ) {
@@ -394,9 +330,6 @@ public class PortfolioAnalysisService {
                     totalReturnRate,
                     concentrationScore,
                     concentrationThreshold,
-                    sectorAnalyses.stream()
-                            .map(PortfolioSectorSnapshot::toAiRequest)
-                            .toList(),
                     holdings.stream()
                             .map(PortfolioHoldingSnapshot::toAiRequest)
                             .toList(),
@@ -405,21 +338,9 @@ public class PortfolioAnalysisService {
         }
     }
 
-    private record PortfolioSectorSnapshot(
-            String sectorName,
-            BigDecimal weight,
-            BigDecimal evaluationAmount
-    ) {
-
-        private AiPortfolioSectorAnalysisRequestDto toAiRequest() {
-            return new AiPortfolioSectorAnalysisRequestDto(sectorName, weight, evaluationAmount);
-        }
-    }
-
     private record PortfolioHoldingSnapshot(
             String ticker,
             String stockName,
-            String sectorName,
             Long quantity,
             BigDecimal averagePurchasePrice,
             BigDecimal currentPrice,
@@ -433,7 +354,6 @@ public class PortfolioAnalysisService {
             return new AiPortfolioHoldingRequestDto(
                     ticker,
                     stockName,
-                    sectorName,
                     quantity,
                     averagePurchasePrice,
                     currentPrice,

@@ -6,12 +6,10 @@ import com.moni.portfolio.application.analysis.TendencySuitabilityResult;
 import com.moni.portfolio.application.analysis.TendencyType;
 import com.moni.portfolio.domain.entity.Portfolio;
 import com.moni.portfolio.domain.entity.PortfolioAnalysis;
-import com.moni.portfolio.domain.entity.PortfolioSectorAnalysis;
 import com.moni.portfolio.domain.enums.AnalysisStatus;
 import com.moni.portfolio.domain.exception.PortfolioErrorCode;
 import com.moni.portfolio.domain.repository.PortfolioAnalysisRepository;
 import com.moni.portfolio.domain.repository.PortfolioRepository;
-import com.moni.portfolio.domain.repository.PortfolioSectorAnalysisRepository;
 import com.moni.portfolio.infrastructure.client.TradeServiceClient;
 import com.moni.portfolio.infrastructure.client.UserServiceClient;
 import com.moni.portfolio.infrastructure.client.dto.request.AiPortfolioAnalysisRequestDto;
@@ -41,7 +39,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
@@ -59,9 +56,6 @@ class PortfolioAnalysisServiceTest {
 
     @Mock
     private PortfolioAnalysisRepository portfolioAnalysisRepository;
-
-    @Mock
-    private PortfolioSectorAnalysisRepository portfolioSectorAnalysisRepository;
 
     @Mock
     private PortfolioRiskCalculator portfolioRiskCalculator;
@@ -141,7 +135,6 @@ class PortfolioAnalysisServiceTest {
                     any(BigDecimal.class),
                     any(BigDecimal.class),
                     any(BigDecimal.class),
-                    any(BigDecimal.class),
                     anyInt()
             )).willReturn(new TendencySuitabilityResult(
                     TendencyType.STABLE,
@@ -157,8 +150,6 @@ class PortfolioAnalysisServiceTest {
                         ReflectionTestUtils.setField(analysis, "id", ANALYSIS_ID);
                         return analysis;
                     });
-            given(portfolioSectorAnalysisRepository.saveAll(anyList()))
-                    .willAnswer(invocation -> invocation.getArgument(0));
 
             // when
             PortfolioAnalysisCreateResponseDto result = portfolioAnalysisService.requestAnalysis(USER_ID);
@@ -167,14 +158,6 @@ class PortfolioAnalysisServiceTest {
             assertThat(result.analysisId()).isEqualTo(ANALYSIS_ID);
             assertThat(result.status()).isEqualTo(AnalysisStatus.PENDING);
             assertThat(portfolio.getAiAnalysisCount()).isEqualTo(1L);
-
-            @SuppressWarnings("unchecked")
-            ArgumentCaptor<List<PortfolioSectorAnalysis>> sectorCaptor = ArgumentCaptor.forClass(List.class);
-            then(portfolioSectorAnalysisRepository).should().saveAll(sectorCaptor.capture());
-            assertThat(sectorCaptor.getValue()).hasSize(1);
-            assertThat(sectorCaptor.getValue().getFirst().getSectorName()).isEqualTo("미분류");
-            assertThat(sectorCaptor.getValue().getFirst().getWeight()).isEqualByComparingTo("100.00");
-            assertThat(sectorCaptor.getValue().getFirst().getEvaluationAmount()).isEqualByComparingTo("4158500.00");
 
             ArgumentCaptor<AiPortfolioAnalysisRequestDto> aiRequestCaptor =
                     ArgumentCaptor.forClass(AiPortfolioAnalysisRequestDto.class);
@@ -187,12 +170,10 @@ class PortfolioAnalysisServiceTest {
             assertThat(aiRequest.userId()).isEqualTo(USER_ID);
             assertThat(aiRequest.totalEvaluationAmount()).isEqualByComparingTo("4158500.00");
             assertThat(aiRequest.totalReturnRate()).isEqualByComparingTo("-1.7750");
-            assertThat(aiRequest.concentrationScore()).isEqualByComparingTo("100.00");
+            assertThat(aiRequest.concentrationScore()).isEqualByComparingTo("50.50");
             assertThat(aiRequest.concentrationThreshold()).isEqualByComparingTo("60.00");
-            assertThat(aiRequest.sectorAnalyses()).hasSize(1);
             assertThat(aiRequest.holdings()).hasSize(2);
             assertThat(aiRequest.holdings().getFirst().stockName()).isEqualTo("SK하이닉스");
-            assertThat(aiRequest.holdings().getFirst().sectorName()).isEqualTo("미분류");
 
             AiPortfolioTendencyAnalysisRequestDto tendencyAnalysis = aiRequest.tendencyAnalysis();
             assertThat(tendencyAnalysis).isNotNull();
@@ -234,7 +215,6 @@ class PortfolioAnalysisServiceTest {
                                     .isEqualTo(PortfolioErrorCode.INVALID_PORTFOLIO_QUERY));
 
             then(portfolioAnalysisRepository).should(never()).save(any(PortfolioAnalysis.class));
-            then(portfolioSectorAnalysisRepository).should(never()).saveAll(anyList());
             then(portfolioAnalysisAsyncExecutor).should(never())
                     .requestAiAnalysis(any(UUID.class), any(AiPortfolioAnalysisRequestDto.class));
         }

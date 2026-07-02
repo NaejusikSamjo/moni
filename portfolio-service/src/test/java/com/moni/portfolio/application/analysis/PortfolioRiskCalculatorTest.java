@@ -34,8 +34,7 @@ class PortfolioRiskCalculatorTest {
                     userTendency,
                     new BigDecimal("10000000.00"),
                     new BigDecimal("4000000.00"),
-                    new BigDecimal("60.00"),
-                    new BigDecimal("100.00"),
+                    new BigDecimal("80.00"),
                     2
             );
 
@@ -64,7 +63,6 @@ class PortfolioRiskCalculatorTest {
                     new BigDecimal("10000000.00"),
                     new BigDecimal("12000000.00"),
                     new BigDecimal("150.00"),
-                    new BigDecimal("130.00"),
                     1
             );
 

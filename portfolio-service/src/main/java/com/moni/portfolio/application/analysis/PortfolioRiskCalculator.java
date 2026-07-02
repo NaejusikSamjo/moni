@@ -10,8 +10,7 @@ import java.math.RoundingMode;
 public class PortfolioRiskCalculator {
 
     private static final BigDecimal HUNDRED = new BigDecimal("100");
-    private static final BigDecimal TOP_HOLDING_WEIGHT = new BigDecimal("0.30");
-    private static final BigDecimal TOP_SECTOR_WEIGHT = new BigDecimal("0.30");
+    private static final BigDecimal HOLDING_CONCENTRATION_WEIGHT = new BigDecimal("0.60");
     private static final BigDecimal STOCK_ALLOCATION_WEIGHT = new BigDecimal("0.25");
     private static final BigDecimal HOLDING_COUNT_WEIGHT = new BigDecimal("0.15");
 
@@ -19,8 +18,7 @@ public class PortfolioRiskCalculator {
             UserTendencyResponseDto userTendency,
             BigDecimal totalAsset,
             BigDecimal stockEvaluationAmount,
-            BigDecimal topHoldingWeight,
-            BigDecimal topSectorWeight,
+            BigDecimal holdingConcentrationScore,
             int holdingCount
     ) {
         int userTendencyScore = userTendency.score();
@@ -28,8 +26,7 @@ public class PortfolioRiskCalculator {
         int portfolioRiskScore = calculatePortfolioRiskScore(
                 totalAsset,
                 stockEvaluationAmount,
-                topHoldingWeight,
-                topSectorWeight,
+                holdingConcentrationScore,
                 holdingCount
         );
         TendencyType portfolioRiskType = TendencyType.fromScore(portfolioRiskScore);
@@ -48,15 +45,13 @@ public class PortfolioRiskCalculator {
     private int calculatePortfolioRiskScore(
             BigDecimal totalAsset,
             BigDecimal stockEvaluationAmount,
-            BigDecimal topHoldingWeight,
-            BigDecimal topSectorWeight,
+            BigDecimal holdingConcentrationScore,
             int holdingCount
     ) {
         BigDecimal stockAllocationRate = calculateStockAllocationRate(totalAsset, stockEvaluationAmount);
         BigDecimal holdingCountRisk = BigDecimal.valueOf(resolveHoldingCountRisk(holdingCount));
 
-        BigDecimal score = normalizePercent(topHoldingWeight).multiply(TOP_HOLDING_WEIGHT)
-                .add(normalizePercent(topSectorWeight).multiply(TOP_SECTOR_WEIGHT))
+        BigDecimal score = normalizePercent(holdingConcentrationScore).multiply(HOLDING_CONCENTRATION_WEIGHT)
                 .add(normalizePercent(stockAllocationRate).multiply(STOCK_ALLOCATION_WEIGHT))
                 .add(holdingCountRisk.multiply(HOLDING_COUNT_WEIGHT));
 

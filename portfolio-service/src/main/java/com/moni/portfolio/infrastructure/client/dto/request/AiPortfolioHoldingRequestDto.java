@@ -5,7 +5,6 @@ import java.math.BigDecimal;
 public record AiPortfolioHoldingRequestDto(
         String ticker,
         String stockName,
-        String sectorName,
         Long quantity,
         BigDecimal averagePurchasePrice,
         BigDecimal currentPrice,

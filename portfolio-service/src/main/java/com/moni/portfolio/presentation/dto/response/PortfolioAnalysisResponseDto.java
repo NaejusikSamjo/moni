@@ -1,12 +1,10 @@
 package com.moni.portfolio.presentation.dto.response;
 
 import com.moni.portfolio.domain.entity.PortfolioAnalysis;
-import com.moni.portfolio.domain.entity.PortfolioSectorAnalysis;
 import com.moni.portfolio.domain.enums.AnalysisStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.UUID;
 
 public record PortfolioAnalysisResponseDto(
@@ -18,13 +16,9 @@ public record PortfolioAnalysisResponseDto(
         BigDecimal concentrationScore,
         BigDecimal concentrationThreshold,
         String errorMessage,
-        LocalDateTime analyzedAt,
-        List<PortfolioSectorAnalysisResponseDto> sectorAnalyses
+        LocalDateTime analyzedAt
 ) {
-    public static PortfolioAnalysisResponseDto from(
-            PortfolioAnalysis analysis,
-            List<PortfolioSectorAnalysis> sectorAnalyses
-    ) {
+    public static PortfolioAnalysisResponseDto from(PortfolioAnalysis analysis) {
         return new PortfolioAnalysisResponseDto(
                 analysis.getId(),
                 analysis.getStatus(),
@@ -34,10 +28,7 @@ public record PortfolioAnalysisResponseDto(
                 analysis.getConcentrationScore(),
                 analysis.getConcentrationThreshold(),
                 analysis.getErrorMessage(),
-                analysis.getAnalyzedAt(),
-                sectorAnalyses.stream()
-                        .map(PortfolioSectorAnalysisResponseDto::from)
-                        .toList()
+                analysis.getAnalyzedAt()
         );
     }
 }

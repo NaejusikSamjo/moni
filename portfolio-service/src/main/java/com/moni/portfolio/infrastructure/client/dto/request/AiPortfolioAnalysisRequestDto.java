@@ -11,7 +11,6 @@ public record AiPortfolioAnalysisRequestDto(
         BigDecimal totalReturnRate,
         BigDecimal concentrationScore,
         BigDecimal concentrationThreshold,
-        List<AiPortfolioSectorAnalysisRequestDto> sectorAnalyses,
         List<AiPortfolioHoldingRequestDto> holdings,
         AiPortfolioTendencyAnalysisRequestDto tendencyAnalysis
 ) {

@@ -66,7 +66,7 @@ class PortfolioAnalysisAsyncExecutorTest {
                             63,
                             "보통",
                             "사용자 성향보다 포트폴리오 위험도가 높은 편입니다.",
-                            "섹터 집중도를 낮추는 방향을 검토해볼 수 있습니다."
+                            "단일 종목 비중을 낮추는 방향을 검토해볼 수 있습니다."
                     ),
                     "분산 투자를 검토해볼 수 있습니다."
             );
@@ -83,7 +83,7 @@ class PortfolioAnalysisAsyncExecutorTest {
             assertThat(analysis.getSummary())
                     .contains("요약 문장입니다.")
                     .contains("성향 적합도: 사용자 성향보다 포트폴리오 위험도가 높은 편입니다.")
-                    .contains("성향 권고: 섹터 집중도를 낮추는 방향을 검토해볼 수 있습니다.")
+                    .contains("성향 권고: 단일 종목 비중을 낮추는 방향을 검토해볼 수 있습니다.")
                     .contains("권고: 분산 투자를 검토해볼 수 있습니다.");
             assertThat(analysis.getConcentrationScore()).isEqualByComparingTo("64.20");
             assertThat(analysis.getConcentrationThreshold()).isEqualByComparingTo("60.00");
@@ -137,7 +137,6 @@ class PortfolioAnalysisAsyncExecutorTest {
                 new BigDecimal("-1.7750"),
                 new BigDecimal("64.20"),
                 new BigDecimal("60.00"),
-                List.of(),
                 List.of(),
                 null
         );
