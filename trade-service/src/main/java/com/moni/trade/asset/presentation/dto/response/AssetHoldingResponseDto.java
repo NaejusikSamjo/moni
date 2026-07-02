@@ -11,6 +11,9 @@ public record AssetHoldingResponseDto(
         @Schema(description = "종목 코드", example = "005930")
         String ticker,
 
+        @Schema(description = "종목명", example = "삼성전자")
+        String stockName,
+
         @Schema(description = "보유 수량", example = "10")
         Long quantity,
 
@@ -35,6 +38,7 @@ public record AssetHoldingResponseDto(
     public static AssetHoldingResponseDto from(HoldingResult result) {
         return new AssetHoldingResponseDto(
                 result.ticker(),
+                result.name(),
                 result.quantity(),
                 result.averagePurchasePrice(),
                 result.currentPrice(),
