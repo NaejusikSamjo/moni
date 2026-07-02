@@ -16,9 +16,6 @@ public record PortfolioHoldingRequestDto(
         @NotBlank
         String stockName,
 
-        @NotBlank
-        String sectorName,
-
         @NotNull
         @Positive
         Long quantity,

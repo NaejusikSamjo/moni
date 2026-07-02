@@ -33,9 +33,6 @@ public record PortfolioAnalysisRequestDto(
         BigDecimal concentrationThreshold,
 
         @NotEmpty
-        List<PortfolioSectorAnalysisRequestDto> sectorAnalyses,
-
-        @NotEmpty
         List<PortfolioHoldingRequestDto> holdings,
 
         @Valid
