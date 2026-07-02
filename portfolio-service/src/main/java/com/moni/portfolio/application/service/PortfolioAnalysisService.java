@@ -12,7 +12,6 @@ import com.moni.portfolio.domain.exception.PortfolioErrorCode;
 import com.moni.portfolio.domain.repository.PortfolioAnalysisRepository;
 import com.moni.portfolio.domain.repository.PortfolioRepository;
 import com.moni.portfolio.domain.repository.PortfolioSectorAnalysisRepository;
-import com.moni.portfolio.infrastructure.client.StockServiceClient;
 import com.moni.portfolio.infrastructure.client.TradeServiceClient;
 import com.moni.portfolio.infrastructure.client.UserServiceClient;
 import com.moni.portfolio.infrastructure.client.dto.request.AiPortfolioAnalysisRequestDto;
@@ -20,7 +19,6 @@ import com.moni.portfolio.infrastructure.client.dto.request.AiPortfolioHoldingRe
 import com.moni.portfolio.infrastructure.client.dto.request.AiPortfolioSectorAnalysisRequestDto;
 import com.moni.portfolio.infrastructure.client.dto.request.AiPortfolioTendencyAnalysisRequestDto;
 import com.moni.portfolio.infrastructure.client.dto.response.ExternalApiResponseDto;
-import com.moni.portfolio.infrastructure.client.dto.response.StockResponseDto;
 import com.moni.portfolio.infrastructure.client.dto.response.TradeAssetHoldingResponseDto;
 import com.moni.portfolio.infrastructure.client.dto.response.TradeAssetHoldingsResponseDto;
 import com.moni.portfolio.infrastructure.client.dto.response.TradeAssetResponseDto;
@@ -69,7 +67,6 @@ public class PortfolioAnalysisService {
     private final PortfolioSectorAnalysisRepository portfolioSectorAnalysisRepository;
     private final PortfolioRiskCalculator portfolioRiskCalculator;
     private final TradeServiceClient tradeServiceClient;
-    private final StockServiceClient stockServiceClient;
     private final UserServiceClient userServiceClient;
     private final PortfolioAnalysisAsyncExecutor portfolioAnalysisAsyncExecutor;
 
@@ -128,9 +125,8 @@ public class PortfolioAnalysisService {
             throw new CustomException(PortfolioErrorCode.INVALID_PORTFOLIO_QUERY);
         }
 
-        Map<String, StockResponseDto> stocks = getStocks(holdings);
         List<PortfolioHoldingSnapshot> holdingSnapshots = holdings.stream()
-                .map(holding -> toHoldingSnapshot(holding, stocks.get(holding.ticker())))
+                .map(this::toHoldingSnapshot)
                 .toList();
         List<PortfolioSectorSnapshot> sectorSnapshots = createSectorSnapshots(holdingSnapshots);
         BigDecimal concentrationScore = sectorSnapshots.stream()
@@ -204,15 +200,15 @@ public class PortfolioAnalysisService {
         }
     }
 
-    private PortfolioHoldingSnapshot toHoldingSnapshot(TradeAssetHoldingResponseDto holding, StockResponseDto stock) {
-        if (stock == null || stock.name() == null || stock.name().isBlank()) {
-            throw new CustomException(PortfolioErrorCode.STOCK_RESPONSE_INVALID);
+    private PortfolioHoldingSnapshot toHoldingSnapshot(TradeAssetHoldingResponseDto holding) {
+        if (holding.stockName() == null || holding.stockName().isBlank()) {
+            throw new CustomException(PortfolioErrorCode.TRADE_RESPONSE_INVALID);
         }
 
         return new PortfolioHoldingSnapshot(
                 holding.ticker(),
-                stock.name(),
-                resolveSectorName(stock.sectorName()),
+                holding.stockName(),
+                DEFAULT_SECTOR_NAME,
                 holding.quantity(),
                 holding.averagePurchasePrice(),
                 holding.currentPrice(),
@@ -326,6 +322,8 @@ public class PortfolioAnalysisService {
         if (holding == null
                 || holding.ticker() == null
                 || holding.ticker().isBlank()
+                || holding.stockName() == null
+                || holding.stockName().isBlank()
                 || holding.quantity() == null
                 || holding.averagePurchasePrice() == null
                 || holding.currentPrice() == null
@@ -335,26 +333,6 @@ public class PortfolioAnalysisService {
                 || holding.weight() == null) {
             throw new CustomException(PortfolioErrorCode.TRADE_RESPONSE_INVALID);
         }
-    }
-
-    private Map<String, StockResponseDto> getStocks(List<TradeAssetHoldingResponseDto> holdings) {
-        return holdings.stream()
-                .map(holding -> {
-                    StockResponseDto stock = requestStockData(
-                            () -> stockServiceClient.getStockDetail(holding.ticker())
-                    );
-
-                    if (stock.ticker() == null || !holding.ticker().equals(stock.ticker())) {
-                        throw new CustomException(PortfolioErrorCode.STOCK_RESPONSE_INVALID);
-                    }
-
-                    return stock;
-                })
-                .collect(Collectors.toMap(
-                        StockResponseDto::ticker,
-                        stock -> stock,
-                        (existing, ignored) -> existing
-                ));
     }
 
     private <T> T requestTradeData(Supplier<ExternalApiResponseDto<T>> request) {
@@ -372,30 +350,6 @@ public class PortfolioAnalysisService {
             }
             throw new CustomException(PortfolioErrorCode.TRADE_SERVICE_ERROR);
         }
-    }
-
-    private <T> T requestStockData(Supplier<ExternalApiResponseDto<T>> request) {
-        try {
-            ExternalApiResponseDto<T> response = request.get();
-            if (response == null || response.data() == null) {
-                throw new CustomException(PortfolioErrorCode.STOCK_RESPONSE_INVALID);
-            }
-            return response.data();
-        } catch (RetryableException exception) {
-            throw new CustomException(PortfolioErrorCode.STOCK_SERVICE_TIMEOUT);
-        } catch (FeignException exception) {
-            if (exception.status() == HttpStatus.NOT_FOUND.value()) {
-                throw new CustomException(PortfolioErrorCode.STOCK_PRICE_NOT_FOUND);
-            }
-            throw new CustomException(PortfolioErrorCode.STOCK_SERVICE_ERROR);
-        }
-    }
-
-    private String resolveSectorName(String sectorName) {
-        if (sectorName == null || sectorName.isBlank()) {
-            return DEFAULT_SECTOR_NAME;
-        }
-        return sectorName;
     }
 
     private BigDecimal calculateRate(BigDecimal numerator, BigDecimal denominator) {

@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 
 public record TradeAssetHoldingResponseDto(
         String ticker,
+        String stockName,
         Long quantity,
         BigDecimal averagePurchasePrice,
         BigDecimal currentPrice,

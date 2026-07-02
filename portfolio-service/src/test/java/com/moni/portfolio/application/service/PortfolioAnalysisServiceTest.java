@@ -12,13 +12,11 @@ import com.moni.portfolio.domain.exception.PortfolioErrorCode;
 import com.moni.portfolio.domain.repository.PortfolioAnalysisRepository;
 import com.moni.portfolio.domain.repository.PortfolioRepository;
 import com.moni.portfolio.domain.repository.PortfolioSectorAnalysisRepository;
-import com.moni.portfolio.infrastructure.client.StockServiceClient;
 import com.moni.portfolio.infrastructure.client.TradeServiceClient;
 import com.moni.portfolio.infrastructure.client.UserServiceClient;
 import com.moni.portfolio.infrastructure.client.dto.request.AiPortfolioAnalysisRequestDto;
 import com.moni.portfolio.infrastructure.client.dto.request.AiPortfolioTendencyAnalysisRequestDto;
 import com.moni.portfolio.infrastructure.client.dto.response.ExternalApiResponseDto;
-import com.moni.portfolio.infrastructure.client.dto.response.StockResponseDto;
 import com.moni.portfolio.infrastructure.client.dto.response.TradeAssetHoldingResponseDto;
 import com.moni.portfolio.infrastructure.client.dto.response.TradeAssetHoldingsResponseDto;
 import com.moni.portfolio.infrastructure.client.dto.response.TradeAssetResponseDto;
@@ -72,9 +70,6 @@ class PortfolioAnalysisServiceTest {
     private TradeServiceClient tradeServiceClient;
 
     @Mock
-    private StockServiceClient stockServiceClient;
-
-    @Mock
     private UserServiceClient userServiceClient;
 
     @Mock
@@ -113,6 +108,7 @@ class PortfolioAnalysisServiceTest {
                             List.of(
                                     holding(
                                             "000660",
+                                            "SK하이닉스",
                                             10L,
                                             "220000.00",
                                             "210000.00",
@@ -123,6 +119,7 @@ class PortfolioAnalysisServiceTest {
                                     ),
                                     holding(
                                             "005930",
+                                            "삼성전자",
                                             30L,
                                             "70000.00",
                                             "68616.67",
@@ -137,20 +134,6 @@ class PortfolioAnalysisServiceTest {
                             2,
                             1,
                             "evaluationAmount,desc"
-                    )));
-            given(stockServiceClient.getStockDetail("000660"))
-                    .willReturn(success(new StockResponseDto(
-                            "000660",
-                            "SK하이닉스",
-                            new BigDecimal("210000.00"),
-                            "반도체"
-                    )));
-            given(stockServiceClient.getStockDetail("005930"))
-                    .willReturn(success(new StockResponseDto(
-                            "005930",
-                            "삼성전자",
-                            new BigDecimal("68616.67"),
-                            "반도체"
                     )));
             given(userServiceClient.getTendency(USER_ID)).willReturn(success(userTendency));
             given(portfolioRiskCalculator.calculate(
@@ -189,7 +172,7 @@ class PortfolioAnalysisServiceTest {
             ArgumentCaptor<List<PortfolioSectorAnalysis>> sectorCaptor = ArgumentCaptor.forClass(List.class);
             then(portfolioSectorAnalysisRepository).should().saveAll(sectorCaptor.capture());
             assertThat(sectorCaptor.getValue()).hasSize(1);
-            assertThat(sectorCaptor.getValue().getFirst().getSectorName()).isEqualTo("반도체");
+            assertThat(sectorCaptor.getValue().getFirst().getSectorName()).isEqualTo("미분류");
             assertThat(sectorCaptor.getValue().getFirst().getWeight()).isEqualByComparingTo("100.00");
             assertThat(sectorCaptor.getValue().getFirst().getEvaluationAmount()).isEqualByComparingTo("4158500.00");
 
@@ -208,6 +191,8 @@ class PortfolioAnalysisServiceTest {
             assertThat(aiRequest.concentrationThreshold()).isEqualByComparingTo("60.00");
             assertThat(aiRequest.sectorAnalyses()).hasSize(1);
             assertThat(aiRequest.holdings()).hasSize(2);
+            assertThat(aiRequest.holdings().getFirst().stockName()).isEqualTo("SK하이닉스");
+            assertThat(aiRequest.holdings().getFirst().sectorName()).isEqualTo("미분류");
 
             AiPortfolioTendencyAnalysisRequestDto tendencyAnalysis = aiRequest.tendencyAnalysis();
             assertThat(tendencyAnalysis).isNotNull();
@@ -263,6 +248,7 @@ class PortfolioAnalysisServiceTest {
 
     private TradeAssetHoldingResponseDto holding(
             String ticker,
+            String stockName,
             Long quantity,
             String averagePurchasePrice,
             String currentPrice,
@@ -273,6 +259,7 @@ class PortfolioAnalysisServiceTest {
     ) {
         return new TradeAssetHoldingResponseDto(
                 ticker,
+                stockName,
                 quantity,
                 new BigDecimal(averagePurchasePrice),
                 new BigDecimal(currentPrice),
