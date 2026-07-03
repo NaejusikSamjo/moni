@@ -15,4 +15,5 @@ public class StockPrice {
     private BigDecimal bidPrice;
     private BigDecimal currentPrice;
     private Long volume;
+    private String section;
 }

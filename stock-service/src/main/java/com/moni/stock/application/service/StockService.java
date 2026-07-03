@@ -11,8 +11,10 @@ import com.moni.stock.domain.exception.StockErrorCode;
 import com.moni.stock.domain.repository.StockRepository;
 import com.moni.stock.domain.type.ChartIndex;
 import com.moni.stock.infrastructure.client.KisOAuthClient;
+import com.moni.stock.infrastructure.redis.RedisUnavailableException;
 import com.moni.stock.infrastructure.redis.StockPriceRedisAdapter;
 import com.moni.stock.infrastructure.redis.ThemeRankingRedisAdapter;
+import com.moni.stock.presentation.dto.request.BatchStockRequest;
 import com.moni.stock.presentation.dto.response.StockChartResponse;
 import com.moni.stock.presentation.dto.response.StockResDto;
 import com.moni.stock.presentation.dto.response.ThemeRankingResponse;
@@ -56,10 +58,8 @@ public class StockService implements StockQueryUseCase {
 
         Page<StockResDto> dtoPage = stockPage.map(stock -> {
             kisWebSocketInitializer.wsSubscribe(stock.getTicker());
-            BigDecimal currentPrice = stockPriceRedisAdapter.getPrice(stock.getTicker())
-                    .map(StockPrice::getCurrentPrice)
-                    .orElseGet(() -> fetchAndCacheCurrentPrice(stock.getTicker()));
-            return new StockResDto(stock.getTicker(), stock.getName(), currentPrice);
+            StockPrice stockPrice = resolvePrice(stock.getTicker());
+            return new StockResDto(stock.getTicker(), stock.getName(), stockPrice.getCurrentPrice(), stockPrice.getSection());
         });
 
         return new PageRes<>(dtoPage);
@@ -74,14 +74,20 @@ public class StockService implements StockQueryUseCase {
 
         kisWebSocketInitializer.wsSubscribe(stock.getTicker());
 
-        BigDecimal price = stockPriceRedisAdapter.getPrice(ticker)
-                .map(StockPrice::getCurrentPrice)
-                .orElseGet(() -> fetchAndCacheCurrentPrice(ticker));
-
-        return new StockResDto(ticker, stock.getName(), price);
+        StockPrice stockPrice = resolvePrice(ticker);
+        return new StockResDto(ticker, stock.getName(), stockPrice.getCurrentPrice(), stockPrice.getSection());
     }
 
-    private BigDecimal fetchAndCacheCurrentPrice(String ticker) {
+    private StockPrice resolvePrice(String ticker) {
+        try {
+            return stockPriceRedisAdapter.getPrice(ticker)
+                    .orElseGet(() -> fetchAndCacheCurrentPrice(ticker));
+        } catch (RedisUnavailableException e) {
+            return StockPrice.builder().ticker(ticker).currentPrice(BigDecimal.ZERO).build();
+        }
+    }
+
+    private StockPrice fetchAndCacheCurrentPrice(String ticker) {
         try {
             JsonNode output = kisOAuthClient.getCurrentPrice(ticker).path("output");
             BigDecimal price = new BigDecimal(output.path("stck_prpr").asText("0"));
@@ -91,11 +97,12 @@ public class StockService implements StockQueryUseCase {
                     .askPrice(new BigDecimal(output.path("stck_askp").asText("0")))
                     .bidPrice(new BigDecimal(output.path("stck_bidp").asText("0")))
                     .volume(output.path("acml_vol").asLong())
+                    .section(output.path("bstp_kor_isnm").asText())
                     .build();
             stockPriceRedisAdapter.savePrice(stockPrice);
-            return price;
+            return stockPrice;
         } catch (Exception e) {
-            return BigDecimal.ZERO;
+            return StockPrice.builder().ticker(ticker).currentPrice(BigDecimal.ZERO).build();
         }
     }
 
@@ -193,6 +200,19 @@ public class StockService implements StockQueryUseCase {
         return TopVolumeResponse.builder()
                 .stocks(stocks)
                 .build();
+    }
+
+    @Override
+    public List<StockResDto> getStockDetailList(BatchStockRequest tickers) {
+        List<Stock> stocks = stockRepository.findByTickerIn(tickers.getTickers());
+
+        return stocks.stream()
+                .map(stock -> {
+                    kisWebSocketInitializer.wsSubscribe(stock.getTicker());
+                    StockPrice stockPrice = resolvePrice(stock.getTicker());
+                    return new StockResDto(stock.getTicker(), stock.getName(), stockPrice.getCurrentPrice(), stockPrice.getSection());
+                })
+                .toList();
     }
 
 
