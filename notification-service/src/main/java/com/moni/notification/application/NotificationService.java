@@ -25,11 +25,6 @@ public class NotificationService {
   private final EmitterRepositoryImpl emitterRepository;
   private final NotificationRepository notificationRepository;
 
-  // 한국 장 개장 5분 전 알림
-  public void sendKoreaOpenMarket() {
-
-  }
-
 
   public SseEmitter subscribe(UUID userId, String lastEventId) {
     String emitterId = createTimeBasedId(userId);
