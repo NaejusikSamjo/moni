@@ -209,7 +209,7 @@ public class AssetService {
 
         return new HoldingInput(
                 holding.ticker(),
-                holding.quantity(),
+                holding.quantity().longValue(),
                 holding.averagePrice(),
                 holding.totalAmount()
         );

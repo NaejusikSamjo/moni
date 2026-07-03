@@ -10,7 +10,7 @@ public record TradeCompletedEvent(
         UUID accountId,
         String ticker,
         TradeType tradeType,
-        BigDecimal quantity,
+        Integer quantity,
         BigDecimal price,
         BigDecimal totalAmount,
         BigDecimal profitAmount,
