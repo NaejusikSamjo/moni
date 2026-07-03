@@ -10,6 +10,7 @@ import com.moni.trade.asset.application.calculator.model.HoldingInput;
 import com.moni.trade.asset.application.calculator.model.HoldingResult;
 import com.moni.trade.asset.application.calculator.model.PriceInput;
 import com.moni.trade.asset.domain.exception.AssetErrorCode;
+import com.moni.trade.asset.presentation.dto.response.AssetAnalysisSnapshotResponseDto;
 import com.moni.trade.asset.presentation.dto.response.AssetHoldingsResponseDto;
 import com.moni.trade.asset.presentation.dto.response.AssetResponseDto;
 import com.moni.trade.holding.domain.entity.Holding;
@@ -31,6 +32,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -321,6 +323,72 @@ class AssetServiceTest {
         }
     }
 
+    @Nested
+    @DisplayName("getAnalysisSnapshot()")
+    class GetAnalysisSnapshot {
+
+        @Test
+        @DisplayName("성공 - 자산 요약과 보유 비중 상위 10개 종목을 반환한다")
+        void success_get_analysis_snapshot() {
+            // given
+            Account account = accountWithBalance("9600000");
+            List<Holding> tradeHoldings = new ArrayList<>();
+            List<HoldingInput> holdingInputs = new ArrayList<>();
+            List<PriceInput> priceInputs = new ArrayList<>();
+            List<HoldingResult> holdingResults = new ArrayList<>();
+
+            for (int index = 1; index <= 11; index++) {
+                String ticker = "9000" + index;
+                tradeHoldings.add(holding(ticker, 1, "1000", "1000"));
+                holdingInputs.add(new HoldingInput(ticker, 1L, money("1000"), money("1000")));
+                priceInputs.add(new PriceInput(ticker, ticker + " name", money("1000")));
+                holdingResults.add(holdingResult(ticker, "1000.00", String.valueOf(index)));
+                given(stockServiceClient.getStock(ticker))
+                        .willReturn(success(stock(ticker, "1000")));
+            }
+
+            AssetResult assetResult = new AssetResult(
+                    money("10700000.00"),
+                    money("9600000"),
+                    money("1100000.00"),
+                    INITIAL_PRINCIPAL_AMOUNT,
+                    money("700000.00"),
+                    money("7.0000")
+            );
+
+            given(accountRepository.findByUserId(USER_ID)).willReturn(Optional.of(account));
+            given(holdingRepository.findByAccountId(eq(ACCOUNT_ID), pageNumber(0)))
+                    .willReturn(page(tradeHoldings.subList(0, 10), 0, 11));
+            given(holdingRepository.findByAccountId(eq(ACCOUNT_ID), pageNumber(1)))
+                    .willReturn(page(tradeHoldings.subList(10, 11), 1, 11));
+            given(assetCalculator.calculateAssets(
+                    money("9600000"),
+                    INITIAL_PRINCIPAL_AMOUNT,
+                    holdingInputs,
+                    priceInputs
+            )).willReturn(assetResult);
+            given(assetCalculator.calculateHoldings(holdingInputs, priceInputs))
+                    .willReturn(holdingResults);
+
+            // when
+            AssetAnalysisSnapshotResponseDto result = assetService.getAnalysisSnapshot(USER_ID);
+
+            // then
+            assertThat(result.totalAsset()).isEqualByComparingTo("10700000.00");
+            assertThat(result.cashBalance()).isEqualByComparingTo("9600000");
+            assertThat(result.stockEvaluationAmount()).isEqualByComparingTo("1100000.00");
+            assertThat(result.principalAmount()).isEqualByComparingTo("10000000");
+            assertThat(result.totalProfitLoss()).isEqualByComparingTo("700000.00");
+            assertThat(result.totalReturnRate()).isEqualByComparingTo("7.0000");
+            assertThat(result.holdings()).hasSize(10);
+            assertThat(result.holdings()).extracting("ticker")
+                    .containsExactly(
+                            "900011", "900010", "90009", "90008", "90007",
+                            "90006", "90005", "90004", "90003", "90002"
+                    );
+        }
+    }
+
     private BigDecimal money(String value) {
         if (value == null) {
             return null;
@@ -359,6 +427,10 @@ class AssetServiceTest {
     }
 
     private HoldingResult holdingResult(String ticker, String evaluationAmount) {
+        return holdingResult(ticker, evaluationAmount, "0.0000");
+    }
+
+    private HoldingResult holdingResult(String ticker, String evaluationAmount, String weight) {
         return new HoldingResult(
                 ticker,
                 ticker + " name",
@@ -368,7 +440,7 @@ class AssetServiceTest {
                 money(evaluationAmount),
                 BigDecimal.ZERO,
                 BigDecimal.ZERO,
-                BigDecimal.ZERO
+                money(weight)
         );
     }
 

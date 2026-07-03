@@ -2,6 +2,7 @@ package com.moni.trade.asset.presentation.controller;
 
 import com.moni.common.response.GlobalResponse;
 import com.moni.trade.asset.application.service.AssetService;
+import com.moni.trade.asset.presentation.dto.response.AssetAnalysisSnapshotResponseDto;
 import com.moni.trade.asset.presentation.dto.response.AssetHoldingsResponseDto;
 import com.moni.trade.asset.presentation.dto.response.AssetResponseDto;
 import io.swagger.v3.oas.annotations.Operation;
@@ -53,6 +54,16 @@ public class AssetController {
             @RequestParam(defaultValue = DEFAULT_SORT) String sort
     ) {
         AssetHoldingsResponseDto response = assetService.getHoldings(userId, page, size, sort);
+        return ResponseEntity.ok(GlobalResponse.success(HttpStatus.OK.value(), response));
+    }
+
+    @Operation(summary = "AI 분석용 자산 스냅샷 조회", description = "AI 포트폴리오 분석에 필요한 자산 요약과 보유 비중 상위 종목을 한 번에 조회합니다.")
+    @GetMapping("/analysis-snapshot")
+    public ResponseEntity<GlobalResponse<AssetAnalysisSnapshotResponseDto>> getAnalysisSnapshot(
+            @Parameter(hidden = true)
+            @RequestHeader(HEADER_USER_ID) UUID userId
+    ) {
+        AssetAnalysisSnapshotResponseDto response = assetService.getAnalysisSnapshot(userId);
         return ResponseEntity.ok(GlobalResponse.success(HttpStatus.OK.value(), response));
     }
 }

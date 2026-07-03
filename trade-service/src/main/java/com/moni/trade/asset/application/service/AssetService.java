@@ -10,6 +10,7 @@ import com.moni.trade.asset.application.calculator.model.HoldingInput;
 import com.moni.trade.asset.application.calculator.model.HoldingResult;
 import com.moni.trade.asset.application.calculator.model.PriceInput;
 import com.moni.trade.asset.domain.exception.AssetErrorCode;
+import com.moni.trade.asset.presentation.dto.response.AssetAnalysisSnapshotResponseDto;
 import com.moni.trade.asset.presentation.dto.response.AssetHoldingResponseDto;
 import com.moni.trade.asset.presentation.dto.response.AssetHoldingsResponseDto;
 import com.moni.trade.asset.presentation.dto.response.AssetResponseDto;
@@ -43,6 +44,7 @@ public class AssetService {
     private static final int DEFAULT_PAGE = 0;
     private static final int DEFAULT_SIZE = 10;
     private static final int MAX_SIZE = 50;
+    private static final int ANALYSIS_SNAPSHOT_HOLDING_LIMIT = 10;
     private static final BigDecimal INITIAL_PRINCIPAL_AMOUNT = new BigDecimal("10000000");
     private static final String DEFAULT_SORT = "evaluationAmount,desc";
     private static final String EVALUATION_AMOUNT_ASC = "evaluationAmount,asc";
@@ -116,6 +118,28 @@ public class AssetService {
                 totalPages,
                 resolvedSort
         );
+    }
+
+    /** AI 분석용 자산 스냅샷 조회 로직 */
+    public AssetAnalysisSnapshotResponseDto getAnalysisSnapshot(UUID userId) {
+        Account account = getAccount(userId);
+        BigDecimal cashBalance = account.getBalance();
+        List<HoldingInput> holdings = getHoldings(account.getId());
+        List<PriceInput> prices = getPrices(holdings);
+
+        AssetResult assetResult = assetCalculator.calculateAssets(
+                cashBalance,
+                INITIAL_PRINCIPAL_AMOUNT,
+                holdings,
+                prices
+        );
+
+        List<HoldingResult> holdingResults = assetCalculator.calculateHoldings(holdings, prices).stream()
+                .sorted(Comparator.comparing(HoldingResult::weight).reversed())
+                .limit(ANALYSIS_SNAPSHOT_HOLDING_LIMIT)
+                .toList();
+
+        return AssetAnalysisSnapshotResponseDto.from(assetResult, holdingResults);
     }
 
     private Account getAccount(UUID userId) {
