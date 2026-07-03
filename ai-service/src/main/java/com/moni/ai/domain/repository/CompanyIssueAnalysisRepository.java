@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface CompanyIssueAnalysisRepository extends JpaRepository<CompanyIssueAnalysisEntity, UUID> {
+public interface CompanyIssueAnalysisRepository extends JpaRepository<CompanyIssueAnalysisEntity, UUID>, CompanyIssueAnalysisRepositoryCustom {
 
     Optional<CompanyIssueAnalysisEntity> findTopByTickerAndExpiredAtAfterOrderByCreatedAtDesc(String ticker, LocalDateTime now);
 }

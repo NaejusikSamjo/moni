@@ -36,7 +36,6 @@ spring:
               uri: lb://payment-service
               predicates:
                 - Path=/api/v1/payment/**, /api/v1/payments/**
-
             - id: ai-service
               uri: lb://ai-service
               predicates:

@@ -1,12 +1,10 @@
 package com.moni.ai.application.service;
 
-import com.moni.ai.common.exception.AiErrorCode;
+import com.moni.ai.domain.exception.AiErrorCode;
 import com.moni.ai.domain.entity.CompanyIssueAnalysisEntity;
-import com.moni.ai.domain.entity.NewsEntity;
 import com.moni.ai.domain.enums.SentimentEnum;
 import com.moni.ai.domain.enums.WatchCompany;
 import com.moni.ai.domain.repository.CompanyIssueAnalysisRepository;
-import com.moni.ai.domain.repository.NewsRepository;
 import com.moni.ai.presentation.dto.response.CompanyIssueResDto;
 import com.moni.common.error.exception.CustomException;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +15,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -37,13 +34,11 @@ public class AiService {
         WatchCompany company = WatchCompany.fromTicker(ticker);
 
         // 1. 유효한 캐시 조회
-        // TODO: queryDSL도입 예정
-        Optional<CompanyIssueAnalysisEntity> cached = companyIssueAnalysisRepository
-                .findTopByTickerAndExpiredAtAfterOrderByCreatedAtDesc(ticker, LocalDateTime.now());
+        Optional<CompanyIssueAnalysisEntity> cached = companyIssueAnalysisRepository.findLatestValidAnalysis(ticker);
 
         if (cached.isPresent()) {
-            log.info("[{}] 캐시된 분석 결과 반환", ticker);
-            return CompanyIssueResDto.toDto(cached.get());
+            log.info("[{}] 분석 존재", ticker);
+            throw new CustomException(AiErrorCode.ANALYSIS_ALREADY_EXISTS);
         }
 
 
@@ -95,7 +90,7 @@ public class AiService {
         WatchCompany.fromTicker(ticker);
 
         return companyIssueAnalysisRepository
-                .findTopByTickerAndExpiredAtAfterOrderByCreatedAtDesc(ticker, LocalDateTime.now())
+                .findLatestValidAnalysis(ticker)
                 .map(CompanyIssueResDto::toDto)
                 .orElseThrow(() -> new CustomException(AiErrorCode.AI_NOT_FOUND));
     }
