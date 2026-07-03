@@ -9,8 +9,7 @@ public enum AssetErrorCode implements ErrorCode {
 
     STOCK_PRICE_NOT_FOUND("ASSET-001", "현재가 정보를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
 
-    TRADE_RESPONSE_INVALID("ASSET-101", "Trade 서비스 응답 데이터가 올바르지 않습니다.", HttpStatus.BAD_GATEWAY),
-    STOCK_RESPONSE_INVALID("ASSET-102", "Stock 서비스 응답 데이터가 올바르지 않습니다.", HttpStatus.BAD_GATEWAY),
+    STOCK_RESPONSE_INVALID("ASSET-101", "Stock 서비스 응답 데이터가 올바르지 않습니다.", HttpStatus.BAD_GATEWAY),
 
     STOCK_SERVICE_ERROR("ASSET-901", "Stock 서비스 연동 중 오류가 발생했습니다.", HttpStatus.BAD_GATEWAY),
     STOCK_SERVICE_TIMEOUT("ASSET-902", "Stock 서비스 응답 시간이 초과되었습니다.", HttpStatus.GATEWAY_TIMEOUT),
