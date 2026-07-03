@@ -84,7 +84,7 @@ jobs:
 
           CHANGED=$(git diff --name-only origin/stage...HEAD)
 
-          if echo "$CHANGED" | grep -qE "^(common/|common-logging/|build\.gradle$|settings\.gradle$|gradle/|\.github/)"; then
+          if echo "$CHANGED" | grep -qE "^(common/|build\.gradle$|settings\.gradle$|gradle/|\.github/)"; then
             CHANGED_SERVICES="$ALL"
           else
             CHANGED_SERVICES=""

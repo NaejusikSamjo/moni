@@ -21,7 +21,13 @@ public enum UserErrorCode implements ErrorCode {
     FORBIDDEN("USER-008", "접근 권한이 없습니다.", HttpStatus.FORBIDDEN),
 
     USER_ALREADY_SUSPENDED("USER-009", "이미 정지된 계정입니다.", HttpStatus.CONFLICT),
-    USER_NOT_SUSPENDED("USER-010", "정지 상태가 아닌 계정입니다.", HttpStatus.BAD_REQUEST);
+    USER_NOT_SUSPENDED("USER-010", "정지 상태가 아닌 계정입니다.", HttpStatus.BAD_REQUEST),
+
+    S3_PRESIGNED_URL_FAILED("USER-012", "프로필 업로드 URL 생성에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
+
+    ALREADY_INTEGRATED("USER-013", "이미 통합 회원으로 전환된 계정입니다.", HttpStatus.CONFLICT),
+    NOT_OAUTH_ACCOUNT("USER-015", "소셜 로그인으로 가입된 계정이 아닙니다.", HttpStatus.BAD_REQUEST),
+    PASSWORD_REQUIRED("USER-014", "비밀번호 확인이 필요합니다.", HttpStatus.BAD_REQUEST);
 
     private final String code;
     private final String message;

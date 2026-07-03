@@ -5,10 +5,12 @@ import com.moni.common.JpaAuditing.baseEntity.BaseEntity;
 import jakarta.persistence.Id;
 import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.PrePersist;
+import lombok.Getter;
 
 import java.util.UUID;
 
 @MappedSuperclass
+@Getter
 public class IdAudit extends BaseEntity {
 
     @Id
