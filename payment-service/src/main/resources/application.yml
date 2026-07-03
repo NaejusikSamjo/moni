@@ -10,6 +10,8 @@ toss:
     secret-key: ${TOSS_SECRET_KEY:test_sk_placeholder}
 
 logging:
+  file:
+    path: /app/logs
   structured:
     format:
       console: logstash

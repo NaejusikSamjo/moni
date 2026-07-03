@@ -5,6 +5,8 @@ spring:
     import: optional:configserver:http://config-server:8888
 
 logging:
+  file:
+    path: /app/logs
   structured:
     format:
       console: logstash
