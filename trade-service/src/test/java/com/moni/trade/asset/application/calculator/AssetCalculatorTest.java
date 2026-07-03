@@ -6,10 +6,7 @@ import com.moni.trade.asset.application.calculator.model.AssetResult;
 import com.moni.trade.asset.application.calculator.model.HoldingInput;
 import com.moni.trade.asset.application.calculator.model.HoldingResult;
 import com.moni.trade.asset.application.calculator.model.PriceInput;
-import com.moni.trade.asset.application.calculator.model.TradeInput;
 import com.moni.trade.asset.domain.exception.AssetErrorCode;
-import com.moni.trade.trade.domain.enums.TradeStatus;
-import com.moni.trade.trade.domain.enums.TradeType;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -97,42 +94,6 @@ class AssetCalculatorTest {
             assertThatThrownBy(() -> assetCalculator.calculateAssets(account, holdings, List.of()))
                     .isInstanceOfSatisfying(CustomException.class, exception ->
                             assertThat(exception.getErrorCode()).isEqualTo(AssetErrorCode.STOCK_PRICE_NOT_FOUND));
-        }
-    }
-
-    @Nested
-    @DisplayName("calculateCashBalance()")
-    class CalculateCashBalance {
-
-        @Test
-        @DisplayName("성공 - 완료된 매수는 차감하고 매도는 가산한다")
-        void success_calculate_cash_balance() {
-            // given
-            List<TradeInput> trades = List.of(
-                    new TradeInput(TradeType.BUY, money("590000"), TradeStatus.DONE),
-                    new TradeInput(TradeType.SELL, money("3585000"), TradeStatus.DONE),
-                    new TradeInput(TradeType.BUY, money("100000"), TradeStatus.PENDING)
-            );
-
-            // when
-            BigDecimal result = assetCalculator.calculateCashBalance(money("10000000"), trades);
-
-            // then
-            assertThat(result).isEqualByComparingTo("12995000");
-        }
-
-        @Test
-        @DisplayName("실패 - 거래 응답 필수값이 없으면 예외가 발생한다")
-        void fail_invalid_trade_response() {
-            // given
-            List<TradeInput> trades = List.of(
-                    new TradeInput(null, money("10000"), TradeStatus.DONE)
-            );
-
-            // when & then
-            assertThatThrownBy(() -> assetCalculator.calculateCashBalance(money("10000000"), trades))
-                    .isInstanceOfSatisfying(CustomException.class, exception ->
-                            assertThat(exception.getErrorCode()).isEqualTo(AssetErrorCode.TRADE_RESPONSE_INVALID));
         }
     }
 

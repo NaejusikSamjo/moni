@@ -6,7 +6,6 @@ import com.moni.trade.asset.application.calculator.model.AssetResult;
 import com.moni.trade.asset.application.calculator.model.HoldingInput;
 import com.moni.trade.asset.application.calculator.model.HoldingResult;
 import com.moni.trade.asset.application.calculator.model.PriceInput;
-import com.moni.trade.asset.application.calculator.model.TradeInput;
 import com.moni.trade.asset.domain.exception.AssetErrorCode;
 import org.springframework.stereotype.Component;
 
@@ -23,9 +22,6 @@ public class AssetCalculator {
     private static final int MONEY_SCALE = 2; // 금액은 소수점 둘째 자리까지 반올림
     private static final int RATE_SCALE = 4; // 수익률과 비중은 퍼센트 기준 소수점 넷째 자리까지 반올림
     private static final BigDecimal HUNDRED = new BigDecimal(100);
-    private static final String TRADE_TYPE_BUY = "BUY";
-    private static final String TRADE_TYPE_SELL = "SELL";
-    private static final String TRADE_STATUS_DONE = "DONE";
 
     /** 보유 종목별 평가 결과를 계산한 뒤 전체 자산 요약 결과 반환 */
     public AssetResult calculateAssets(
@@ -54,19 +50,6 @@ public class AssetCalculator {
                 totalReturnRate,
                 holdingResults
         );
-    }
-
-    /** 거래 이력을 기준으로 매수 금액은 차감하고 매도 금액은 가산해 예수금 계산 */
-    public BigDecimal calculateCashBalance(BigDecimal principalAmount, List<TradeInput> trades) {
-        BigDecimal cashBalance = principalAmount;
-
-        for (TradeInput trade : trades) {
-            if (isDoneTrade(trade)) {
-                cashBalance = calculateCashBalance(cashBalance, trade);
-            }
-        }
-
-        return cashBalance;
     }
 
     /** 계좌 정보 없이 보유 종목별 평가금액, 평가손익, 수익률, 비중을 계산 */
@@ -116,28 +99,6 @@ public class AssetCalculator {
                 profitRate,
                 BigDecimal.ZERO
         );
-    }
-
-    private boolean isDoneTrade(TradeInput trade) {
-        if (trade == null
-                || trade.tradeType() == null
-                || trade.totalAmount() == null
-                || trade.status() == null) {
-            throw new CustomException(AssetErrorCode.TRADE_RESPONSE_INVALID);
-        }
-
-        return TRADE_STATUS_DONE.equalsIgnoreCase(trade.status().toString());
-    }
-
-    private BigDecimal calculateCashBalance(BigDecimal cashBalance, TradeInput trade) {
-        if (TRADE_TYPE_BUY.equalsIgnoreCase(trade.tradeType().toString())) {
-            return cashBalance.subtract(trade.totalAmount());
-        }
-        if (TRADE_TYPE_SELL.equalsIgnoreCase(trade.tradeType().toString())) {
-            return cashBalance.add(trade.totalAmount());
-        }
-
-        throw new CustomException(AssetErrorCode.TRADE_RESPONSE_INVALID);
     }
 
     /** numerator / denominator * 100 형태의 퍼센트 값을 계산 */

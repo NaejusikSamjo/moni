@@ -10,18 +10,15 @@ import com.moni.trade.asset.application.calculator.model.AssetResult;
 import com.moni.trade.asset.application.calculator.model.HoldingInput;
 import com.moni.trade.asset.application.calculator.model.HoldingResult;
 import com.moni.trade.asset.application.calculator.model.PriceInput;
-import com.moni.trade.asset.application.calculator.model.TradeInput;
 import com.moni.trade.asset.domain.exception.AssetErrorCode;
 import com.moni.trade.asset.presentation.dto.response.AssetHoldingResponseDto;
 import com.moni.trade.asset.presentation.dto.response.AssetHoldingsResponseDto;
 import com.moni.trade.asset.presentation.dto.response.AssetResponseDto;
 import com.moni.trade.holding.application.service.HoldingService;
 import com.moni.trade.holding.presentation.dto.response.HoldingResponseDto;
-import com.moni.trade.trade.application.service.TradeService;
 import com.moni.trade.trade.infrastructure.client.StockServiceClient;
 import com.moni.trade.trade.infrastructure.client.dto.ExternalApiResponseDto;
 import com.moni.trade.trade.infrastructure.client.dto.StockPriceResponseDto;
-import com.moni.trade.trade.presentation.dto.response.TradeResponseDto;
 import feign.FeignException;
 import feign.RetryableException;
 import lombok.RequiredArgsConstructor;
@@ -52,7 +49,6 @@ public class AssetService {
 
     private final AccountService accountService;
     private final HoldingService holdingService;
-    private final TradeService tradeService;
     private final AssetCalculator assetCalculator;
     private final StockServiceClient stockServiceClient;
 
@@ -61,10 +57,7 @@ public class AssetService {
         AccountInput account = getAccount(userId);
         List<HoldingInput> holdings = getHoldings(userId);
         List<PriceInput> prices = getPrices(holdings);
-        List<TradeInput> trades = getTrades(userId);
-        BigDecimal cashBalance = assetCalculator.calculateCashBalance(account.principalAmount(), trades);
-        AccountInput calculatedAccount = new AccountInput(cashBalance, account.principalAmount());
-        AssetResult result = assetCalculator.calculateAssets(calculatedAccount, holdings, prices);
+        AssetResult result = assetCalculator.calculateAssets(account, holdings, prices);
 
         return AssetResponseDto.from(result);
     }
@@ -142,37 +135,6 @@ public class AssetService {
                 .toList();
     }
 
-    private List<TradeInput> getTrades(UUID userId) {
-        PageData<TradeResponseDto> firstPage = getTradePage(userId, DEFAULT_PAGE);
-        List<TradeResponseDto> trades = new ArrayList<>(firstPage.content());
-
-        for (int page = 1; page < firstPage.totalPages(); page++) {
-            PageData<TradeResponseDto> nextPage = getTradePage(userId, page);
-            trades.addAll(nextPage.content());
-        }
-
-        return trades.stream()
-                .map(this::toTradeInput)
-                .toList();
-    }
-
-    private PageData<TradeResponseDto> getTradePage(UUID userId, int page) {
-        PageRequest pageable = PageRequest.of(page, DEFAULT_SIZE, Sort.by("createdAt").descending());
-        return PageData.from(tradeService.findTrades(userId, pageable));
-    }
-
-    private TradeInput toTradeInput(TradeResponseDto trade) {
-        if (trade == null) {
-            throw new CustomException(AssetErrorCode.TRADE_RESPONSE_INVALID);
-        }
-
-        return new TradeInput(
-                trade.tradeType(),
-                trade.totalAmount(),
-                trade.status()
-        );
-    }
-
     private List<PriceInput> getPrices(List<HoldingInput> holdings) {
         return holdings.stream()
                 .map(holding -> {
@@ -183,7 +145,7 @@ public class AssetService {
                     if (stock.ticker() == null || !holding.ticker().equals(stock.ticker())) {
                         throw new CustomException(AssetErrorCode.STOCK_RESPONSE_INVALID);
                     }
-                    if (stock.price() == null) {
+                    if (stock.price() == null || stock.price().compareTo(BigDecimal.ZERO) <= 0) {
                         throw new CustomException(AssetErrorCode.STOCK_PRICE_NOT_FOUND);
                     }
                     if (stock.name() == null || stock.name().isBlank()) {

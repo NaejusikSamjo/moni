@@ -10,19 +10,14 @@ import com.moni.trade.asset.application.calculator.model.AssetResult;
 import com.moni.trade.asset.application.calculator.model.HoldingInput;
 import com.moni.trade.asset.application.calculator.model.HoldingResult;
 import com.moni.trade.asset.application.calculator.model.PriceInput;
-import com.moni.trade.asset.application.calculator.model.TradeInput;
 import com.moni.trade.asset.domain.exception.AssetErrorCode;
 import com.moni.trade.asset.presentation.dto.response.AssetHoldingsResponseDto;
 import com.moni.trade.asset.presentation.dto.response.AssetResponseDto;
 import com.moni.trade.holding.application.service.HoldingService;
 import com.moni.trade.holding.presentation.dto.response.HoldingResponseDto;
-import com.moni.trade.trade.application.service.TradeService;
-import com.moni.trade.trade.domain.enums.TradeStatus;
-import com.moni.trade.trade.domain.enums.TradeType;
 import com.moni.trade.trade.infrastructure.client.StockServiceClient;
 import com.moni.trade.trade.infrastructure.client.dto.ExternalApiResponseDto;
 import com.moni.trade.trade.infrastructure.client.dto.StockPriceResponseDto;
-import com.moni.trade.trade.presentation.dto.response.TradeResponseDto;
 import feign.FeignException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -36,7 +31,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -58,7 +52,6 @@ class AssetServiceTest {
     private static final UUID ACCOUNT_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
     private static final UUID HOLDING_ID_1 = UUID.fromString("00000000-0000-0000-0000-000000000011");
     private static final UUID HOLDING_ID_2 = UUID.fromString("00000000-0000-0000-0000-000000000012");
-    private static final UUID TRADE_ID = UUID.fromString("00000000-0000-0000-0000-000000000021");
     private static final BigDecimal INITIAL_PRINCIPAL_AMOUNT = new BigDecimal("10000000");
     private static final int DEFAULT_SIZE = 10;
 
@@ -67,9 +60,6 @@ class AssetServiceTest {
 
     @Mock
     private HoldingService holdingService;
-
-    @Mock
-    private TradeService tradeService;
 
     @Mock
     private AssetCalculator assetCalculator;
@@ -85,7 +75,7 @@ class AssetServiceTest {
     class GetAssets {
 
         @Test
-        @DisplayName("성공 - 전체 보유 페이지와 거래 페이지를 모아 자산을 계산한다")
+        @DisplayName("성공 - 계좌 잔액을 예수금으로 사용해 자산을 계산한다")
         void success_calculate_assets() {
             // given
             AccountResponseDto account = new AccountResponseDto(
@@ -97,7 +87,6 @@ class AssetServiceTest {
             HoldingResponseDto secondHolding = holding(
                     HOLDING_ID_2, "999992", 2, "15000", "30000"
             );
-            TradeResponseDto trade = trade(TradeType.BUY, "400000", TradeStatus.DONE);
 
             given(accountService.findAccountByUserId(USER_ID)).willReturn(account);
             given(holdingService.findHoldings(eq(USER_ID), pageNumber(0)))
@@ -108,8 +97,6 @@ class AssetServiceTest {
                     .willReturn(success(stock("999991", "11.00")));
             given(stockServiceClient.getStock("999992"))
                     .willReturn(success(stock("999992", "10000")));
-            given(tradeService.findTrades(eq(USER_ID), pageNumber(0)))
-                    .willReturn(page(List.of(trade), 0, 1));
 
             List<HoldingInput> holdingInputs = List.of(
                     new HoldingInput("999991", 3L, money("10.01"), money("30.02")),
@@ -118,9 +105,6 @@ class AssetServiceTest {
             List<PriceInput> priceInputs = List.of(
                     new PriceInput("999991", "999991 name", money("11.00")),
                     new PriceInput("999992", "999992 name", money("10000"))
-            );
-            List<TradeInput> tradeInputs = List.of(
-                    new TradeInput(TradeType.BUY, money("400000"), TradeStatus.DONE)
             );
             AssetResult calculated = new AssetResult(
                     money("9620033.00"),
@@ -131,8 +115,6 @@ class AssetServiceTest {
                     money("-3.7997"),
                     List.of()
             );
-            given(assetCalculator.calculateCashBalance(INITIAL_PRINCIPAL_AMOUNT, tradeInputs))
-                    .willReturn(money("9600000"));
             given(assetCalculator.calculateAssets(
                     new AccountInput(money("9600000"), INITIAL_PRINCIPAL_AMOUNT),
                     holdingInputs,
@@ -150,7 +132,6 @@ class AssetServiceTest {
             assertThat(result.totalProfitLoss()).isEqualByComparingTo("-379967.00");
             assertThat(result.totalReturnRate()).isEqualByComparingTo("-3.7997");
             then(holdingService).should().findHoldings(eq(USER_ID), pageNumber(1));
-            then(assetCalculator).should().calculateCashBalance(INITIAL_PRINCIPAL_AMOUNT, tradeInputs);
             then(assetCalculator).should().calculateAssets(
                     new AccountInput(money("9600000"), INITIAL_PRINCIPAL_AMOUNT),
                     holdingInputs,
@@ -178,10 +159,6 @@ class AssetServiceTest {
             given(accountService.findAccountByUserId(USER_ID)).willReturn(account);
             given(holdingService.findHoldings(eq(USER_ID), pageNumber(0)))
                     .willReturn(page(List.of(), 0, 0));
-            given(tradeService.findTrades(eq(USER_ID), pageNumber(0)))
-                    .willReturn(page(List.of(), 0, 0));
-            given(assetCalculator.calculateCashBalance(INITIAL_PRINCIPAL_AMOUNT, List.of()))
-                    .willReturn(money("10000000"));
             given(assetCalculator.calculateAssets(
                     new AccountInput(money("10000000"), INITIAL_PRINCIPAL_AMOUNT),
                     List.of(),
@@ -211,7 +188,7 @@ class AssetServiceTest {
                     .isInstanceOfSatisfying(CustomException.class, exception ->
                             assertThat(exception.getErrorCode()).isEqualTo(AssetErrorCode.TRADE_RESPONSE_INVALID));
 
-            verifyNoInteractions(holdingService, tradeService, stockServiceClient, assetCalculator);
+            verifyNoInteractions(holdingService, stockServiceClient, assetCalculator);
         }
     }
 
@@ -333,6 +310,26 @@ class AssetServiceTest {
         }
 
         @Test
+        @DisplayName("실패 - Stock 응답의 현재가가 0 이하이면 현재가 없음 오류가 발생한다")
+        void fail_stock_price_not_positive() {
+            // given
+            HoldingResponseDto holding = holding(
+                    HOLDING_ID_1, "999991", 3, "10.01", "30.02"
+            );
+            given(holdingService.findHoldings(eq(USER_ID), pageNumber(0)))
+                    .willReturn(page(List.of(holding), 0, 1));
+            given(stockServiceClient.getStock("999991"))
+                    .willReturn(success(stock("999991", "0.00")));
+
+            // when & then
+            assertThatThrownBy(() -> assetService.getHoldings(USER_ID, 0, 10, "evaluationAmount,desc"))
+                    .isInstanceOfSatisfying(CustomException.class, exception ->
+                            assertThat(exception.getErrorCode()).isEqualTo(AssetErrorCode.STOCK_PRICE_NOT_FOUND));
+
+            verifyNoInteractions(assetCalculator);
+        }
+
+        @Test
         @DisplayName("실패 - Stock 404 예외는 현재가 없음 오류로 변환한다")
         void fail_stock_not_found() {
             // given
@@ -371,21 +368,6 @@ class AssetServiceTest {
                 quantity,
                 money(averagePrice),
                 money(totalAmount)
-        );
-    }
-
-    private TradeResponseDto trade(TradeType tradeType, String totalAmount, TradeStatus status) {
-        return new TradeResponseDto(
-                TRADE_ID,
-                "999991",
-                tradeType,
-                1,
-                money("10000"),
-                money(totalAmount),
-                null,
-                null,
-                status,
-                LocalDateTime.of(2026, 6, 30, 0, 0)
         );
     }
 
