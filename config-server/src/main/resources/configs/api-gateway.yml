@@ -36,11 +36,10 @@ spring:
               uri: lb://payment-service
               predicates:
                 - Path=/api/v1/payment/**, /api/v1/payments/**
-# TODO /api/v1/admin/ai/** 삭제 필요
             - id: ai-service
               uri: lb://ai-service
               predicates:
-                - Path=/api/v1/ai/**, /api/v1/admin/ai/**
+                - Path=/api/v1/ai/**
 
             - id: user-service-docs
               uri: lb://user-service
