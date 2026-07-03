@@ -8,6 +8,8 @@ public record AssetResult(
         BigDecimal stockEvaluationAmount,
         BigDecimal principalAmount,
         BigDecimal totalProfitLoss,
-        BigDecimal totalReturnRate
+        BigDecimal totalReturnRate,
+        BigDecimal stockProfitLoss,
+        BigDecimal stockReturnRate
 ) {
 }

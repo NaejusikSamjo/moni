@@ -9,6 +9,7 @@ import com.moni.trade.asset.application.calculator.model.AssetResult;
 import com.moni.trade.asset.application.calculator.model.HoldingInput;
 import com.moni.trade.asset.application.calculator.model.HoldingResult;
 import com.moni.trade.asset.application.calculator.model.PriceInput;
+import com.moni.trade.asset.application.calculator.model.StockSummaryResult;
 import com.moni.trade.asset.domain.exception.AssetErrorCode;
 import com.moni.trade.asset.presentation.dto.response.AssetAnalysisSnapshotResponseDto;
 import com.moni.trade.asset.presentation.dto.response.AssetHoldingResponseDto;
@@ -83,6 +84,7 @@ public class AssetService {
 
         // 평가금액, 평가손익, 수익률과 비중은 페이지를 나누기 전에 전체 종목 기준으로 계산
         List<HoldingResult> holdingResults = assetCalculator.calculateHoldings(holdings, prices);
+        StockSummaryResult stockSummary = assetCalculator.calculateStockSummary(holdings, holdingResults);
 
         // 계산 결과의 평가금액을 기준으로 오름차순 또는 기본 내림차순 정렬
         Comparator<HoldingResult> comparator = Comparator.comparing(HoldingResult::evaluationAmount);
@@ -111,6 +113,8 @@ public class AssetService {
         }
 
         return new AssetHoldingsResponseDto(
+                stockSummary.stockProfitLoss(),
+                stockSummary.stockReturnRate(),
                 content,
                 resolvedPage,
                 resolvedSize,

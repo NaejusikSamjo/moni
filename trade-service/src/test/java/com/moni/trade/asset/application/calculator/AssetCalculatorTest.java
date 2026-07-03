@@ -35,7 +35,7 @@ class AssetCalculatorTest {
             );
             List<PriceInput> prices = List.of(
                     new PriceInput("999991", "첫 번째 종목", money("11000")),
-                    new PriceInput("999992", "두 번째 종목", money("13500"))
+                    new PriceInput("999992", "두 번째 종목", money("14500"))
             );
 
             // when
@@ -47,12 +47,14 @@ class AssetCalculatorTest {
             );
 
             // then
-            assertThat(result.totalAsset()).isEqualByComparingTo("120000.00");
+            assertThat(result.totalAsset()).isEqualByComparingTo("122000.00");
             assertThat(result.cashBalance()).isEqualByComparingTo("60000");
-            assertThat(result.stockEvaluationAmount()).isEqualByComparingTo("60000.00");
+            assertThat(result.stockEvaluationAmount()).isEqualByComparingTo("62000.00");
             assertThat(result.principalAmount()).isEqualByComparingTo("100000");
-            assertThat(result.totalProfitLoss()).isEqualByComparingTo("20000.00");
-            assertThat(result.totalReturnRate()).isEqualByComparingTo("20.0000");
+            assertThat(result.totalProfitLoss()).isEqualByComparingTo("22000.00");
+            assertThat(result.totalReturnRate()).isEqualByComparingTo("22.0000");
+            assertThat(result.stockProfitLoss()).isEqualByComparingTo("2000.00");
+            assertThat(result.stockReturnRate()).isEqualByComparingTo("3.3333");
         }
 
         @Test
@@ -71,6 +73,8 @@ class AssetCalculatorTest {
             assertThat(result.stockEvaluationAmount()).isEqualByComparingTo("0.00");
             assertThat(result.totalProfitLoss()).isEqualByComparingTo("0.00");
             assertThat(result.totalReturnRate()).isEqualByComparingTo("0.0000");
+            assertThat(result.stockProfitLoss()).isEqualByComparingTo("0.00");
+            assertThat(result.stockReturnRate()).isEqualByComparingTo("0.0000");
         }
 
         @Test

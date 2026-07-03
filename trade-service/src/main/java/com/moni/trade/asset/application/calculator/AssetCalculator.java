@@ -5,6 +5,7 @@ import com.moni.trade.asset.application.calculator.model.AssetResult;
 import com.moni.trade.asset.application.calculator.model.HoldingInput;
 import com.moni.trade.asset.application.calculator.model.HoldingResult;
 import com.moni.trade.asset.application.calculator.model.PriceInput;
+import com.moni.trade.asset.application.calculator.model.StockSummaryResult;
 import com.moni.trade.asset.domain.exception.AssetErrorCode;
 import org.springframework.stereotype.Component;
 
@@ -38,6 +39,7 @@ public class AssetCalculator {
         BigDecimal totalAsset = cashBalance.add(stockEvaluationAmount);
         BigDecimal totalProfitLoss = totalAsset.subtract(principalAmount);
         BigDecimal totalReturnRate = calculateRate(totalProfitLoss, principalAmount);
+        StockSummaryResult stockSummary = calculateStockSummary(holdings, holdingResults);
 
         return new AssetResult(
                 totalAsset.setScale(MONEY_SCALE, RoundingMode.HALF_UP),
@@ -45,7 +47,9 @@ public class AssetCalculator {
                 stockEvaluationAmount.setScale(MONEY_SCALE, RoundingMode.HALF_UP),
                 principalAmount,
                 totalProfitLoss.setScale(MONEY_SCALE, RoundingMode.HALF_UP),
-                totalReturnRate
+                totalReturnRate,
+                stockSummary.stockProfitLoss(),
+                stockSummary.stockReturnRate()
         );
     }
 
@@ -61,6 +65,21 @@ public class AssetCalculator {
         return holdingResults.stream()
                 .map(result -> result.withWeight(calculateRate(result.evaluationAmount(), stockEvaluationAmount)))
                 .toList();
+    }
+
+    /** 현재 보유 종목 기준 평가손익 합계와 수익률을 계산 */
+    public StockSummaryResult calculateStockSummary(
+            List<HoldingInput> holdings,
+            List<HoldingResult> holdingResults
+    ) {
+        BigDecimal stockProfitLoss = sumProfitLoss(holdingResults);
+        BigDecimal stockPurchaseAmount = sumPurchaseAmount(holdings);
+        BigDecimal stockReturnRate = calculateRate(stockProfitLoss, stockPurchaseAmount);
+
+        return new StockSummaryResult(
+                stockProfitLoss.setScale(MONEY_SCALE, RoundingMode.HALF_UP),
+                stockReturnRate
+        );
     }
 
     private List<HoldingResult> calculateHoldingResults(
@@ -79,6 +98,18 @@ public class AssetCalculator {
     private BigDecimal sumEvaluationAmount(List<HoldingResult> holdingResults) {
         return holdingResults.stream()
                 .map(HoldingResult::evaluationAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private BigDecimal sumProfitLoss(List<HoldingResult> holdingResults) {
+        return holdingResults.stream()
+                .map(HoldingResult::profitLoss)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private BigDecimal sumPurchaseAmount(List<HoldingInput> holdings) {
+        return holdings.stream()
+                .map(HoldingInput::totalPurchaseAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 

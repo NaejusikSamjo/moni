@@ -28,6 +28,12 @@ public record AssetAnalysisSnapshotResponseDto(
         @Schema(description = "누적 수익률(%)", example = "5.0000")
         BigDecimal totalReturnRate,
 
+        @Schema(description = "현재 보유 종목 평가손익 합계", example = "203500.00")
+        BigDecimal stockProfitLoss,
+
+        @Schema(description = "현재 보유 종목 기준 수익률(%)", example = "3.2670")
+        BigDecimal stockReturnRate,
+
         @Schema(description = "보유 비중 상위 보유 종목 목록")
         List<AssetHoldingResponseDto> holdings
 ) {
@@ -42,6 +48,8 @@ public record AssetAnalysisSnapshotResponseDto(
                 assetResult.principalAmount(),
                 assetResult.totalProfitLoss(),
                 assetResult.totalReturnRate(),
+                assetResult.stockProfitLoss(),
+                assetResult.stockReturnRate(),
                 holdingResults.stream()
                         .map(AssetHoldingResponseDto::from)
                         .toList()

@@ -9,6 +9,7 @@ import com.moni.trade.asset.application.calculator.model.AssetResult;
 import com.moni.trade.asset.application.calculator.model.HoldingInput;
 import com.moni.trade.asset.application.calculator.model.HoldingResult;
 import com.moni.trade.asset.application.calculator.model.PriceInput;
+import com.moni.trade.asset.application.calculator.model.StockSummaryResult;
 import com.moni.trade.asset.domain.exception.AssetErrorCode;
 import com.moni.trade.asset.presentation.dto.response.AssetAnalysisSnapshotResponseDto;
 import com.moni.trade.asset.presentation.dto.response.AssetHoldingsResponseDto;
@@ -107,7 +108,9 @@ class AssetServiceTest {
                     money("20033.00"),
                     INITIAL_PRINCIPAL_AMOUNT,
                     money("-379967.00"),
-                    money("-3.7997")
+                    money("-3.7997"),
+                    money("3.00"),
+                    money("0.0100")
             );
             given(assetCalculator.calculateAssets(
                     money("9600000"),
@@ -145,6 +148,8 @@ class AssetServiceTest {
                     money("10000000"),
                     money("0.00"),
                     INITIAL_PRINCIPAL_AMOUNT,
+                    money("0.00"),
+                    money("0.0000"),
                     money("0.00"),
                     money("0.0000")
             );
@@ -216,6 +221,8 @@ class AssetServiceTest {
             );
             given(assetCalculator.calculateHoldings(holdingInputs, priceInputs))
                     .willReturn(holdingResults);
+            given(assetCalculator.calculateStockSummary(holdingInputs, holdingResults))
+                    .willReturn(new StockSummaryResult(money("3.00"), money("0.0100")));
 
             // when
             AssetHoldingsResponseDto result = assetService.getHoldings(
@@ -224,6 +231,8 @@ class AssetServiceTest {
 
             // then
             assertThat(result.content()).hasSize(1);
+            assertThat(result.stockProfitLoss()).isEqualByComparingTo("3.00");
+            assertThat(result.stockReturnRate()).isEqualByComparingTo("0.0100");
             assertThat(result.content().getFirst().ticker()).isEqualTo("999992");
             assertThat(result.content().getFirst().stockName()).isEqualTo("999992 name");
             assertThat(result.page()).isZero();
@@ -246,6 +255,8 @@ class AssetServiceTest {
                     .willReturn(success(stock("999991", "11.00")));
             given(assetCalculator.calculateHoldings(any(), any()))
                     .willReturn(List.of(holdingResult("999991", "33.00")));
+            given(assetCalculator.calculateStockSummary(any(), any()))
+                    .willReturn(new StockSummaryResult(money("2.98"), money("9.9267")));
 
             // when
             AssetHoldingsResponseDto result = assetService.getHoldings(
@@ -258,6 +269,8 @@ class AssetServiceTest {
             assertThat(result.totalElements()).isEqualTo(1);
             assertThat(result.totalPages()).isEqualTo(1);
             assertThat(result.sort()).isEqualTo("evaluationAmount,desc");
+            assertThat(result.stockProfitLoss()).isEqualByComparingTo("2.98");
+            assertThat(result.stockReturnRate()).isEqualByComparingTo("9.9267");
             assertThat(result.content()).extracting("ticker").containsExactly("999991");
         }
 
@@ -353,7 +366,9 @@ class AssetServiceTest {
                     money("1100000.00"),
                     INITIAL_PRINCIPAL_AMOUNT,
                     money("700000.00"),
-                    money("7.0000")
+                    money("7.0000"),
+                    money("100000.00"),
+                    money("10.0000")
             );
 
             given(accountRepository.findByUserId(USER_ID)).willReturn(Optional.of(account));
@@ -380,6 +395,8 @@ class AssetServiceTest {
             assertThat(result.principalAmount()).isEqualByComparingTo("10000000");
             assertThat(result.totalProfitLoss()).isEqualByComparingTo("700000.00");
             assertThat(result.totalReturnRate()).isEqualByComparingTo("7.0000");
+            assertThat(result.stockProfitLoss()).isEqualByComparingTo("100000.00");
+            assertThat(result.stockReturnRate()).isEqualByComparingTo("10.0000");
             assertThat(result.holdings()).hasSize(10);
             assertThat(result.holdings()).extracting("ticker")
                     .containsExactly(
