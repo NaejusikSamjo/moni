@@ -1,7 +1,6 @@
 package com.moni.ai.application.service;
 
 import com.moni.ai.domain.entity.MarketNewsAnalysisEntity;
-import com.moni.ai.domain.entity.MarketNewsEntity;
 import com.moni.ai.domain.enums.MarketKeyword;
 import com.moni.ai.domain.exception.AiErrorCode;
 import com.moni.ai.domain.entity.CompanyIssueAnalysisEntity;
@@ -22,7 +21,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.Optional;
 
 @Service
@@ -84,6 +82,8 @@ public class AiService {
 
         CompanyIssueAnalysisEntity saved = analysisSaveService.save(entity);
 
+        analysisSaveService.saveLog(combinePrompt(systemPrompt,query,filterExpression),saved,null);
+
         log.info("[{}] 분석 결과 저장 완료 - sentiment: {}", ticker, sentiment);
 
         return CompanyIssueResDto.toDto(saved);
@@ -119,6 +119,7 @@ public class AiService {
                 .build();
 
         MarketNewsAnalysisEntity saved = analysisSaveService.save(entity);
+        analysisSaveService.saveLog(combinePrompt(systemPrompt,query,filterExpression),null,saved);
 
         log.info("[{}] 분석 결과 저장 완료", keyword);
         return MarketAnalysisResDto.from(saved);
@@ -144,6 +145,14 @@ public class AiService {
         } catch (IOException e) {
             throw new CustomException(AiErrorCode.AI_RESPONSE_FAILED);
         }
+    }
+
+    private String combinePrompt(String systemPrompt,String query, String filterExpression){
+        String prompt = "=== SYSTEM ===\n" + systemPrompt +
+                "\n=== QUERY ===\n" + query +
+                "\n=== FILTER ===\n" + filterExpression;
+
+        return prompt;
     }
 
 }

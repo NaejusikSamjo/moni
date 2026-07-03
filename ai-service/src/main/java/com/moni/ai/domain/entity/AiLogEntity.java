@@ -24,6 +24,10 @@ public class AiLogEntity extends IdAudit{
     private String prompt;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "analysis_id")
-    private CompanyIssueAnalysisEntity analysis;
+    @JoinColumn(name = "company_analysis_id")
+    private CompanyIssueAnalysisEntity companyAnalysis;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name="market_news_analysis_id")
+    private MarketNewsAnalysisEntity marketAnalysis;
 }

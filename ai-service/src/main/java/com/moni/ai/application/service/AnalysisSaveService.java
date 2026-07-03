@@ -1,19 +1,15 @@
 package com.moni.ai.application.service;
 
+import com.moni.ai.domain.entity.AiLogEntity;
 import com.moni.ai.domain.entity.CompanyIssueAnalysisEntity;
 import com.moni.ai.domain.entity.MarketNewsAnalysisEntity;
-import com.moni.ai.domain.entity.MarketNewsEntity;
-import com.moni.ai.domain.enums.WatchCompany;
-import com.moni.ai.domain.exception.AiErrorCode;
+import com.moni.ai.domain.repository.AiLogRepository;
 import com.moni.ai.domain.repository.CompanyIssueAnalysisRepository;
 import com.moni.ai.domain.repository.MarketNewsAnalysisRepository;
-import com.moni.ai.presentation.dto.response.CompanyIssueResDto;
-import com.moni.common.error.exception.CustomException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.swing.text.html.parser.Entity;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -24,6 +20,7 @@ public class AnalysisSaveService {
 
     private final CompanyIssueAnalysisRepository companyIssueAnalysisRepository;
     private final MarketNewsAnalysisRepository marketNewsAnalysisRepository;
+    private final AiLogRepository aiLogRepository;
 
     public Optional<CompanyIssueAnalysisEntity>  getCachedAnalysis(String ticker){
         return companyIssueAnalysisRepository.findLatestValidAnalysis(ticker);
@@ -47,6 +44,22 @@ public class AnalysisSaveService {
     public Optional<MarketNewsAnalysisEntity> getCachedMarketAnalysis(String keyword) {
         return marketNewsAnalysisRepository
                 .findTopByKeywordAndExpiredAtAfterOrderByCreatedAtDesc(keyword, LocalDateTime.now());
+    }
+
+    @Transactional
+    public AiLogEntity saveLog(
+            String prompt,
+            CompanyIssueAnalysisEntity companyIssueAnalysis,
+            MarketNewsAnalysisEntity marketNewsAnalysis
+    ){
+
+        return aiLogRepository.save(
+                AiLogEntity.builder()
+                        .prompt(prompt)
+                        .companyAnalysis(companyIssueAnalysis)
+                        .marketAnalysis(marketNewsAnalysis)
+                        .build()
+        );
     }
 
 }
