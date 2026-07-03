@@ -45,4 +45,12 @@ public class StockPersistenceAdapter implements StockRepository {
     public void save(Stock stock) {
         stockJpaRepository.save(StockEntity.from(stock));
     }
+
+    @Override
+    public List<Stock> findByTickerIn(List<String> tickers) {
+        return stockJpaRepository.findAllByTickerIn(tickers)
+                .stream()
+                .map(StockEntity::toDomain)
+                .toList();
+    }
 }

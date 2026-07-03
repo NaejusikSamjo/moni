@@ -43,6 +43,9 @@ dependencies {
     implementation 'me.paulschwarz:spring-dotenv:4.0.0'
     //postgres
     runtimeOnly 'org.postgresql:postgresql'
+    //resilience4j
+    implementation 'org.springframework.boot:spring-boot-starter-aop'
+    implementation 'io.github.resilience4j:resilience4j-spring-boot3:2.2.0'
 
 
 }

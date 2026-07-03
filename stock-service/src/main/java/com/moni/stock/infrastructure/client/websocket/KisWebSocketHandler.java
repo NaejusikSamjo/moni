@@ -15,6 +15,7 @@ import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 
 @Slf4j
 @Component
@@ -82,12 +83,16 @@ public class KisWebSocketHandler extends TextWebSocketHandler {
             if (data.length < 14) return;
 
             try {
+
+                StockPrice price = stockPriceRedisAdapter.getPrice(data[0]).get();
+
                 StockPrice stockPrice = StockPrice.builder()
                         .ticker(data[0]) //ticker
                         .currentPrice(new BigDecimal(data[2])) //현재가
                         .askPrice(new BigDecimal(data[10]))  // 매도호가1
                         .bidPrice(new BigDecimal(data[11]))  // 매수호가1
                         .volume(Long.parseLong(data[13]))    // 누적거래량
+                        .section(price.getSection())
                         .build();
 
             stockPriceRedisAdapter.savePrice(stockPrice);
