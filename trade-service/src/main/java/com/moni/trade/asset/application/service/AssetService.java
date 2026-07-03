@@ -5,7 +5,6 @@ import com.moni.common.response.paging.PageRes;
 import com.moni.trade.account.application.service.AccountService;
 import com.moni.trade.account.presentation.dto.response.AccountResponseDto;
 import com.moni.trade.asset.application.calculator.AssetCalculator;
-import com.moni.trade.asset.application.calculator.model.AccountInput;
 import com.moni.trade.asset.application.calculator.model.AssetResult;
 import com.moni.trade.asset.application.calculator.model.HoldingInput;
 import com.moni.trade.asset.application.calculator.model.HoldingResult;
@@ -54,10 +53,15 @@ public class AssetService {
 
     /** 자산 조회 로직 */
     public AssetResponseDto getAssets(UUID userId) {
-        AccountInput account = getAccount(userId);
+        BigDecimal cashBalance = getCashBalance(userId);
         List<HoldingInput> holdings = getHoldings(userId);
         List<PriceInput> prices = getPrices(holdings);
-        AssetResult result = assetCalculator.calculateAssets(account, holdings, prices);
+        AssetResult result = assetCalculator.calculateAssets(
+                cashBalance,
+                INITIAL_PRINCIPAL_AMOUNT,
+                holdings,
+                prices
+        );
 
         return AssetResponseDto.from(result);
     }
@@ -111,14 +115,14 @@ public class AssetService {
         );
     }
 
-    private AccountInput getAccount(UUID userId) {
+    private BigDecimal getCashBalance(UUID userId) {
         AccountResponseDto account = accountService.findAccountByUserId(userId);
 
         if (account.balance() == null) {
             throw new CustomException(AssetErrorCode.TRADE_RESPONSE_INVALID);
         }
 
-        return new AccountInput(account.balance(), INITIAL_PRINCIPAL_AMOUNT);
+        return account.balance();
     }
 
     private List<HoldingInput> getHoldings(UUID userId) {

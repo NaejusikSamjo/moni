@@ -1,7 +1,6 @@
 package com.moni.trade.asset.application.calculator;
 
 import com.moni.common.error.exception.CustomException;
-import com.moni.trade.asset.application.calculator.model.AccountInput;
 import com.moni.trade.asset.application.calculator.model.AssetResult;
 import com.moni.trade.asset.application.calculator.model.HoldingInput;
 import com.moni.trade.asset.application.calculator.model.HoldingResult;
@@ -25,7 +24,8 @@ public class AssetCalculator {
 
     /** 보유 종목별 평가 결과를 계산한 뒤 전체 자산 요약 결과 반환 */
     public AssetResult calculateAssets(
-            AccountInput account,
+            BigDecimal cashBalance,
+            BigDecimal principalAmount,
             List<HoldingInput> holdings,
             List<PriceInput> prices
     ) {
@@ -37,15 +37,15 @@ public class AssetCalculator {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         // 총 평가자산과 전체 손익은 계좌 예수금, 주식 평가금액, 투자 원금을 기준으로 계산
-        BigDecimal totalAsset = account.cashBalance().add(stockEvaluationAmount);
-        BigDecimal totalProfitLoss = totalAsset.subtract(account.principalAmount());
-        BigDecimal totalReturnRate = calculateRate(totalProfitLoss, account.principalAmount());
+        BigDecimal totalAsset = cashBalance.add(stockEvaluationAmount);
+        BigDecimal totalProfitLoss = totalAsset.subtract(principalAmount);
+        BigDecimal totalReturnRate = calculateRate(totalProfitLoss, principalAmount);
 
         return new AssetResult(
                 totalAsset.setScale(MONEY_SCALE, RoundingMode.HALF_UP),
-                account.cashBalance(),
+                cashBalance,
                 stockEvaluationAmount.setScale(MONEY_SCALE, RoundingMode.HALF_UP),
-                account.principalAmount(),
+                principalAmount,
                 totalProfitLoss.setScale(MONEY_SCALE, RoundingMode.HALF_UP),
                 totalReturnRate,
                 holdingResults

@@ -5,7 +5,6 @@ import com.moni.common.response.paging.PageRes;
 import com.moni.trade.account.application.service.AccountService;
 import com.moni.trade.account.presentation.dto.response.AccountResponseDto;
 import com.moni.trade.asset.application.calculator.AssetCalculator;
-import com.moni.trade.asset.application.calculator.model.AccountInput;
 import com.moni.trade.asset.application.calculator.model.AssetResult;
 import com.moni.trade.asset.application.calculator.model.HoldingInput;
 import com.moni.trade.asset.application.calculator.model.HoldingResult;
@@ -116,7 +115,8 @@ class AssetServiceTest {
                     List.of()
             );
             given(assetCalculator.calculateAssets(
-                    new AccountInput(money("9600000"), INITIAL_PRINCIPAL_AMOUNT),
+                    money("9600000"),
+                    INITIAL_PRINCIPAL_AMOUNT,
                     holdingInputs,
                     priceInputs
             )).willReturn(calculated);
@@ -133,7 +133,8 @@ class AssetServiceTest {
             assertThat(result.totalReturnRate()).isEqualByComparingTo("-3.7997");
             then(holdingService).should().findHoldings(eq(USER_ID), pageNumber(1));
             then(assetCalculator).should().calculateAssets(
-                    new AccountInput(money("9600000"), INITIAL_PRINCIPAL_AMOUNT),
+                    money("9600000"),
+                    INITIAL_PRINCIPAL_AMOUNT,
                     holdingInputs,
                     priceInputs
             );
@@ -160,7 +161,8 @@ class AssetServiceTest {
             given(holdingService.findHoldings(eq(USER_ID), pageNumber(0)))
                     .willReturn(page(List.of(), 0, 0));
             given(assetCalculator.calculateAssets(
-                    new AccountInput(money("10000000"), INITIAL_PRINCIPAL_AMOUNT),
+                    money("10000000"),
+                    INITIAL_PRINCIPAL_AMOUNT,
                     List.of(),
                     List.of()
             )).willReturn(calculated);

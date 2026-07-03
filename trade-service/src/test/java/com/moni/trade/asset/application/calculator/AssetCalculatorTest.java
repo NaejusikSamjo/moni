@@ -1,7 +1,6 @@
 package com.moni.trade.asset.application.calculator;
 
 import com.moni.common.error.exception.CustomException;
-import com.moni.trade.asset.application.calculator.model.AccountInput;
 import com.moni.trade.asset.application.calculator.model.AssetResult;
 import com.moni.trade.asset.application.calculator.model.HoldingInput;
 import com.moni.trade.asset.application.calculator.model.HoldingResult;
@@ -30,7 +29,6 @@ class AssetCalculatorTest {
         @DisplayName("성공 - 보유 종목 평가 결과와 전체 자산을 계산한다")
         void success_calculate_assets() {
             // given
-            AccountInput account = new AccountInput(money("60000"), money("100000"));
             List<HoldingInput> holdings = List.of(
                     new HoldingInput("999991", 3L, money("10000"), money("30000")),
                     new HoldingInput("999992", 2L, money("15000"), money("30000"))
@@ -41,7 +39,12 @@ class AssetCalculatorTest {
             );
 
             // when
-            AssetResult result = assetCalculator.calculateAssets(account, holdings, prices);
+            AssetResult result = assetCalculator.calculateAssets(
+                    money("60000"),
+                    money("100000"),
+                    holdings,
+                    prices
+            );
 
             // then
             assertThat(result.totalAsset()).isEqualByComparingTo("120000.00");
@@ -67,11 +70,13 @@ class AssetCalculatorTest {
         @Test
         @DisplayName("성공 - 보유 종목이 없으면 주식 평가금액과 수익률은 0이다")
         void success_empty_holdings() {
-            // given
-            AccountInput account = new AccountInput(money("10000"), money("10000"));
-
             // when
-            AssetResult result = assetCalculator.calculateAssets(account, List.of(), List.of());
+            AssetResult result = assetCalculator.calculateAssets(
+                    money("10000"),
+                    money("10000"),
+                    List.of(),
+                    List.of()
+            );
 
             // then
             assertThat(result.totalAsset()).isEqualByComparingTo("10000.00");
@@ -85,13 +90,17 @@ class AssetCalculatorTest {
         @DisplayName("실패 - 현재가가 없는 종목이면 예외가 발생한다")
         void fail_stock_price_not_found() {
             // given
-            AccountInput account = new AccountInput(money("10000"), money("10000"));
             List<HoldingInput> holdings = List.of(
                     new HoldingInput("999991", 1L, money("10000"), money("10000"))
             );
 
             // when & then
-            assertThatThrownBy(() -> assetCalculator.calculateAssets(account, holdings, List.of()))
+            assertThatThrownBy(() -> assetCalculator.calculateAssets(
+                    money("10000"),
+                    money("10000"),
+                    holdings,
+                    List.of()
+            ))
                     .isInstanceOfSatisfying(CustomException.class, exception ->
                             assertThat(exception.getErrorCode()).isEqualTo(AssetErrorCode.STOCK_PRICE_NOT_FOUND));
         }
