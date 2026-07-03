@@ -4,6 +4,7 @@ import com.moni.trade.global.entity.TradeBaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -25,6 +26,9 @@ public class Account extends TradeBaseEntity {
 
     @Column(nullable = false, precision = 18, scale = 2)
     private BigDecimal totalInvestment;
+
+    @Version
+    private Long version;
 
     public static Account create(UUID userId, BigDecimal initialBalance) {
         Account account = new Account();
