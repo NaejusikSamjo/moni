@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 
 public record PriceInput(
         String ticker,
+        String name,
         BigDecimal currentPrice
 ) {
 }

@@ -4,6 +4,7 @@ import com.moni.portfolio.domain.entity.PortfolioAnalysis;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -18,4 +19,10 @@ public interface PortfolioAnalysisRepository {
     Optional<PortfolioAnalysis> findLatestSuccessByPortfolioId(UUID portfolioId);
 
     Page<PortfolioAnalysis> findAllByPortfolioId(UUID portfolioId, Pageable pageable);
+
+    boolean existsByPortfolioIdAndUpdatedAtBetween(
+            UUID portfolioId,
+            LocalDateTime startDateTime,
+            LocalDateTime endDateTime
+    );
 }

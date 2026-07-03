@@ -116,8 +116,8 @@ class AssetServiceTest {
                     new HoldingInput("999992", 2L, money("15000"), money("30000"))
             );
             List<PriceInput> priceInputs = List.of(
-                    new PriceInput("999991", money("11.00")),
-                    new PriceInput("999992", money("10000"))
+                    new PriceInput("999991", "999991 name", money("11.00")),
+                    new PriceInput("999992", "999992 name", money("10000"))
             );
             List<TradeInput> tradeInputs = List.of(
                     new TradeInput(TradeType.BUY, money("400000"), TradeStatus.DONE)
@@ -241,8 +241,8 @@ class AssetServiceTest {
                     new HoldingInput("999992", 2L, money("15000"), money("30000"))
             );
             List<PriceInput> priceInputs = List.of(
-                    new PriceInput("999991", money("11.00")),
-                    new PriceInput("999992", money("10000"))
+                    new PriceInput("999991", "999991 name", money("11.00")),
+                    new PriceInput("999992", "999992 name", money("10000"))
             );
             List<HoldingResult> holdingResults = List.of(
                     holdingResult("999991", "33.00"),
@@ -259,6 +259,7 @@ class AssetServiceTest {
             // then
             assertThat(result.content()).hasSize(1);
             assertThat(result.content().getFirst().ticker()).isEqualTo("999992");
+            assertThat(result.content().getFirst().stockName()).isEqualTo("999992 name");
             assertThat(result.page()).isZero();
             assertThat(result.size()).isEqualTo(1);
             assertThat(result.totalElements()).isEqualTo(2);
@@ -395,6 +396,7 @@ class AssetServiceTest {
     private HoldingResult holdingResult(String ticker, String evaluationAmount) {
         return new HoldingResult(
                 ticker,
+                ticker + " name",
                 1L,
                 money("10000"),
                 money(evaluationAmount),

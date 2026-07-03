@@ -186,8 +186,11 @@ public class AssetService {
                     if (stock.price() == null) {
                         throw new CustomException(AssetErrorCode.STOCK_PRICE_NOT_FOUND);
                     }
+                    if (stock.name() == null || stock.name().isBlank()) {
+                        throw new CustomException(AssetErrorCode.STOCK_RESPONSE_INVALID);
+                    }
 
-                    return new PriceInput(stock.ticker(), stock.price());
+                    return new PriceInput(stock.ticker(), stock.name(), stock.price());
                 })
                 .toList();
     }

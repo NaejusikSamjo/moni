@@ -39,8 +39,8 @@ class AssetCalculatorTest {
                     new HoldingInput("999992", 2L, money("15000"), money("30000"))
             );
             List<PriceInput> prices = List.of(
-                    new PriceInput("999991", money("11000")),
-                    new PriceInput("999992", money("13500"))
+                    new PriceInput("999991", "첫 번째 종목", money("11000")),
+                    new PriceInput("999992", "두 번째 종목", money("13500"))
             );
 
             // when
@@ -55,6 +55,8 @@ class AssetCalculatorTest {
             assertThat(result.totalReturnRate()).isEqualByComparingTo("20.0000");
             assertThat(result.holdings()).extracting(HoldingResult::ticker)
                     .containsExactly("999991", "999992");
+            assertThat(result.holdings()).extracting(HoldingResult::name)
+                    .containsExactly("첫 번째 종목", "두 번째 종목");
             assertThat(result.holdings().getFirst().evaluationAmount()).isEqualByComparingTo("33000.00");
             assertThat(result.holdings().getFirst().profitLoss()).isEqualByComparingTo("3000.00");
             assertThat(result.holdings().getFirst().profitRate()).isEqualByComparingTo("10.0000");

@@ -36,7 +36,6 @@ spring:
               uri: lb://payment-service
               predicates:
                 - Path=/api/v1/payment/**, /api/v1/payments/**
-
             - id: ai-service
               uri: lb://ai-service
               predicates:
@@ -128,4 +127,4 @@ gateway:
   secret: ${GATEWAY_SECRET}
 
 cors:
-  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
+  allowed-origins: ${CORS_ALLOWED_ORIGINS}

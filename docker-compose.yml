@@ -66,6 +66,7 @@ services:
       JWT_ACCESS_TOKEN_EXPIRATION: ${JWT_ACCESS_TOKEN_EXPIRATION}
       JWT_REFRESH_TOKEN_EXPIRATION: ${JWT_REFRESH_TOKEN_EXPIRATION}
       GATEWAY_SECRET: ${GATEWAY_SECRET}
+      CLOUDFRONT_DOMAIN: ${CLOUDFRONT_DOMAIN}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
       GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI}
@@ -84,6 +85,8 @@ services:
       JAVA_TOOL_OPTIONS: "-javaagent:/opt/otel/opentelemetry-javaagent.jar -Dotel.instrumentation.logback-mdc.enabled=true"
     volumes:
       - ./logs/user-service:/app/logs
+#      aws 로컬 테스트 볼륨
+      - ~/.aws:/root/.aws:ro
     depends_on:
       eureka-server:
         condition: service_healthy
@@ -197,6 +200,7 @@ services:
       REDIS_HOST: ${REDIS_HOST}
       REDIS_PORT: ${REDIS_PORT}
       REDIS_PASSWORD: ${REDIS_PASSWORD}
+      GATEWAY_SECRET: ${GATEWAY_SECRET}
       SPRING_PROFILES_ACTIVE: prod
       OTEL_SERVICE_NAME: notification-service
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}

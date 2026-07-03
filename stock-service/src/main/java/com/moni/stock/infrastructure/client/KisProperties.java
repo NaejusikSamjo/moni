@@ -16,4 +16,6 @@ public class KisProperties {
     private String wsUrl;
     private String restUrl;
     private boolean mock;
+    private int connectTimeout = 2000;
+    private int readTimeout = 3000;
 }

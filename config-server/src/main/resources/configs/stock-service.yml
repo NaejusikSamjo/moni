@@ -34,6 +34,8 @@ kis:
   ws-url: ws://ops.koreainvestment.com:31000
   rest-url: https://openapi.koreainvestment.com:9443
   mock: false
+  connect-timeout: 2000
+  read-timeout: 3000
 
 eureka:
   client:
