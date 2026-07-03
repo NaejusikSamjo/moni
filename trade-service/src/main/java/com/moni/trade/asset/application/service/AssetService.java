@@ -18,6 +18,7 @@ import com.moni.trade.asset.presentation.dto.response.AssetResponseDto;
 import com.moni.trade.holding.domain.entity.Holding;
 import com.moni.trade.holding.domain.repository.HoldingRepository;
 import com.moni.trade.trade.infrastructure.client.StockServiceClient;
+import com.moni.trade.trade.infrastructure.client.dto.BatchStockRequestDto;
 import com.moni.trade.trade.infrastructure.client.dto.ExternalApiResponseDto;
 import com.moni.trade.trade.infrastructure.client.dto.StockPriceResponseDto;
 import feign.FeignException;
@@ -34,8 +35,12 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -166,25 +171,57 @@ public class AssetService {
     }
 
     private List<PriceInput> getPrices(List<HoldingInput> holdings) {
+        if (holdings.isEmpty()) {
+            return List.of();
+        }
+
+        List<String> tickers = holdings.stream()
+                .map(HoldingInput::ticker)
+                .distinct()
+                .toList();
+
+        //
+        System.out.println("tickers: [ ");
+        for (String ticker : tickers) {
+            System.out.print(ticker + " ");
+        }
+        System.out.println("]");
+        //
+        
+        List<StockPriceResponseDto> stocks = requestStockData(
+                () -> stockServiceClient.getStocks(new BatchStockRequestDto(tickers))
+        );
+
+        Map<String, StockPriceResponseDto> stockMap = stocks.stream()
+                .peek(stock -> validateStockData(stock, Set.copyOf(tickers)))
+                .collect(Collectors.toMap(
+                        StockPriceResponseDto::ticker,
+                        Function.identity(),
+                        (existing, ignored) -> existing
+                ));
+
         return holdings.stream()
                 .map(holding -> {
-                    StockPriceResponseDto stock = requestStockData(
-                            () -> stockServiceClient.getStock(holding.ticker())
-                    );
-
-                    if (stock.ticker() == null || !holding.ticker().equals(stock.ticker())) {
-                        throw new CustomException(AssetErrorCode.STOCK_RESPONSE_INVALID);
-                    }
-                    if (stock.price() == null || stock.price().compareTo(BigDecimal.ZERO) <= 0) {
+                    StockPriceResponseDto stock = stockMap.get(holding.ticker());
+                    if (stock == null) {
                         throw new CustomException(AssetErrorCode.STOCK_PRICE_NOT_FOUND);
-                    }
-                    if (stock.name() == null || stock.name().isBlank()) {
-                        throw new CustomException(AssetErrorCode.STOCK_RESPONSE_INVALID);
                     }
 
                     return new PriceInput(stock.ticker(), stock.name(), stock.price());
                 })
                 .toList();
+    }
+
+    private void validateStockData(StockPriceResponseDto stock, Set<String> requestedTickers) {
+        if (stock == null || stock.ticker() == null || !requestedTickers.contains(stock.ticker())) {
+            throw new CustomException(AssetErrorCode.STOCK_RESPONSE_INVALID);
+        }
+        if (stock.price() == null || stock.price().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new CustomException(AssetErrorCode.STOCK_PRICE_NOT_FOUND);
+        }
+        if (stock.name() == null || stock.name().isBlank()) {
+            throw new CustomException(AssetErrorCode.STOCK_RESPONSE_INVALID);
+        }
     }
 
     private Page<Holding> getHoldingPage(UUID accountId, int page) {

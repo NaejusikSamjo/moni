@@ -17,9 +17,9 @@ import com.moni.trade.asset.presentation.dto.response.AssetResponseDto;
 import com.moni.trade.holding.domain.entity.Holding;
 import com.moni.trade.holding.domain.repository.HoldingRepository;
 import com.moni.trade.trade.infrastructure.client.StockServiceClient;
+import com.moni.trade.trade.infrastructure.client.dto.BatchStockRequestDto;
 import com.moni.trade.trade.infrastructure.client.dto.ExternalApiResponseDto;
 import com.moni.trade.trade.infrastructure.client.dto.StockPriceResponseDto;
-import feign.FeignException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -89,10 +89,11 @@ class AssetServiceTest {
                     .willReturn(page(List.of(firstHolding), 0, 11));
             given(holdingRepository.findByAccountId(eq(ACCOUNT_ID), pageNumber(1)))
                     .willReturn(page(List.of(secondHolding), 1, 11));
-            given(stockServiceClient.getStock("999991"))
-                    .willReturn(success(stock("999991", "11.00")));
-            given(stockServiceClient.getStock("999992"))
-                    .willReturn(success(stock("999992", "10000")));
+            given(stockServiceClient.getStocks(new BatchStockRequestDto(List.of("999991", "999992"))))
+                    .willReturn(success(List.of(
+                            stock("999991", "11.00"),
+                            stock("999992", "10000")
+                    )));
 
             List<HoldingInput> holdingInputs = List.of(
                     new HoldingInput("999991", 3L, money("10.01"), money("30.02")),
@@ -202,10 +203,11 @@ class AssetServiceTest {
             given(accountRepository.findByUserId(USER_ID)).willReturn(Optional.of(account));
             given(holdingRepository.findByAccountId(eq(ACCOUNT_ID), pageNumber(0)))
                     .willReturn(page(List.of(firstHolding, secondHolding), 0, 2));
-            given(stockServiceClient.getStock("999991"))
-                    .willReturn(success(stock("999991", "11.00")));
-            given(stockServiceClient.getStock("999992"))
-                    .willReturn(success(stock("999992", "10000")));
+            given(stockServiceClient.getStocks(new BatchStockRequestDto(List.of("999991", "999992"))))
+                    .willReturn(success(List.of(
+                            stock("999991", "11.00"),
+                            stock("999992", "10000")
+                    )));
 
             List<HoldingInput> holdingInputs = List.of(
                     new HoldingInput("999991", 3L, money("10.01"), money("30.02")),
@@ -251,8 +253,8 @@ class AssetServiceTest {
             given(accountRepository.findByUserId(USER_ID)).willReturn(Optional.of(account));
             given(holdingRepository.findByAccountId(eq(ACCOUNT_ID), pageNumber(0)))
                     .willReturn(page(List.of(holding), 0, 1));
-            given(stockServiceClient.getStock("999991"))
-                    .willReturn(success(stock("999991", "11.00")));
+            given(stockServiceClient.getStocks(new BatchStockRequestDto(List.of("999991"))))
+                    .willReturn(success(List.of(stock("999991", "11.00"))));
             given(assetCalculator.calculateHoldings(any(), any()))
                     .willReturn(List.of(holdingResult("999991", "33.00")));
             given(assetCalculator.calculateStockSummary(any(), any()))
@@ -283,8 +285,8 @@ class AssetServiceTest {
             given(accountRepository.findByUserId(USER_ID)).willReturn(Optional.of(account));
             given(holdingRepository.findByAccountId(eq(ACCOUNT_ID), pageNumber(0)))
                     .willReturn(page(List.of(holding), 0, 1));
-            given(stockServiceClient.getStock("999991"))
-                    .willReturn(success(stock("999992", "11.00")));
+            given(stockServiceClient.getStocks(new BatchStockRequestDto(List.of("999991"))))
+                    .willReturn(success(List.of(stock("999992", "11.00"))));
 
             // when & then
             assertThatThrownBy(() -> assetService.getHoldings(USER_ID, 0, 10, "evaluationAmount,desc"))
@@ -303,8 +305,8 @@ class AssetServiceTest {
             given(accountRepository.findByUserId(USER_ID)).willReturn(Optional.of(account));
             given(holdingRepository.findByAccountId(eq(ACCOUNT_ID), pageNumber(0)))
                     .willReturn(page(List.of(holding), 0, 1));
-            given(stockServiceClient.getStock("999991"))
-                    .willReturn(success(stock("999991", "0.00")));
+            given(stockServiceClient.getStocks(new BatchStockRequestDto(List.of("999991"))))
+                    .willReturn(success(List.of(stock("999991", "0.00"))));
 
             // when & then
             assertThatThrownBy(() -> assetService.getHoldings(USER_ID, 0, 10, "evaluationAmount,desc"))
@@ -315,17 +317,16 @@ class AssetServiceTest {
         }
 
         @Test
-        @DisplayName("실패 - Stock 404 예외는 현재가 없음 오류로 변환한다")
+        @DisplayName("실패 - Stock batch 응답에 요청 종목이 없으면 현재가 없음 오류가 발생한다")
         void fail_stock_not_found() {
             // given
             Account account = account();
             Holding holding = holding("999991", 3, "10.01", "30.02");
-            FeignException exception = mock(FeignException.class);
-            given(exception.status()).willReturn(404);
             given(accountRepository.findByUserId(USER_ID)).willReturn(Optional.of(account));
             given(holdingRepository.findByAccountId(eq(ACCOUNT_ID), pageNumber(0)))
                     .willReturn(page(List.of(holding), 0, 1));
-            given(stockServiceClient.getStock("999991")).willThrow(exception);
+            given(stockServiceClient.getStocks(new BatchStockRequestDto(List.of("999991"))))
+                    .willReturn(success(List.of()));
 
             // when & then
             assertThatThrownBy(() -> assetService.getHoldings(USER_ID, 0, 10, "evaluationAmount,desc"))
@@ -349,6 +350,7 @@ class AssetServiceTest {
             List<HoldingInput> holdingInputs = new ArrayList<>();
             List<PriceInput> priceInputs = new ArrayList<>();
             List<HoldingResult> holdingResults = new ArrayList<>();
+            List<StockPriceResponseDto> stocks = new ArrayList<>();
 
             for (int index = 1; index <= 11; index++) {
                 String ticker = "9000" + index;
@@ -356,8 +358,7 @@ class AssetServiceTest {
                 holdingInputs.add(new HoldingInput(ticker, 1L, money("1000"), money("1000")));
                 priceInputs.add(new PriceInput(ticker, ticker + " name", money("1000")));
                 holdingResults.add(holdingResult(ticker, "1000.00", String.valueOf(index)));
-                given(stockServiceClient.getStock(ticker))
-                        .willReturn(success(stock(ticker, "1000")));
+                stocks.add(stock(ticker, "1000"));
             }
 
             AssetResult assetResult = new AssetResult(
@@ -376,6 +377,11 @@ class AssetServiceTest {
                     .willReturn(page(tradeHoldings.subList(0, 10), 0, 11));
             given(holdingRepository.findByAccountId(eq(ACCOUNT_ID), pageNumber(1)))
                     .willReturn(page(tradeHoldings.subList(10, 11), 1, 11));
+            given(stockServiceClient.getStocks(new BatchStockRequestDto(
+                    holdingInputs.stream()
+                            .map(HoldingInput::ticker)
+                            .toList()
+            ))).willReturn(success(stocks));
             given(assetCalculator.calculateAssets(
                     money("9600000"),
                     INITIAL_PRINCIPAL_AMOUNT,
