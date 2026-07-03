@@ -47,7 +47,7 @@ loki.write "default" {
   endpoint {
     url = sys.env("LOKI_URL")
 
-    batch_size = 1048576   // 1 MiB
+    batch_size = "1048576B"   // 1 MiB
     batch_wait = "10s"
   }
 

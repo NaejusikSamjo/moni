@@ -1,8 +1,3 @@
-# service-ec2에서 실행하는 Alloy 사이드카
-# 역할: 서비스 로그 파일 → monitoring-ec2 Loki 전송
-#
-# CI/CD(cd-service.yml)가 자동으로 배포한다.
-# 이미 실행 중인 경우 --no-recreate로 재시작하지 않는다.
 networks:
   default:
     name: moni-network
