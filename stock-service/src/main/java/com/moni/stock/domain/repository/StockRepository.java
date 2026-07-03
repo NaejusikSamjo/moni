@@ -18,4 +18,6 @@ public interface StockRepository {
     void saveAll(List<Stock> stocks);
 
     void save(Stock stock);
+
+    List<Stock> findByTickerIn(List<String> tickers);
 }
