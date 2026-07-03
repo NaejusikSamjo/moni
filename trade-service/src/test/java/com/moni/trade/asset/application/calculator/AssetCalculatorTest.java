@@ -53,18 +53,6 @@ class AssetCalculatorTest {
             assertThat(result.principalAmount()).isEqualByComparingTo("100000");
             assertThat(result.totalProfitLoss()).isEqualByComparingTo("20000.00");
             assertThat(result.totalReturnRate()).isEqualByComparingTo("20.0000");
-            assertThat(result.holdings()).extracting(HoldingResult::ticker)
-                    .containsExactly("999991", "999992");
-            assertThat(result.holdings()).extracting(HoldingResult::name)
-                    .containsExactly("첫 번째 종목", "두 번째 종목");
-            assertThat(result.holdings().getFirst().evaluationAmount()).isEqualByComparingTo("33000.00");
-            assertThat(result.holdings().getFirst().profitLoss()).isEqualByComparingTo("3000.00");
-            assertThat(result.holdings().getFirst().profitRate()).isEqualByComparingTo("10.0000");
-            assertThat(result.holdings().getFirst().weight()).isEqualByComparingTo("55.0000");
-            assertThat(result.holdings().get(1).evaluationAmount()).isEqualByComparingTo("27000.00");
-            assertThat(result.holdings().get(1).profitLoss()).isEqualByComparingTo("-3000.00");
-            assertThat(result.holdings().get(1).profitRate()).isEqualByComparingTo("-10.0000");
-            assertThat(result.holdings().get(1).weight()).isEqualByComparingTo("45.0000");
         }
 
         @Test
@@ -83,7 +71,6 @@ class AssetCalculatorTest {
             assertThat(result.stockEvaluationAmount()).isEqualByComparingTo("0.00");
             assertThat(result.totalProfitLoss()).isEqualByComparingTo("0.00");
             assertThat(result.totalReturnRate()).isEqualByComparingTo("0.0000");
-            assertThat(result.holdings()).isEmpty();
         }
 
         @Test
@@ -103,6 +90,42 @@ class AssetCalculatorTest {
             ))
                     .isInstanceOfSatisfying(CustomException.class, exception ->
                             assertThat(exception.getErrorCode()).isEqualTo(AssetErrorCode.STOCK_PRICE_NOT_FOUND));
+        }
+    }
+
+    @Nested
+    @DisplayName("calculateHoldings()")
+    class CalculateHoldings {
+
+        @Test
+        @DisplayName("성공 - 보유 종목별 평가 결과와 비중을 계산한다")
+        void success_calculate_holdings() {
+            // given
+            List<HoldingInput> holdings = List.of(
+                    new HoldingInput("999991", 3L, money("10000"), money("30000")),
+                    new HoldingInput("999992", 2L, money("15000"), money("30000"))
+            );
+            List<PriceInput> prices = List.of(
+                    new PriceInput("999991", "첫 번째 종목", money("11000")),
+                    new PriceInput("999992", "두 번째 종목", money("13500"))
+            );
+
+            // when
+            List<HoldingResult> result = assetCalculator.calculateHoldings(holdings, prices);
+
+            // then
+            assertThat(result).extracting(HoldingResult::ticker)
+                    .containsExactly("999991", "999992");
+            assertThat(result).extracting(HoldingResult::name)
+                    .containsExactly("첫 번째 종목", "두 번째 종목");
+            assertThat(result.getFirst().evaluationAmount()).isEqualByComparingTo("33000.00");
+            assertThat(result.getFirst().profitLoss()).isEqualByComparingTo("3000.00");
+            assertThat(result.getFirst().profitRate()).isEqualByComparingTo("10.0000");
+            assertThat(result.getFirst().weight()).isEqualByComparingTo("55.0000");
+            assertThat(result.get(1).evaluationAmount()).isEqualByComparingTo("27000.00");
+            assertThat(result.get(1).profitLoss()).isEqualByComparingTo("-3000.00");
+            assertThat(result.get(1).profitRate()).isEqualByComparingTo("-10.0000");
+            assertThat(result.get(1).weight()).isEqualByComparingTo("45.0000");
         }
     }
 

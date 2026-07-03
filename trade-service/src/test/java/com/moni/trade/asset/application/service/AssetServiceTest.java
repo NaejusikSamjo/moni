@@ -111,8 +111,7 @@ class AssetServiceTest {
                     money("20033.00"),
                     INITIAL_PRINCIPAL_AMOUNT,
                     money("-379967.00"),
-                    money("-3.7997"),
-                    List.of()
+                    money("-3.7997")
             );
             given(assetCalculator.calculateAssets(
                     money("9600000"),
@@ -153,8 +152,7 @@ class AssetServiceTest {
                     money("0.00"),
                     INITIAL_PRINCIPAL_AMOUNT,
                     money("0.00"),
-                    money("0.0000"),
-                    List.of()
+                    money("0.0000")
             );
 
             given(accountService.findAccountByUserId(USER_ID)).willReturn(account);

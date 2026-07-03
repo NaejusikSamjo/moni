@@ -29,7 +29,7 @@ public class AssetCalculator {
             List<HoldingInput> holdings,
             List<PriceInput> prices
     ) {
-        List<HoldingResult> holdingResults = calculateHoldings(holdings, prices);
+        List<HoldingResult> holdingResults = calculateHoldingResults(holdings, prices);
 
         // 주식 평가금액은 모든 보유 종목 평가금액의 합계
         BigDecimal stockEvaluationAmount = holdingResults.stream()
@@ -47,8 +47,7 @@ public class AssetCalculator {
                 stockEvaluationAmount.setScale(MONEY_SCALE, RoundingMode.HALF_UP),
                 principalAmount,
                 totalProfitLoss.setScale(MONEY_SCALE, RoundingMode.HALF_UP),
-                totalReturnRate,
-                holdingResults
+                totalReturnRate
         );
     }
 
@@ -57,13 +56,7 @@ public class AssetCalculator {
             List<HoldingInput> holdings,
             List<PriceInput> prices
     ) {
-        // 현재가는 ticker 기준으로 빠르게 찾을 수 있도록 Map으로 변환
-        Map<String, PriceInput> priceMap = prices.stream()
-                .collect(Collectors.toMap(PriceInput::ticker, Function.identity()));
-
-        List<HoldingResult> holdingResults = holdings.stream()
-                .map(holding -> calculateHolding(holding, priceMap))
-                .toList();
+        List<HoldingResult> holdingResults = calculateHoldingResults(holdings, prices);
 
         BigDecimal stockEvaluationAmount = holdingResults.stream()
                 .map(HoldingResult::evaluationAmount)
@@ -71,6 +64,19 @@ public class AssetCalculator {
 
         return holdingResults.stream()
                 .map(result -> result.withWeight(calculateRate(result.evaluationAmount(), stockEvaluationAmount)))
+                .toList();
+    }
+
+    private List<HoldingResult> calculateHoldingResults(
+            List<HoldingInput> holdings,
+            List<PriceInput> prices
+    ) {
+        // 현재가는 ticker 기준으로 빠르게 찾을 수 있도록 Map으로 변환
+        Map<String, PriceInput> priceMap = prices.stream()
+                .collect(Collectors.toMap(PriceInput::ticker, Function.identity()));
+
+        return holdings.stream()
+                .map(holding -> calculateHolding(holding, priceMap))
                 .toList();
     }
 
