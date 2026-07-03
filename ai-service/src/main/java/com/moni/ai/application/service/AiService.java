@@ -1,20 +1,28 @@
 package com.moni.ai.application.service;
 
+import com.moni.ai.domain.entity.MarketNewsAnalysisEntity;
+import com.moni.ai.domain.entity.MarketNewsEntity;
+import com.moni.ai.domain.enums.MarketKeyword;
 import com.moni.ai.domain.exception.AiErrorCode;
 import com.moni.ai.domain.entity.CompanyIssueAnalysisEntity;
 import com.moni.ai.domain.enums.SentimentEnum;
 import com.moni.ai.domain.enums.WatchCompany;
-import com.moni.ai.domain.repository.CompanyIssueAnalysisRepository;
+import com.moni.ai.presentation.dto.response.AiNewsAnalysisResDto;
 import com.moni.ai.presentation.dto.response.CompanyIssueResDto;
+import com.moni.ai.presentation.dto.response.MarketAnalysisResDto;
 import com.moni.common.error.exception.CustomException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
+import org.springframework.ai.converter.BeanOutputConverter;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.Optional;
 
 @Service
@@ -22,76 +30,120 @@ import java.util.Optional;
 @Slf4j
 public class AiService {
 
-    private final ChatClient chatClient;
-    private final CompanyIssueAnalysisRepository companyIssueAnalysisRepository;
+    private final AnalysisSaveService analysisSaveService;
+    private final LlmAnalysisService llmAnalysisService;
+
+    @Value("classpath:prompts/ai-system-prompt.st")
+    private Resource companyPromptResource;
+
+    @Value("classpath:prompts/market-system-prompt.st")
+    private Resource marketPromptResource;
 
     //분석 결과 유효 시간
     private static final int CACHE_HOURS = 6;
 
-    @Transactional
-    public CompanyIssueResDto analyze(String ticker, String question) {
+    public CompanyIssueResDto companyAnalyze(String ticker, String question) {
 
         WatchCompany company = WatchCompany.fromTicker(ticker);
 
         // 1. 유효한 캐시 조회
-        Optional<CompanyIssueAnalysisEntity> cached = companyIssueAnalysisRepository.findLatestValidAnalysis(ticker);
+        Optional<CompanyIssueAnalysisEntity> cached = analysisSaveService.getCachedAnalysis(ticker);
 
         if (cached.isPresent()) {
             log.info("[{}] 분석 존재", ticker);
             throw new CustomException(AiErrorCode.ANALYSIS_ALREADY_EXISTS);
         }
+        BeanOutputConverter<AiNewsAnalysisResDto> parser = new BeanOutputConverter<>(AiNewsAnalysisResDto.class);
 
+        // 프롬프트 로드 및 변수 치환
+        String systemPrompt = loadPrompt(companyPromptResource)
+                .replace("{ticker}", ticker)
+                .replace("{companyName}", company.getCompanyName())
+                .replace("{format}", parser.getFormat());
 
-        // 3. 질의 생성 (null이면 ticker 기반 기본 질의)
         String query = (question != null && !question.isBlank())
                 ? "[" + ticker + " " + company.getCompanyName() + "] " + question
-                : "[" + ticker + " " + company.getCompanyName() + "] " + company.getCompanyName() + " 기업의 최근 주요 이슈와 뉴스만 분석해줘. 다른 기업 정보는 제외해줘.";
+                : "[" + ticker + " " + company.getCompanyName() + "] " + company.getCompanyName() + " 기업의 최근 주요 이슈와 뉴스만 분석해줘.";
 
-        // 4. RAG + LLM 호출
-        log.info("[{}] RAG 분석 시작 - 질의: {}", ticker, query);
-        String response = chatClient.prompt()
-                .system(sp -> sp.param("ticker", ticker)
-                        .param("companyName", company.getCompanyName()))
-                .user(query)
-                .advisors(advisor -> advisor
-                        .param(QuestionAnswerAdvisor.FILTER_EXPRESSION,
-                                "ticker == '" + ticker + "'"))
-                .call()
-                .content();
 
+        String twoDaysAgo = LocalDate.now().minusDays(1).toString();
+        String filterExpression = "ticker == '" + ticker + "' && published_at >= '" + twoDaysAgo + "'";
+
+
+        AiNewsAnalysisResDto result = llmAnalysisService.createLlmAnalysis(systemPrompt,query,filterExpression);
         // 5. sentiment 추출 (응답에서 POSITIVE/NEGATIVE/NEUTRAL 파싱)
-        SentimentEnum sentiment = extractSentiment(response);
-
+        SentimentEnum sentiment = SentimentEnum.valueOf(result.getSentiment());
         // 6. 분석 결과 저장
         CompanyIssueAnalysisEntity entity = CompanyIssueAnalysisEntity.builder()
                 .ticker(ticker)
                 .companyName(company.getCompanyName())
-                .summary(response)
+                .summary(result.getSummary())
                 .sentiment(sentiment)
                 .expiredAt(LocalDateTime.now().plusHours(CACHE_HOURS))
                 .build();
 
-        companyIssueAnalysisRepository.save(entity);
+        CompanyIssueAnalysisEntity saved = analysisSaveService.save(entity);
+
         log.info("[{}] 분석 결과 저장 완료 - sentiment: {}", ticker, sentiment);
 
-        return CompanyIssueResDto.toDto(entity);
+        return CompanyIssueResDto.toDto(saved);
     }
 
-    private SentimentEnum extractSentiment(String response) {
-        if (response.contains("POSITIVE")) return SentimentEnum.POSITIVE;
-        if (response.contains("NEGATIVE")) return SentimentEnum.NEGATIVE;
-        if (response.contains("NEUTRAL")) return SentimentEnum.NEUTRAL;
-        return null;
+    public MarketAnalysisResDto analyzeMarket(String keyword, String question) {
+
+
+        MarketKeyword marketKeyword = MarketKeyword.fromKeyword(keyword);
+
+        // 유효한 캐시 조회
+        Optional<MarketNewsAnalysisEntity> cached = analysisSaveService.getCachedMarketAnalysis(keyword);
+        if (cached.isPresent()) {
+            log.info("[{}] 마켓 분석 존재", keyword);
+            throw new CustomException(AiErrorCode.ANALYSIS_ALREADY_EXISTS);
+        }
+
+        BeanOutputConverter<AiNewsAnalysisResDto> parser = new BeanOutputConverter<>(AiNewsAnalysisResDto.class);
+
+        String systemPrompt = loadPrompt(marketPromptResource)
+                .replace("{keyword}", marketKeyword.getKeyword())
+                .replace("{format}", parser.getFormat());
+
+        String query = marketKeyword.getKeyword() + " 관련 최근 시장 이슈 분석해줘.";
+        String twoDaysAgo = LocalDate.now().minusDays(1).toString();
+        String filterExpression = "category == 'MARKET' && keyword == '" + keyword + "' && published_at >= '" + twoDaysAgo + "'";
+
+        AiNewsAnalysisResDto llmResult = llmAnalysisService.createLlmAnalysis(systemPrompt, query, filterExpression);
+
+        MarketNewsAnalysisEntity entity = MarketNewsAnalysisEntity.builder()
+                .summary(llmResult.getSummary())
+                .expiredAt(LocalDateTime.now().plusHours(CACHE_HOURS))
+                .build();
+
+        MarketNewsAnalysisEntity saved = analysisSaveService.save(entity);
+
+        log.info("[{}] 분석 결과 저장 완료", keyword);
+        return MarketAnalysisResDto.from(saved);
     }
+
+
 
 
     public CompanyIssueResDto getLatestAnalysis(String ticker) {
 
         WatchCompany.fromTicker(ticker);
 
-        return companyIssueAnalysisRepository
-                .findLatestValidAnalysis(ticker)
+        return analysisSaveService.getLatestAnalysis(ticker)
                 .map(CompanyIssueResDto::toDto)
-                .orElseThrow(() -> new CustomException(AiErrorCode.AI_NOT_FOUND));
+                .orElseThrow(()-> new CustomException(AiErrorCode.AI_NOT_FOUND));
     }
+
+
+
+    private String loadPrompt(Resource resource) {
+        try {
+            return resource.getContentAsString(StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new CustomException(AiErrorCode.AI_RESPONSE_FAILED);
+        }
+    }
+
 }
