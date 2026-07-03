@@ -1,7 +1,7 @@
 package com.moni.ai.application.service;
 
 import com.moni.ai.application.prompt.PortfolioAnalysisPromptBuilder;
-import com.moni.ai.common.exception.AiErrorCode;
+import com.moni.ai.domain.exception.AiErrorCode;
 import com.moni.ai.infrastructure.client.LlmAnalysisRequest;
 import com.moni.ai.infrastructure.client.LlmAnalysisResponse;
 import com.moni.ai.infrastructure.client.LlmClient;

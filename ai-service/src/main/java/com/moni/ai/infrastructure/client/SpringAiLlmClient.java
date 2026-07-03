@@ -2,7 +2,7 @@ package com.moni.ai.infrastructure.client;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.moni.ai.common.exception.AiErrorCode;
+import com.moni.ai.domain.exception.AiErrorCode;
 import com.moni.common.error.exception.CustomException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;

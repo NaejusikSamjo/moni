@@ -64,6 +64,8 @@ naver:
 springdoc:
   api-docs:
     path: /v3/api-docs
+  swagger-ui:
+    enabled: true
 
 management:
   endpoints:
