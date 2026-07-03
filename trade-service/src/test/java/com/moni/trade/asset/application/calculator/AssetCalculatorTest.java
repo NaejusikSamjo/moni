@@ -35,8 +35,8 @@ class AssetCalculatorTest {
             // given
             AccountInput account = new AccountInput(money("60000"), money("100000"));
             List<HoldingInput> holdings = List.of(
-                    new HoldingInput("999991", 3L, money("10000"), money("30000")),
-                    new HoldingInput("999992", 2L, money("15000"), money("30000"))
+                    new HoldingInput("999991", money("3"), money("10000"), money("30000")),
+                    new HoldingInput("999992", money("2"), money("15000"), money("30000"))
             );
             List<PriceInput> prices = List.of(
                     new PriceInput("999991", "첫 번째 종목", money("11000")),
@@ -90,7 +90,7 @@ class AssetCalculatorTest {
             // given
             AccountInput account = new AccountInput(money("10000"), money("10000"));
             List<HoldingInput> holdings = List.of(
-                    new HoldingInput("999991", 1L, money("10000"), money("10000"))
+                    new HoldingInput("999991", money("1"), money("10000"), money("10000"))
             );
 
             // when & then

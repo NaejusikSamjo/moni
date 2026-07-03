@@ -112,8 +112,8 @@ class AssetServiceTest {
                     .willReturn(page(List.of(trade), 0, 1));
 
             List<HoldingInput> holdingInputs = List.of(
-                    new HoldingInput("999991", 3L, money("10.01"), money("30.02")),
-                    new HoldingInput("999992", 2L, money("15000"), money("30000"))
+                    new HoldingInput("999991", money("3"), money("10.01"), money("30.02")),
+                    new HoldingInput("999992", money("2"), money("15000"), money("30000"))
             );
             List<PriceInput> priceInputs = List.of(
                     new PriceInput("999991", "999991 name", money("11.00")),
@@ -237,8 +237,8 @@ class AssetServiceTest {
                     .willReturn(success(stock("999992", "10000")));
 
             List<HoldingInput> holdingInputs = List.of(
-                    new HoldingInput("999991", 3L, money("10.01"), money("30.02")),
-                    new HoldingInput("999992", 2L, money("15000"), money("30000"))
+                    new HoldingInput("999991", money("3"), money("10.01"), money("30.02")),
+                    new HoldingInput("999992", money("2"), money("15000"), money("30000"))
             );
             List<PriceInput> priceInputs = List.of(
                     new PriceInput("999991", "999991 name", money("11.00")),
@@ -368,7 +368,7 @@ class AssetServiceTest {
         return new HoldingResponseDto(
                 id,
                 ticker,
-                quantity,
+                BigDecimal.valueOf(quantity),
                 money(averagePrice),
                 money(totalAmount)
         );
@@ -379,7 +379,7 @@ class AssetServiceTest {
                 TRADE_ID,
                 "999991",
                 tradeType,
-                1,
+                money("1"),
                 money("10000"),
                 money(totalAmount),
                 null,
@@ -397,7 +397,7 @@ class AssetServiceTest {
         return new HoldingResult(
                 ticker,
                 ticker + " name",
-                1L,
+                money("1"),
                 money("10000"),
                 money(evaluationAmount),
                 money(evaluationAmount),
