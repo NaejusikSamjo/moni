@@ -85,7 +85,6 @@ public class NotificationService {
     );
   }
 
-
   private String createTimeBasedId(UUID userId) {
     return userId.toString() + "_" + System.currentTimeMillis();
   }
