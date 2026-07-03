@@ -11,8 +11,8 @@ public record AssetHoldingResponseDto(
         @Schema(description = "종목 코드", example = "005930")
         String ticker,
 
-        @Schema(description = "보유 수량", example = "10")
-        Long quantity,
+        @Schema(description = "보유 수량", example = "1.50")
+        BigDecimal quantity,
 
         @Schema(description = "평균 매수 단가", example = "70000.00")
         BigDecimal averagePurchasePrice,
@@ -20,10 +20,10 @@ public record AssetHoldingResponseDto(
         @Schema(description = "현재가", example = "75000.00")
         BigDecimal currentPrice,
 
-        @Schema(description = "평가금액", example = "750000.00")
+        @Schema(description = "평가금액", example = "112500.00")
         BigDecimal evaluationAmount,
 
-        @Schema(description = "평가손익", example = "50000.00")
+        @Schema(description = "평가손익", example = "7500.00")
         BigDecimal profitLoss,
 
         @Schema(description = "수익률(%)", example = "7.1429")

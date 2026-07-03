@@ -4,6 +4,7 @@ import com.moni.trade.global.entity.TradeBaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -24,8 +25,8 @@ public class Holding extends TradeBaseEntity {
     @Column(nullable = false, length = 10)
     private String ticker;
 
-    @Column(nullable = false)
-    private Integer quantity;
+    @Column(nullable = false, precision = 18, scale = 2)
+    private BigDecimal quantity;
 
     @Column(nullable = false, precision = 18, scale = 2)
     private BigDecimal averagePrice;
@@ -33,26 +34,33 @@ public class Holding extends TradeBaseEntity {
     @Column(nullable = false, precision = 18, scale = 2)
     private BigDecimal totalAmount;
 
-    public static Holding create(UUID accountId, String ticker, Integer quantity, BigDecimal price) {
+    @Version
+    private Long version;
+
+    public static Holding create(UUID accountId, String ticker, BigDecimal quantity, BigDecimal price) {
         Holding holding = new Holding();
         holding.accountId = accountId;
         holding.ticker = ticker;
         holding.quantity = quantity;
         holding.averagePrice = price;
-        holding.totalAmount = price.multiply(BigDecimal.valueOf(quantity));
+        holding.totalAmount = price.multiply(quantity).setScale(2, RoundingMode.HALF_UP);
         return holding;
     }
 
-    public void buy(Integer additionalQuantity, BigDecimal price) {
-        BigDecimal newTotalAmount = this.totalAmount.add(price.multiply(BigDecimal.valueOf(additionalQuantity)));
-        int newQuantity = this.quantity + additionalQuantity;
-        this.averagePrice = newTotalAmount.divide(BigDecimal.valueOf(newQuantity), 2, RoundingMode.HALF_UP);
+    public void buy(BigDecimal additionalQuantity, BigDecimal price) {
+        BigDecimal newTotalAmount = this.totalAmount.add(price.multiply(additionalQuantity));
+        BigDecimal newQuantity = this.quantity.add(additionalQuantity);
+        this.averagePrice = newTotalAmount.divide(newQuantity, 2, RoundingMode.HALF_UP);
         this.totalAmount = newTotalAmount;
         this.quantity = newQuantity;
     }
 
-    public void sell(Integer sellQuantity) {
-        this.quantity -= sellQuantity;
-        this.totalAmount = this.averagePrice.multiply(BigDecimal.valueOf(this.quantity));
+    public void sell(BigDecimal sellQuantity) {
+        this.quantity = this.quantity.subtract(sellQuantity);
+        this.totalAmount = this.averagePrice.multiply(this.quantity).setScale(2, RoundingMode.HALF_UP);
+    }
+
+    public boolean isEmpty() {
+        return this.quantity.compareTo(BigDecimal.ZERO) <= 0;
     }
 }

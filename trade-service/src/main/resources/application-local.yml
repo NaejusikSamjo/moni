@@ -1,0 +1,56 @@
+spring:
+  cloud:
+    config:
+      enabled: false
+    openfeign:
+      client:
+        config:
+          stock-service:
+            url: http://localhost:19092  # local 프로파일에서는 mock이 @Primary로 대체됨
+  datasource:
+    url: jdbc:postgresql://localhost:25436/trade_db
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: true
+  data:
+    redis:
+      host: localhost
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD}
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+server:
+  port: 19091
+
+eureka:
+  client:
+    enabled: false
+
+gateway:
+  secret: ${GATEWAY_SECRET:local-secret}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: always
+  health:
+    kafka:
+      enabled: false
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
