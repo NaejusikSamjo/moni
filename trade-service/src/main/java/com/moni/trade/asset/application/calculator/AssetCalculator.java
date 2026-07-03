@@ -32,9 +32,7 @@ public class AssetCalculator {
         List<HoldingResult> holdingResults = calculateHoldingResults(holdings, prices);
 
         // 주식 평가금액은 모든 보유 종목 평가금액의 합계
-        BigDecimal stockEvaluationAmount = holdingResults.stream()
-                .map(HoldingResult::evaluationAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal stockEvaluationAmount = sumEvaluationAmount(holdingResults);
 
         // 총 평가자산과 전체 손익은 계좌 예수금, 주식 평가금액, 투자 원금을 기준으로 계산
         BigDecimal totalAsset = cashBalance.add(stockEvaluationAmount);
@@ -58,9 +56,7 @@ public class AssetCalculator {
     ) {
         List<HoldingResult> holdingResults = calculateHoldingResults(holdings, prices);
 
-        BigDecimal stockEvaluationAmount = holdingResults.stream()
-                .map(HoldingResult::evaluationAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal stockEvaluationAmount = sumEvaluationAmount(holdingResults);
 
         return holdingResults.stream()
                 .map(result -> result.withWeight(calculateRate(result.evaluationAmount(), stockEvaluationAmount)))
@@ -78,6 +74,12 @@ public class AssetCalculator {
         return holdings.stream()
                 .map(holding -> calculateHolding(holding, priceMap))
                 .toList();
+    }
+
+    private BigDecimal sumEvaluationAmount(List<HoldingResult> holdingResults) {
+        return holdingResults.stream()
+                .map(HoldingResult::evaluationAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     /** 단일 보유 종목의 평가금액, 평가손익, 수익률을 계산 */
