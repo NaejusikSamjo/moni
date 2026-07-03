@@ -14,6 +14,7 @@
         <a th:href="@{/admin/dashboard}">대시보드</a>
         <a th:href="@{/admin/users}" class="active">사용자 관리</a>
         <a th:href="@{/admin/users/deleted}">삭제된 사용자</a>
+        <a th:href="@{/admin/news}">뉴스 관리</a>
     </nav>
     <form id="logout-form" class="logout-form" th:action="@{/admin/logout}" method="post">
         <span class="nav-username" sec:authentication="name"></span>
