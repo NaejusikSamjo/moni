@@ -8,6 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -43,5 +44,18 @@ public class PortfolioAnalysisRepositoryImpl implements PortfolioAnalysisReposit
     @Override
     public Page<PortfolioAnalysis> findAllByPortfolioId(UUID portfolioId, Pageable pageable) {
         return portfolioAnalysisJpaRepository.findAllByPortfolioIdOrderByAnalyzedAtDesc(portfolioId, pageable);
+    }
+
+    @Override
+    public boolean existsByPortfolioIdAndUpdatedAtBetween(
+            UUID portfolioId,
+            LocalDateTime startDateTime,
+            LocalDateTime endDateTime
+    ) {
+        return portfolioAnalysisJpaRepository.existsByPortfolioIdAndUpdatedAtGreaterThanEqualAndUpdatedAtLessThan(
+                portfolioId,
+                startDateTime,
+                endDateTime
+        );
     }
 }

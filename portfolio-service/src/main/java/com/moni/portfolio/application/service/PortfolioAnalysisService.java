@@ -5,6 +5,7 @@ import com.moni.common.error.exception.CustomException;
 import com.moni.portfolio.application.analysis.PortfolioRiskCalculator;
 import com.moni.portfolio.application.analysis.TendencyType;
 import com.moni.portfolio.application.analysis.TendencySuitabilityResult;
+import com.moni.portfolio.application.policy.PortfolioAnalysisPolicyService;
 import com.moni.portfolio.domain.entity.Portfolio;
 import com.moni.portfolio.domain.entity.PortfolioAnalysis;
 import com.moni.portfolio.domain.exception.PortfolioErrorCode;
@@ -52,6 +53,7 @@ public class PortfolioAnalysisService {
 
     private final PortfolioRepository portfolioRepository;
     private final PortfolioAnalysisRepository portfolioAnalysisRepository;
+    private final PortfolioAnalysisPolicyService portfolioAnalysisPolicyService;
     private final PortfolioRiskCalculator portfolioRiskCalculator;
     private final TradeServiceClient tradeServiceClient;
     private final UserServiceClient userServiceClient;
@@ -59,7 +61,8 @@ public class PortfolioAnalysisService {
 
     @Transactional
     public PortfolioAnalysisCreateResponseDto requestAnalysis(UUID userId) {
-        Portfolio portfolio = findPortfolio(userId);
+        Portfolio portfolio = findPortfolioForUpdate(userId);
+        portfolioAnalysisPolicyService.validateRequest(userId, portfolio);
         PortfolioAnalysisSnapshot snapshot = createSnapshot(userId);
 
         PortfolioAnalysis analysis = PortfolioAnalysis.request(
@@ -221,6 +224,11 @@ public class PortfolioAnalysisService {
 
     private Portfolio findPortfolio(UUID userId) {
         return portfolioRepository.findByUserId(userId)
+                .orElseThrow(() -> new CustomException(PortfolioErrorCode.PORTFOLIO_NOT_FOUND));
+    }
+
+    private Portfolio findPortfolioForUpdate(UUID userId) {
+        return portfolioRepository.findByUserIdForUpdate(userId)
                 .orElseThrow(() -> new CustomException(PortfolioErrorCode.PORTFOLIO_NOT_FOUND));
     }
 
