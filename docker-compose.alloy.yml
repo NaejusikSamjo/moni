@@ -16,9 +16,4 @@ services:
       - "127.0.0.1:12346:12345"
     environment:
       LOKI_URL: ${LOKI_URL}
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:12345/-/ready || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
+
