@@ -1,12 +1,11 @@
 package com.moni.trade.asset.application.calculator;
 
 import com.moni.common.error.exception.CustomException;
-import com.moni.trade.asset.application.calculator.model.AccountInput;
 import com.moni.trade.asset.application.calculator.model.AssetResult;
 import com.moni.trade.asset.application.calculator.model.HoldingInput;
 import com.moni.trade.asset.application.calculator.model.HoldingResult;
 import com.moni.trade.asset.application.calculator.model.PriceInput;
-import com.moni.trade.asset.application.calculator.model.TradeInput;
+import com.moni.trade.asset.application.calculator.model.StockSummaryResult;
 import com.moni.trade.asset.domain.exception.AssetErrorCode;
 import org.springframework.stereotype.Component;
 
@@ -23,50 +22,35 @@ public class AssetCalculator {
     private static final int MONEY_SCALE = 2; // 금액은 소수점 둘째 자리까지 반올림
     private static final int RATE_SCALE = 4; // 수익률과 비중은 퍼센트 기준 소수점 넷째 자리까지 반올림
     private static final BigDecimal HUNDRED = new BigDecimal(100);
-    private static final String TRADE_TYPE_BUY = "BUY";
-    private static final String TRADE_TYPE_SELL = "SELL";
-    private static final String TRADE_STATUS_DONE = "DONE";
 
     /** 보유 종목별 평가 결과를 계산한 뒤 전체 자산 요약 결과 반환 */
     public AssetResult calculateAssets(
-            AccountInput account,
+            BigDecimal cashBalance,
+            BigDecimal principalAmount,
             List<HoldingInput> holdings,
             List<PriceInput> prices
     ) {
-        List<HoldingResult> holdingResults = calculateHoldings(holdings, prices);
+        List<HoldingResult> holdingResults = calculateHoldingResults(holdings, prices);
 
         // 주식 평가금액은 모든 보유 종목 평가금액의 합계
-        BigDecimal stockEvaluationAmount = holdingResults.stream()
-                .map(HoldingResult::evaluationAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal stockEvaluationAmount = sumEvaluationAmount(holdingResults);
 
         // 총 평가자산과 전체 손익은 계좌 예수금, 주식 평가금액, 투자 원금을 기준으로 계산
-        BigDecimal totalAsset = account.cashBalance().add(stockEvaluationAmount);
-        BigDecimal totalProfitLoss = totalAsset.subtract(account.principalAmount());
-        BigDecimal totalReturnRate = calculateRate(totalProfitLoss, account.principalAmount());
+        BigDecimal totalAsset = cashBalance.add(stockEvaluationAmount);
+        BigDecimal totalProfitLoss = totalAsset.subtract(principalAmount);
+        BigDecimal totalReturnRate = calculateRate(totalProfitLoss, principalAmount);
+        StockSummaryResult stockSummary = calculateStockSummary(holdings, holdingResults);
 
         return new AssetResult(
                 totalAsset.setScale(MONEY_SCALE, RoundingMode.HALF_UP),
-                account.cashBalance(),
+                cashBalance,
                 stockEvaluationAmount.setScale(MONEY_SCALE, RoundingMode.HALF_UP),
-                account.principalAmount(),
+                principalAmount,
                 totalProfitLoss.setScale(MONEY_SCALE, RoundingMode.HALF_UP),
                 totalReturnRate,
-                holdingResults
+                stockSummary.stockProfitLoss(),
+                stockSummary.stockReturnRate()
         );
-    }
-
-    /** 거래 이력을 기준으로 매수 금액은 차감하고 매도 금액은 가산해 예수금 계산 */
-    public BigDecimal calculateCashBalance(BigDecimal principalAmount, List<TradeInput> trades) {
-        BigDecimal cashBalance = principalAmount;
-
-        for (TradeInput trade : trades) {
-            if (isDoneTrade(trade)) {
-                cashBalance = calculateCashBalance(cashBalance, trade);
-            }
-        }
-
-        return cashBalance;
     }
 
     /** 계좌 정보 없이 보유 종목별 평가금액, 평가손익, 수익률, 비중을 계산 */
@@ -74,21 +58,59 @@ public class AssetCalculator {
             List<HoldingInput> holdings,
             List<PriceInput> prices
     ) {
-        // 현재가는 ticker 기준으로 빠르게 찾을 수 있도록 Map으로 변환
-        Map<String, PriceInput> priceMap = prices.stream()
-                .collect(Collectors.toMap(PriceInput::ticker, Function.identity()));
+        List<HoldingResult> holdingResults = calculateHoldingResults(holdings, prices);
 
-        List<HoldingResult> holdingResults = holdings.stream()
-                .map(holding -> calculateHolding(holding, priceMap))
-                .toList();
-
-        BigDecimal stockEvaluationAmount = holdingResults.stream()
-                .map(HoldingResult::evaluationAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal stockEvaluationAmount = sumEvaluationAmount(holdingResults);
 
         return holdingResults.stream()
                 .map(result -> result.withWeight(calculateRate(result.evaluationAmount(), stockEvaluationAmount)))
                 .toList();
+    }
+
+    /** 현재 보유 종목 기준 평가손익 합계와 수익률을 계산 */
+    public StockSummaryResult calculateStockSummary(
+            List<HoldingInput> holdings,
+            List<HoldingResult> holdingResults
+    ) {
+        BigDecimal stockProfitLoss = sumProfitLoss(holdingResults);
+        BigDecimal stockPurchaseAmount = sumPurchaseAmount(holdings);
+        BigDecimal stockReturnRate = calculateRate(stockProfitLoss, stockPurchaseAmount);
+
+        return new StockSummaryResult(
+                stockProfitLoss.setScale(MONEY_SCALE, RoundingMode.HALF_UP),
+                stockReturnRate
+        );
+    }
+
+    private List<HoldingResult> calculateHoldingResults(
+            List<HoldingInput> holdings,
+            List<PriceInput> prices
+    ) {
+        // 현재가는 ticker 기준으로 빠르게 찾을 수 있도록 Map으로 변환
+        Map<String, PriceInput> priceMap = prices.stream()
+                .collect(Collectors.toMap(PriceInput::ticker, Function.identity()));
+
+        return holdings.stream()
+                .map(holding -> calculateHolding(holding, priceMap))
+                .toList();
+    }
+
+    private BigDecimal sumEvaluationAmount(List<HoldingResult> holdingResults) {
+        return holdingResults.stream()
+                .map(HoldingResult::evaluationAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private BigDecimal sumProfitLoss(List<HoldingResult> holdingResults) {
+        return holdingResults.stream()
+                .map(HoldingResult::profitLoss)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private BigDecimal sumPurchaseAmount(List<HoldingInput> holdings) {
+        return holdings.stream()
+                .map(HoldingInput::totalPurchaseAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     /** 단일 보유 종목의 평가금액, 평가손익, 수익률을 계산 */
@@ -116,28 +138,6 @@ public class AssetCalculator {
                 profitRate,
                 BigDecimal.ZERO
         );
-    }
-
-    private boolean isDoneTrade(TradeInput trade) {
-        if (trade == null
-                || trade.tradeType() == null
-                || trade.totalAmount() == null
-                || trade.status() == null) {
-            throw new CustomException(AssetErrorCode.TRADE_RESPONSE_INVALID);
-        }
-
-        return TRADE_STATUS_DONE.equalsIgnoreCase(trade.status().toString());
-    }
-
-    private BigDecimal calculateCashBalance(BigDecimal cashBalance, TradeInput trade) {
-        if (TRADE_TYPE_BUY.equalsIgnoreCase(trade.tradeType().toString())) {
-            return cashBalance.subtract(trade.totalAmount());
-        }
-        if (TRADE_TYPE_SELL.equalsIgnoreCase(trade.tradeType().toString())) {
-            return cashBalance.add(trade.totalAmount());
-        }
-
-        throw new CustomException(AssetErrorCode.TRADE_RESPONSE_INVALID);
     }
 
     /** numerator / denominator * 100 형태의 퍼센트 값을 계산 */

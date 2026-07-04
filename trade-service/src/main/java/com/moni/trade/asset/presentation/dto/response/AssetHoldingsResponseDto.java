@@ -2,10 +2,17 @@ package com.moni.trade.asset.presentation.dto.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Schema(description = "보유 종목 현황 조회 응답")
 public record AssetHoldingsResponseDto(
+
+        @Schema(description = "현재 보유 종목 평가손익 합계", example = "203500.00")
+        BigDecimal stockProfitLoss,
+
+        @Schema(description = "현재 보유 종목 기준 수익률(%)", example = "3.2670")
+        BigDecimal stockReturnRate,
 
         @Schema(description = "보유 종목 목록")
         List<AssetHoldingResponseDto> content,

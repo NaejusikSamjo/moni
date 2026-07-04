@@ -4,6 +4,7 @@ import com.moni.ai.application.service.AiService;
 import com.moni.ai.application.service.NewsService;
 import com.moni.ai.presentation.dto.request.IssueAnalysisReqDto;
 import com.moni.ai.presentation.dto.response.CompanyIssueResDto;
+import com.moni.ai.presentation.dto.response.MarketAnalysisResDto;
 import com.moni.ai.presentation.dto.response.WatchCompanyResDto;
 import com.moni.common.response.GlobalResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -44,7 +46,23 @@ public class AiController{
     ) {
 
         String question = request != null ? request.getQuestion() : null;
-        CompanyIssueResDto result = aiService.analyze(ticker, question);
+        CompanyIssueResDto result = aiService.companyAnalyze(ticker, question);
+        return ResponseEntity.status(HttpStatus.CREATED).body(GlobalResponse.success(201,result));
+    }
+
+    @PostMapping("/news-summary")
+    @Operation(summary = "시장 뉴스 분석 생성", description = "키워드 기반 시장 뉴스를 분석합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "분석 성공"),
+            @ApiResponse(responseCode = "404", description = "등록되지 않은 키워드"),
+            @ApiResponse(responseCode = "500", description = "LLM 호출 실패")
+    })
+    public ResponseEntity<GlobalResponse<MarketAnalysisResDto>> createNewsAnalysis(
+            @RequestParam("keyword") String keyword,
+            @RequestBody(required = false) IssueAnalysisReqDto request
+    ){
+        String question = request != null ? request.getQuestion() : null;
+        MarketAnalysisResDto result = aiService.analyzeMarket(keyword,question);
         return ResponseEntity.status(HttpStatus.CREATED).body(GlobalResponse.success(201,result));
     }
 

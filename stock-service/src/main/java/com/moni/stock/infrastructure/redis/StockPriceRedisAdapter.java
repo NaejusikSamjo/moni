@@ -3,6 +3,7 @@ package com.moni.stock.infrastructure.redis;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.moni.stock.domain.entity.StockPrice;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
@@ -30,6 +31,7 @@ public class StockPriceRedisAdapter {
         } catch (JsonProcessingException ignored) {}
     }
 
+    @CircuitBreaker(name = "redisPrice", fallbackMethod = "getPriceFallback")
     public Optional<StockPrice> getPrice(String ticker) {
         String value = redisTemplate.opsForValue().get(PRICE_KEY_PREFIX + ticker);
         if (value == null) return Optional.empty();
@@ -38,6 +40,10 @@ public class StockPriceRedisAdapter {
         } catch (JsonProcessingException e) {
             return Optional.empty();
         }
+    }
+
+    private Optional<StockPrice> getPriceFallback(String ticker, Throwable t) {
+        throw new RedisUnavailableException(ticker, t);
     }
 
     public void saveTopVolume(List<StockPrice> stockPrices) {
