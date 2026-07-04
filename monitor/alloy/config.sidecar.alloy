@@ -6,10 +6,15 @@
 //   LOKI_URL — monitoring-ec2 Loki push 엔드포인트
 // ============================================================
 
-loki.source.file "moni_services" {
-  targets = [
-    {__path__ = "/var/log/services/**/*.log", job = "moni"},
+local.file_match "moni_logs" {
+  path_targets = [
+    { __path__ = "/var/log/services/*/*.log", job = "moni" },
   ]
+  sync_period = "10s"
+}
+
+loki.source.file "moni_services" {
+  targets    = local.file_match.moni_logs.targets
   forward_to = [loki.process.filter.receiver]
 }
 
