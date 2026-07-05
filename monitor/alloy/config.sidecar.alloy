@@ -41,6 +41,15 @@ loki.process "filter" {
     expression = "(?i)^(info|debug|trace)$"
   }
 
+  // stock-service: WARN도 drop → ERROR만 보존
+  stage.match {
+    selector = `{service="stock-service"}`
+    stage.drop {
+      source     = "level"
+      expression = "(?i)^warn$"
+    }
+  }
+
   stage.static_labels {
     values = {environment = "prod"}
   }
