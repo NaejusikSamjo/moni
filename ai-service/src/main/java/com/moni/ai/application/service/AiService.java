@@ -40,7 +40,7 @@ public class AiService {
     //분석 결과 유효 시간
     private static final int CACHE_HOURS = 6;
 
-    public CompanyIssueResDto companyAnalyze(String ticker, String question) {
+    public CompanyIssueResDto companyAnalyze(String ticker) {
 
         WatchCompany company = WatchCompany.fromTicker(ticker);
 
@@ -59,9 +59,7 @@ public class AiService {
                 .replace("{companyName}", company.getCompanyName())
                 .replace("{format}", parser.getFormat());
 
-        String query = (question != null && !question.isBlank())
-                ? "[" + ticker + " " + company.getCompanyName() + "] " + question
-                : "[" + ticker + " " + company.getCompanyName() + "] " + company.getCompanyName() + " 기업의 최근 주요 이슈와 뉴스만 분석해줘.";
+        String query = "[" + ticker + " " + company.getCompanyName() + "] " + company.getCompanyName() + " 기업의 최근 주요 이슈와 뉴스만 분석해줘.";
 
 
         String twoDaysAgo = LocalDate.now().minusDays(1).toString();
@@ -89,7 +87,7 @@ public class AiService {
         return CompanyIssueResDto.toDto(saved);
     }
 
-    public MarketAnalysisResDto analyzeMarket(String keyword, String question) {
+    public MarketAnalysisResDto analyzeMarket(String keyword) {
 
 
         MarketKeyword marketKeyword = MarketKeyword.fromKeyword(keyword);

@@ -2,7 +2,6 @@ package com.moni.ai.presentation.controller;
 
 import com.moni.ai.application.service.AiService;
 import com.moni.ai.application.service.NewsService;
-import com.moni.ai.presentation.dto.request.IssueAnalysisReqDto;
 import com.moni.ai.presentation.dto.response.CompanyIssueResDto;
 import com.moni.ai.presentation.dto.response.MarketAnalysisResDto;
 import com.moni.ai.presentation.dto.response.WatchCompanyResDto;
@@ -16,7 +15,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -41,12 +39,9 @@ public class AiController{
             @ApiResponse(responseCode = "500", description = "LLM 호출 실패")
     })
     public ResponseEntity<GlobalResponse<CompanyIssueResDto>> createIssueAnalysis(
-            @PathVariable("ticker") String ticker,
-            @RequestBody(required = false) IssueAnalysisReqDto request
+            @PathVariable("ticker") String ticker
     ) {
-
-        String question = request != null ? request.getQuestion() : null;
-        CompanyIssueResDto result = aiService.companyAnalyze(ticker, question);
+        CompanyIssueResDto result = aiService.companyAnalyze(ticker);
         return ResponseEntity.status(HttpStatus.CREATED).body(GlobalResponse.success(201,result));
     }
 
@@ -58,11 +53,9 @@ public class AiController{
             @ApiResponse(responseCode = "500", description = "LLM 호출 실패")
     })
     public ResponseEntity<GlobalResponse<MarketAnalysisResDto>> createNewsAnalysis(
-            @RequestParam("keyword") String keyword,
-            @RequestBody(required = false) IssueAnalysisReqDto request
+            @RequestParam("keyword") String keyword
     ){
-        String question = request != null ? request.getQuestion() : null;
-        MarketAnalysisResDto result = aiService.analyzeMarket(keyword,question);
+        MarketAnalysisResDto result = aiService.analyzeMarket(keyword);
         return ResponseEntity.status(HttpStatus.CREATED).body(GlobalResponse.success(201,result));
     }
 
