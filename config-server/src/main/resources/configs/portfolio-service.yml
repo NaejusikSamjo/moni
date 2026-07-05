@@ -36,9 +36,15 @@ spring:
           trade-service:
             connectTimeout: 1000
             readTimeout: 3000
-          stock-service:
+          payment-service:
             connectTimeout: 1000
-            readTimeout: 3000
+            readTimeout: 2000
+          user-service:
+            connectTimeout: 1000
+            readTimeout: 2000
+          ai-service:
+            connectTimeout: 1000
+            readTimeout: 30000
 
 springdoc:
   api-docs:
