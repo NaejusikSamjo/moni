@@ -26,7 +26,11 @@ public interface PortfolioAnalysisRepository {
             LocalDateTime endDateTime
     );
 
-    Page<PortfolioAnalysis> findAllByPortfolioId(UUID portfolioId, Pageable pageable);
+    Page<PortfolioAnalysis> findAllByPortfolioIdAndStatusIn(
+            UUID portfolioId,
+            List<AnalysisStatus> statuses,
+            Pageable pageable
+    );
 
     boolean existsByPortfolioIdAndStatusInAndCreatedAtBetween(
             UUID portfolioId,

@@ -58,8 +58,16 @@ public class PortfolioAnalysisRepositoryImpl implements PortfolioAnalysisReposit
     }
 
     @Override
-    public Page<PortfolioAnalysis> findAllByPortfolioId(UUID portfolioId, Pageable pageable) {
-        return portfolioAnalysisJpaRepository.findAllByPortfolioIdOrderByAnalyzedAtDesc(portfolioId, pageable);
+    public Page<PortfolioAnalysis> findAllByPortfolioIdAndStatusIn(
+            UUID portfolioId,
+            List<AnalysisStatus> statuses,
+            Pageable pageable
+    ) {
+        return portfolioAnalysisJpaRepository.findAllByPortfolioIdAndStatusInOrderByAnalyzedAtDesc(
+                portfolioId,
+                statuses,
+                pageable
+        );
     }
 
     @Override

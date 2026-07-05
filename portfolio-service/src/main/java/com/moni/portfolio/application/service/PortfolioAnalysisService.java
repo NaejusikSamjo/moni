@@ -8,6 +8,7 @@ import com.moni.portfolio.application.analysis.TendencySuitabilityResult;
 import com.moni.portfolio.application.policy.PortfolioAnalysisPolicyService;
 import com.moni.portfolio.domain.entity.Portfolio;
 import com.moni.portfolio.domain.entity.PortfolioAnalysis;
+import com.moni.portfolio.domain.enums.AnalysisStatus;
 import com.moni.portfolio.domain.exception.PortfolioErrorCode;
 import com.moni.portfolio.domain.repository.PortfolioAnalysisRepository;
 import com.moni.portfolio.domain.repository.PortfolioRepository;
@@ -52,6 +53,10 @@ public class PortfolioAnalysisService {
     private static final int MAX_SIZE = 50;
     private static final BigDecimal CONCENTRATION_THRESHOLD = new BigDecimal("60.00");
     private static final ZoneId ANALYSIS_DAILY_LIMIT_ZONE = ZoneId.of("Asia/Seoul");
+    private static final List<AnalysisStatus> VISIBLE_ANALYSIS_STATUSES = List.of(
+            AnalysisStatus.PENDING,
+            AnalysisStatus.SUCCESS
+    );
 
     private final PortfolioRepository portfolioRepository;
     private final PortfolioAnalysisRepository portfolioAnalysisRepository;
@@ -118,7 +123,7 @@ public class PortfolioAnalysisService {
         Portfolio portfolio = findPortfolio(userId);
         PageRequest pageRequest = PageRequest.of(resolvePage(page), resolveSize(size));
         Page<PortfolioAnalysisResponseDto> analyses = portfolioAnalysisRepository
-                .findAllByPortfolioId(portfolio.getId(), pageRequest)
+                .findAllByPortfolioIdAndStatusIn(portfolio.getId(), VISIBLE_ANALYSIS_STATUSES, pageRequest)
                 .map(this::toResponse);
 
         return new PageRes<>(analyses);

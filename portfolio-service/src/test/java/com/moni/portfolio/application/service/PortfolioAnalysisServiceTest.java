@@ -1,6 +1,7 @@
 package com.moni.portfolio.application.service;
 
 import com.moni.common.error.exception.CustomException;
+import com.moni.common.response.paging.PageRes;
 import com.moni.portfolio.application.analysis.PortfolioRiskCalculator;
 import com.moni.portfolio.application.analysis.TendencySuitabilityResult;
 import com.moni.portfolio.application.analysis.TendencyType;
@@ -20,6 +21,7 @@ import com.moni.portfolio.infrastructure.client.dto.response.TradeAssetAnalysisS
 import com.moni.portfolio.infrastructure.client.dto.response.TradeAssetHoldingResponseDto;
 import com.moni.portfolio.infrastructure.client.dto.response.UserTendencyResponseDto;
 import com.moni.portfolio.presentation.dto.response.PortfolioAnalysisCreateResponseDto;
+import com.moni.portfolio.presentation.dto.response.PortfolioAnalysisResponseDto;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -28,6 +30,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
@@ -332,6 +336,59 @@ class PortfolioAnalysisServiceTest {
             assertThat(portfolio.getAiAnalysisCount()).isZero();
             then(portfolioAnalysisAsyncExecutor).should()
                     .requestAiAnalysis(any(UUID.class), any(AiPortfolioAnalysisRequestDto.class));
+        }
+    }
+
+    @Nested
+    @DisplayName("getAnalyses()")
+    class GetAnalyses {
+
+        @Test
+        @DisplayName("성공 - 분석 이력 목록은 FAILED를 제외하고 PENDING, SUCCESS만 조회한다")
+        void success_exclude_failed_analysis() {
+            // given
+            Portfolio portfolio = portfolio();
+            PortfolioAnalysis pendingAnalysis = PortfolioAnalysis.request(
+                    portfolio,
+                    new BigDecimal("-1.7750"),
+                    new BigDecimal("4158500.00")
+            );
+            ReflectionTestUtils.setField(pendingAnalysis, "id", ANALYSIS_ID);
+            PortfolioAnalysis successAnalysis = PortfolioAnalysis.request(
+                    portfolio,
+                    new BigDecimal("2.1200"),
+                    new BigDecimal("5100000.00")
+            );
+            successAnalysis.succeed("요약입니다.", new BigDecimal("45.00"), new BigDecimal("60.00"));
+            ReflectionTestUtils.setField(
+                    successAnalysis,
+                    "id",
+                    UUID.fromString("00000000-0000-0000-0000-000000000003")
+            );
+
+            given(portfolioRepository.findByUserId(USER_ID)).willReturn(Optional.of(portfolio));
+            given(portfolioAnalysisRepository.findAllByPortfolioIdAndStatusIn(
+                    eq(PORTFOLIO_ID),
+                    eq(List.of(AnalysisStatus.PENDING, AnalysisStatus.SUCCESS)),
+                    any(PageRequest.class)
+            )).willReturn(new PageImpl<>(
+                    List.of(pendingAnalysis, successAnalysis),
+                    PageRequest.of(0, 10),
+                    2
+            ));
+
+            // when
+            PageRes<PortfolioAnalysisResponseDto> result = portfolioAnalysisService.getAnalyses(USER_ID, 0, 10);
+
+            // then
+            assertThat(result.getContent())
+                    .extracting(PortfolioAnalysisResponseDto::status)
+                    .containsExactly(AnalysisStatus.PENDING, AnalysisStatus.SUCCESS);
+            then(portfolioAnalysisRepository).should().findAllByPortfolioIdAndStatusIn(
+                    eq(PORTFOLIO_ID),
+                    eq(List.of(AnalysisStatus.PENDING, AnalysisStatus.SUCCESS)),
+                    any(PageRequest.class)
+            );
         }
     }
 
