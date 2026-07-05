@@ -26,6 +26,7 @@ import com.moni.portfolio.presentation.dto.response.PortfolioAnalysisResponseDto
 import feign.FeignException;
 import feign.RetryableException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
@@ -43,6 +44,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Supplier;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -176,28 +178,38 @@ public class PortfolioAnalysisService {
     private UserTendencyResponseDto getUserTendency(UUID userId) {
         try {
             ExternalApiResponseDto<UserTendencyResponseDto> response = userServiceClient.getTendency(userId);
-            if (response == null || response.data() == null) {
-                throw new CustomException(PortfolioErrorCode.USER_TENDENCY_RESPONSE_INVALID);
-            }
-            if (response.data().score() == null
-                    || response.data().score() < 0
-                    || response.data().score() > 100
-                    || response.data().type() == null
-                    || response.data().type().isBlank()) {
-                throw new CustomException(PortfolioErrorCode.USER_TENDENCY_RESPONSE_INVALID);
+            if (response == null || isInvalidUserTendency(response.data())) {
+                log.warn("투자 성향 응답 데이터가 올바르지 않아 성향 분석을 생략합니다. userId={}", userId);
+                return null;
             }
             TendencyType.fromName(response.data().type());
             return response.data();
         } catch (RetryableException exception) {
-            throw new CustomException(PortfolioErrorCode.USER_SERVICE_TIMEOUT);
+            log.warn("투자 성향 조회 시간이 초과되어 성향 분석을 생략합니다. userId={}", userId);
+            return null;
         } catch (FeignException exception) {
             if (exception.status() == HttpStatus.NOT_FOUND.value()) {
                 return null;
             }
-            throw new CustomException(PortfolioErrorCode.USER_SERVICE_ERROR);
+            log.warn(
+                    "투자 성향 조회 중 User 서비스 오류가 발생해 성향 분석을 생략합니다. userId={}, status={}",
+                    userId,
+                    exception.status()
+            );
+            return null;
         } catch (IllegalArgumentException exception) {
-            throw new CustomException(PortfolioErrorCode.USER_TENDENCY_RESPONSE_INVALID);
+            log.warn("지원하지 않는 투자 성향 타입이 내려와 성향 분석을 생략합니다. userId={}", userId);
+            return null;
         }
+    }
+
+    private boolean isInvalidUserTendency(UserTendencyResponseDto userTendency) {
+        return userTendency == null
+                || userTendency.score() == null
+                || userTendency.score() < 0
+                || userTendency.score() > 100
+                || userTendency.type() == null
+                || userTendency.type().isBlank();
     }
 
     private PortfolioHoldingSnapshot toHoldingSnapshot(TradeAssetHoldingResponseDto holding) {

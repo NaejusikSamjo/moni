@@ -337,6 +337,59 @@ class PortfolioAnalysisServiceTest {
             then(portfolioAnalysisAsyncExecutor).should()
                     .requestAiAnalysis(any(UUID.class), any(AiPortfolioAnalysisRequestDto.class));
         }
+
+        @Test
+        @DisplayName("성공 - 투자 성향 조회 응답이 올바르지 않으면 성향 분석만 생략하고 기본 분석을 요청한다")
+        void success_fallback_user_tendency_invalid_response() {
+            // given
+            Portfolio portfolio = portfolio();
+
+            given(portfolioRepository.findByUserIdForUpdate(USER_ID)).willReturn(Optional.of(portfolio));
+            given(tradeServiceClient.getAnalysisSnapshot(USER_ID))
+                    .willReturn(success(snapshot(
+                            "10000000.00",
+                            "4158500.00",
+                            "-1.7750",
+                            List.of(holding(
+                                    "000660",
+                                    "SK하이닉스",
+                                    10L,
+                                    "220000.00",
+                                    "210000.00",
+                                    "2100000.00",
+                                    "-100000.00",
+                                    "-4.5455",
+                                    "100.00"
+                            ))
+                    )));
+            given(userServiceClient.getTendency(USER_ID)).willReturn(success(null));
+            given(portfolioAnalysisRepository.save(any(PortfolioAnalysis.class)))
+                    .willAnswer(invocation -> {
+                        PortfolioAnalysis analysis = invocation.getArgument(0);
+                        ReflectionTestUtils.setField(analysis, "id", ANALYSIS_ID);
+                        return analysis;
+                    });
+
+            // when
+            PortfolioAnalysisCreateResponseDto result = portfolioAnalysisService.requestAnalysis(USER_ID);
+
+            // then
+            assertThat(result.analysisId()).isEqualTo(ANALYSIS_ID);
+            ArgumentCaptor<AiPortfolioAnalysisRequestDto> aiRequestCaptor =
+                    ArgumentCaptor.forClass(AiPortfolioAnalysisRequestDto.class);
+            then(portfolioAnalysisAsyncExecutor).should().requestAiAnalysis(
+                    any(UUID.class),
+                    aiRequestCaptor.capture()
+            );
+            assertThat(aiRequestCaptor.getValue().tendencyAnalysis()).isNull();
+            then(portfolioRiskCalculator).should(never()).calculate(
+                    any(UserTendencyResponseDto.class),
+                    any(BigDecimal.class),
+                    any(BigDecimal.class),
+                    any(BigDecimal.class),
+                    anyInt()
+            );
+        }
     }
 
     @Nested
