@@ -31,6 +31,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -39,6 +40,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.BDDMockito.willThrow;
@@ -175,6 +177,39 @@ class PortfolioAnalysisServiceTest {
             assertThat(tendencyAnalysis.userTendencyLabel()).isEqualTo("안정추구형");
             assertThat(tendencyAnalysis.portfolioRiskType()).isEqualTo("ACTIVE");
             assertThat(tendencyAnalysis.suitabilityScore()).isEqualTo(63);
+        }
+
+        @Test
+        @DisplayName("성공 - 오늘 진행 중인 분석이 있으면 기존 분석 ID를 반환한다")
+        void success_return_existing_pending_analysis() {
+            // given
+            Portfolio portfolio = portfolio();
+            PortfolioAnalysis pendingAnalysis = PortfolioAnalysis.request(
+                    portfolio,
+                    new BigDecimal("-1.7750"),
+                    new BigDecimal("4158500.00")
+            );
+            ReflectionTestUtils.setField(pendingAnalysis, "id", ANALYSIS_ID);
+
+            given(portfolioRepository.findByUserIdForUpdate(USER_ID)).willReturn(Optional.of(portfolio));
+            given(portfolioAnalysisRepository.findPendingByPortfolioIdAndCreatedAtBetween(
+                    eq(PORTFOLIO_ID),
+                    any(LocalDateTime.class),
+                    any(LocalDateTime.class)
+            )).willReturn(Optional.of(pendingAnalysis));
+
+            // when
+            PortfolioAnalysisCreateResponseDto result = portfolioAnalysisService.requestAnalysis(USER_ID);
+
+            // then
+            assertThat(result.analysisId()).isEqualTo(ANALYSIS_ID);
+            assertThat(result.status()).isEqualTo(AnalysisStatus.PENDING);
+            assertThat(portfolio.getAiAnalysisCount()).isZero();
+            then(portfolioAnalysisPolicyService).should(never()).validateRequest(USER_ID, portfolio);
+            then(tradeServiceClient).should(never()).getAnalysisSnapshot(USER_ID);
+            then(portfolioAnalysisRepository).should(never()).save(any(PortfolioAnalysis.class));
+            then(portfolioAnalysisAsyncExecutor).should(never())
+                    .requestAiAnalysis(any(UUID.class), any(AiPortfolioAnalysisRequestDto.class));
         }
 
         @Test

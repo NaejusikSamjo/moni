@@ -34,7 +34,11 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Supplier;
 
@@ -47,6 +51,7 @@ public class PortfolioAnalysisService {
     private static final int DEFAULT_SIZE = 10;
     private static final int MAX_SIZE = 50;
     private static final BigDecimal CONCENTRATION_THRESHOLD = new BigDecimal("60.00");
+    private static final ZoneId ANALYSIS_DAILY_LIMIT_ZONE = ZoneId.of("Asia/Seoul");
 
     private final PortfolioRepository portfolioRepository;
     private final PortfolioAnalysisRepository portfolioAnalysisRepository;
@@ -59,6 +64,11 @@ public class PortfolioAnalysisService {
     @Transactional
     public PortfolioAnalysisCreateResponseDto requestAnalysis(UUID userId) {
         Portfolio portfolio = findPortfolioForUpdate(userId);
+        Optional<PortfolioAnalysis> pendingAnalysis = findPendingAnalysisToday(portfolio);
+        if (pendingAnalysis.isPresent()) {
+            return PortfolioAnalysisCreateResponseDto.from(pendingAnalysis.get());
+        }
+
         portfolioAnalysisPolicyService.validateRequest(userId, portfolio);
         PortfolioAnalysisSnapshot snapshot = createSnapshot(userId);
 
@@ -76,6 +86,17 @@ public class PortfolioAnalysisService {
         );
 
         return PortfolioAnalysisCreateResponseDto.from(savedAnalysis);
+    }
+
+    private Optional<PortfolioAnalysis> findPendingAnalysisToday(Portfolio portfolio) {
+        LocalDate today = LocalDate.now(ANALYSIS_DAILY_LIMIT_ZONE);
+        LocalDateTime startDateTime = today.atStartOfDay();
+        LocalDateTime endDateTime = today.plusDays(1).atStartOfDay();
+        return portfolioAnalysisRepository.findPendingByPortfolioIdAndCreatedAtBetween(
+                portfolio.getId(),
+                startDateTime,
+                endDateTime
+        );
     }
 
     public PortfolioAnalysisResponseDto getLatestAnalysis(UUID userId) {

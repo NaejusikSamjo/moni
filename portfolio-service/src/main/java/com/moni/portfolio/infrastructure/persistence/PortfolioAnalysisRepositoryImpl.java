@@ -42,6 +42,21 @@ public class PortfolioAnalysisRepositoryImpl implements PortfolioAnalysisReposit
     }
 
     @Override
+    public Optional<PortfolioAnalysis> findPendingByPortfolioIdAndCreatedAtBetween(
+            UUID portfolioId,
+            LocalDateTime startDateTime,
+            LocalDateTime endDateTime
+    ) {
+        return portfolioAnalysisJpaRepository
+                .findFirstByPortfolioIdAndStatusAndCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtDesc(
+                        portfolioId,
+                        AnalysisStatus.PENDING,
+                        startDateTime,
+                        endDateTime
+                );
+    }
+
+    @Override
     public Page<PortfolioAnalysis> findAllByPortfolioId(UUID portfolioId, Pageable pageable) {
         return portfolioAnalysisJpaRepository.findAllByPortfolioIdOrderByAnalyzedAtDesc(portfolioId, pageable);
     }

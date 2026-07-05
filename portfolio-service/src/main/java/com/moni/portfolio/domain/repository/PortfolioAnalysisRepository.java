@@ -18,6 +18,12 @@ public interface PortfolioAnalysisRepository {
 
     Optional<PortfolioAnalysis> findLatestSuccessByPortfolioId(UUID portfolioId);
 
+    Optional<PortfolioAnalysis> findPendingByPortfolioIdAndCreatedAtBetween(
+            UUID portfolioId,
+            LocalDateTime startDateTime,
+            LocalDateTime endDateTime
+    );
+
     Page<PortfolioAnalysis> findAllByPortfolioId(UUID portfolioId, Pageable pageable);
 
     boolean existsByPortfolioIdAndCreatedAtBetween(
