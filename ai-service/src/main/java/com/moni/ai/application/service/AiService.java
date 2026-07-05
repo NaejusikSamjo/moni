@@ -62,8 +62,8 @@ public class AiService {
         String query = "[" + ticker + " " + company.getCompanyName() + "] " + company.getCompanyName() + " 기업의 최근 주요 이슈와 뉴스만 분석해줘.";
 
 
-        String twoDaysAgo = LocalDate.now().minusDays(1).toString();
-        String filterExpression = "ticker == '" + ticker + "' && published_at >= '" + twoDaysAgo + "'";
+
+        String filterExpression = getFilterExpression(ticker);
 
 
         AiNewsAnalysisResDto result = llmAnalysisService.createLlmAnalysis(systemPrompt,query,filterExpression);
@@ -106,8 +106,8 @@ public class AiService {
                 .replace("{format}", parser.getFormat());
 
         String query = marketKeyword.getKeyword() + " 관련 최근 시장 이슈 분석해줘.";
-        String twoDaysAgo = LocalDate.now().minusDays(1).toString();
-        String filterExpression = "category == 'MARKET' && keyword == '" + keyword + "' && published_at >= '" + twoDaysAgo + "'";
+
+        String filterExpression = getMarketFilterExpression(marketKeyword.getKeyword());
 
         AiNewsAnalysisResDto llmResult = llmAnalysisService.createLlmAnalysis(systemPrompt, query, filterExpression);
 
@@ -151,6 +151,28 @@ public class AiService {
                 "\n=== FILTER ===\n" + filterExpression;
 
         return prompt;
+    }
+
+    private String getFilterExpression(String ticker) {
+        int searchDays = switch (LocalDate.now().getDayOfWeek()) {
+            case MONDAY,SUNDAY -> 3;   // 금~월 커버
+            case TUESDAY, WEDNESDAY, THURSDAY, FRIDAY -> 1;
+            case SATURDAY -> 2;  // 금~토 커버
+        };
+
+        String fromDate = LocalDate.now().minusDays(searchDays).toString();
+        return "ticker == '" + ticker + "' && published_at >= '" + fromDate + "'";
+    }
+
+    private String getMarketFilterExpression(String keyword) {
+        int searchDays = switch (LocalDate.now().getDayOfWeek()) {
+            case MONDAY,SUNDAY -> 3;   // 금~월 커버
+            case TUESDAY, WEDNESDAY, THURSDAY, FRIDAY -> 1;
+            case SATURDAY -> 2;  // 금~토 커버
+        };
+
+        String fromDate = LocalDate.now().minusDays(searchDays).toString();
+        return "category == 'MARKET' && keyword == '" + keyword + "' && published_at >= '" + fromDate + "'";
     }
 
 }
