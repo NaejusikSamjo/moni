@@ -18,7 +18,7 @@ interface PortfolioAnalysisJpaRepository extends JpaRepository<PortfolioAnalysis
 
     Page<PortfolioAnalysis> findAllByPortfolioIdOrderByAnalyzedAtDesc(UUID portfolioId, Pageable pageable);
 
-    boolean existsByPortfolioIdAndUpdatedAtGreaterThanEqualAndUpdatedAtLessThan(
+    boolean existsByPortfolioIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
             UUID portfolioId,
             LocalDateTime startDateTime,
             LocalDateTime endDateTime

@@ -67,7 +67,7 @@ class PortfolioAnalysisPolicyServiceTest {
         void fail_daily_limit_exceeded() {
             // given
             Portfolio portfolio = portfolio(0L);
-            given(portfolioAnalysisRepository.existsByPortfolioIdAndUpdatedAtBetween(
+            given(portfolioAnalysisRepository.existsByPortfolioIdAndCreatedAtBetween(
                     any(UUID.class),
                     any(LocalDateTime.class),
                     any(LocalDateTime.class)
@@ -130,7 +130,7 @@ class PortfolioAnalysisPolicyServiceTest {
     }
 
     private void givenNoAnalysisToday() {
-        given(portfolioAnalysisRepository.existsByPortfolioIdAndUpdatedAtBetween(
+        given(portfolioAnalysisRepository.existsByPortfolioIdAndCreatedAtBetween(
                 any(UUID.class),
                 any(LocalDateTime.class),
                 any(LocalDateTime.class)

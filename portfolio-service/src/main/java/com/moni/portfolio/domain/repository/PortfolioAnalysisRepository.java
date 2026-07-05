@@ -20,7 +20,7 @@ public interface PortfolioAnalysisRepository {
 
     Page<PortfolioAnalysis> findAllByPortfolioId(UUID portfolioId, Pageable pageable);
 
-    boolean existsByPortfolioIdAndUpdatedAtBetween(
+    boolean existsByPortfolioIdAndCreatedAtBetween(
             UUID portfolioId,
             LocalDateTime startDateTime,
             LocalDateTime endDateTime

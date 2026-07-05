@@ -38,7 +38,7 @@ public class PortfolioAnalysisPolicyService {
         LocalDate today = LocalDate.now(ANALYSIS_DAILY_LIMIT_ZONE);
         LocalDateTime startDateTime = today.atStartOfDay();
         LocalDateTime endDateTime = today.plusDays(1).atStartOfDay();
-        if (portfolioAnalysisRepository.existsByPortfolioIdAndUpdatedAtBetween(
+        if (portfolioAnalysisRepository.existsByPortfolioIdAndCreatedAtBetween(
                 portfolio.getId(),
                 startDateTime,
                 endDateTime

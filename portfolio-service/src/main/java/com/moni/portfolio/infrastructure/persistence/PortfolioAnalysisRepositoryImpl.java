@@ -47,12 +47,12 @@ public class PortfolioAnalysisRepositoryImpl implements PortfolioAnalysisReposit
     }
 
     @Override
-    public boolean existsByPortfolioIdAndUpdatedAtBetween(
+    public boolean existsByPortfolioIdAndCreatedAtBetween(
             UUID portfolioId,
             LocalDateTime startDateTime,
             LocalDateTime endDateTime
     ) {
-        return portfolioAnalysisJpaRepository.existsByPortfolioIdAndUpdatedAtGreaterThanEqualAndUpdatedAtLessThan(
+        return portfolioAnalysisJpaRepository.existsByPortfolioIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
                 portfolioId,
                 startDateTime,
                 endDateTime
