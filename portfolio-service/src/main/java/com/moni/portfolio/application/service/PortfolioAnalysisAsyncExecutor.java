@@ -4,6 +4,7 @@ import com.moni.common.error.exception.CustomException;
 import com.moni.portfolio.domain.entity.PortfolioAnalysis;
 import com.moni.portfolio.domain.exception.PortfolioErrorCode;
 import com.moni.portfolio.domain.repository.PortfolioAnalysisRepository;
+import com.moni.portfolio.global.config.AsyncConfig;
 import com.moni.portfolio.infrastructure.client.AiServiceClient;
 import com.moni.portfolio.infrastructure.client.dto.request.AiPortfolioAnalysisRequestDto;
 import com.moni.portfolio.infrastructure.client.dto.response.AiPortfolioAnalysisResponseDto;
@@ -29,7 +30,7 @@ public class PortfolioAnalysisAsyncExecutor {
     private final AiServiceClient aiServiceClient;
     private final PortfolioAnalysisRepository portfolioAnalysisRepository;
 
-    @Async
+    @Async(AsyncConfig.PORTFOLIO_ANALYSIS_TASK_EXECUTOR)
     @Transactional
     public void requestAiAnalysis(UUID analysisId, AiPortfolioAnalysisRequestDto request) {
         PortfolioAnalysis analysis = portfolioAnalysisRepository.findById(analysisId)

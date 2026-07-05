@@ -53,6 +53,14 @@ springdoc:
 gateway:
   secret: ${GATEWAY_SECRET}
 
+portfolio:
+  analysis:
+    async:
+      core-pool-size: 4
+      max-pool-size: 16
+      queue-capacity: 100
+      await-termination-seconds: 30
+
 management:
   endpoints:
     web:
