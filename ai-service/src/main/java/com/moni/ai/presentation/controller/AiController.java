@@ -2,17 +2,25 @@ package com.moni.ai.presentation.controller;
 
 import com.moni.ai.application.service.AiService;
 import com.moni.ai.application.service.NewsService;
+import com.moni.ai.presentation.dto.request.NewsSearchReqDto;
 import com.moni.ai.presentation.dto.response.CompanyIssueResDto;
 import com.moni.ai.presentation.dto.response.MarketAnalysisResDto;
+import com.moni.ai.presentation.dto.response.NewsResDto;
 import com.moni.ai.presentation.dto.response.WatchCompanyResDto;
 import com.moni.common.response.GlobalResponse;
+import com.moni.common.response.paging.PageRes;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -84,5 +92,16 @@ public class AiController{
     }
 
 
+    @GetMapping("/news")
+    @Operation(summary = "뉴스 목록 조회", description = "ticker, companyName, keyword로 필터링, 날짜 기준 최대 3일 조회")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공")
+    })
+    public ResponseEntity<GlobalResponse<PageRes<NewsResDto>>> getNewsList(
+            @ModelAttribute @Valid NewsSearchReqDto request,
+            @PageableDefault(size = 5, sort = "publishedAt", direction = Sort.Direction.DESC) Pageable pageable) {
+
+        return ResponseEntity.ok(GlobalResponse.success(200, newsService.getNewsList(request, pageable)));
+    }
 
 }
