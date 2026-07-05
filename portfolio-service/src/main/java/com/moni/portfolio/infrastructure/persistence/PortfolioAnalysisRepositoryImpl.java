@@ -35,6 +35,11 @@ public class PortfolioAnalysisRepositoryImpl implements PortfolioAnalysisReposit
     }
 
     @Override
+    public boolean existsByIdAndStatus(UUID id, AnalysisStatus status) {
+        return portfolioAnalysisJpaRepository.existsByIdAndStatus(id, status);
+    }
+
+    @Override
     public Optional<PortfolioAnalysis> findLatestSuccessByPortfolioId(UUID portfolioId) {
         return portfolioAnalysisJpaRepository.findFirstByPortfolioIdAndStatusOrderByAnalyzedAtDesc(
                 portfolioId,
@@ -84,5 +89,41 @@ public class PortfolioAnalysisRepositoryImpl implements PortfolioAnalysisReposit
                         startDateTime,
                         endDateTime
                 );
+    }
+
+    @Override
+    public int failPendingByPortfolioIdCreatedBefore(
+            UUID portfolioId,
+            LocalDateTime cutoffDateTime,
+            String errorMessage,
+            LocalDateTime analyzedAt
+    ) {
+        return portfolioAnalysisJpaRepository.failPendingByPortfolioIdCreatedBefore(
+                AnalysisStatus.PENDING,
+                AnalysisStatus.FAILED,
+                portfolioId,
+                cutoffDateTime,
+                errorMessage,
+                analyzedAt
+        );
+    }
+
+    @Override
+    public int failPendingByIdAndPortfolioIdCreatedBefore(
+            UUID id,
+            UUID portfolioId,
+            LocalDateTime cutoffDateTime,
+            String errorMessage,
+            LocalDateTime analyzedAt
+    ) {
+        return portfolioAnalysisJpaRepository.failPendingByIdAndPortfolioIdCreatedBefore(
+                AnalysisStatus.PENDING,
+                AnalysisStatus.FAILED,
+                id,
+                portfolioId,
+                cutoffDateTime,
+                errorMessage,
+                analyzedAt
+        );
     }
 }

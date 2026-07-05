@@ -98,6 +98,7 @@ class PortfolioAnalysisAsyncExecutorTest {
             );
 
             given(portfolioAnalysisRepository.findById(ANALYSIS_ID)).willReturn(Optional.of(analysis));
+            givenPendingAnalysisExists();
             givenTradeSnapshot();
             given(userServiceClient.getTendency(USER_ID)).willReturn(success(userTendency));
             given(portfolioRiskCalculator.calculate(
@@ -158,6 +159,7 @@ class PortfolioAnalysisAsyncExecutorTest {
             );
 
             given(portfolioAnalysisRepository.findById(ANALYSIS_ID)).willReturn(Optional.of(analysis));
+            givenPendingAnalysisExists();
             givenTradeSnapshot();
             given(userServiceClient.getTendency(USER_ID)).willReturn(success(null));
             given(aiServiceClient.analyzePortfolio(eq(USER_ID), eq("USER"), any(AiPortfolioAnalysisRequestDto.class)))
@@ -193,6 +195,7 @@ class PortfolioAnalysisAsyncExecutorTest {
             );
 
             given(portfolioAnalysisRepository.findById(ANALYSIS_ID)).willReturn(Optional.of(analysis));
+            givenPendingAnalysisExists();
             givenTradeSnapshot();
             given(userServiceClient.getTendency(USER_ID)).willReturn(success(null));
             given(aiServiceClient.analyzePortfolio(eq(USER_ID), eq("USER"), any(AiPortfolioAnalysisRequestDto.class)))
@@ -213,6 +216,7 @@ class PortfolioAnalysisAsyncExecutorTest {
             // given
             PortfolioAnalysis analysis = pendingAnalysis();
             given(portfolioAnalysisRepository.findById(ANALYSIS_ID)).willReturn(Optional.of(analysis));
+            givenPendingAnalysisExists();
             given(tradeServiceClient.getAnalysisSnapshot(USER_ID))
                     .willReturn(success(snapshot("10000000.00", "0.00", "0.00", List.of())));
 
@@ -227,7 +231,35 @@ class PortfolioAnalysisAsyncExecutorTest {
         }
 
         @Test
-        @DisplayName("성공 - 이미 성공 처리된 분석은 AI 분석 횟수를 중복 증가시키지 않는다")
+        @DisplayName("성공 - AI 응답 전 상태가 변경되면 결과 저장을 건너뛴다")
+        void success_skip_when_status_changed_before_ai_response_saved() {
+            // given
+            PortfolioAnalysis analysis = pendingAnalysis();
+            AiPortfolioAnalysisResponseDto response = new AiPortfolioAnalysisResponseDto(
+                    ANALYSIS_ID,
+                    "요약 문장입니다.",
+                    null,
+                    "권고 문장입니다."
+            );
+
+            given(portfolioAnalysisRepository.findById(ANALYSIS_ID)).willReturn(Optional.of(analysis));
+            given(portfolioAnalysisRepository.existsByIdAndStatus(ANALYSIS_ID, AnalysisStatus.PENDING))
+                    .willReturn(false);
+            givenTradeSnapshot();
+            given(userServiceClient.getTendency(USER_ID)).willReturn(success(null));
+            given(aiServiceClient.analyzePortfolio(eq(USER_ID), eq("USER"), any(AiPortfolioAnalysisRequestDto.class)))
+                    .willReturn(new ExternalApiResponseDto<>(200, "SUCCESS", response, null));
+
+            // when
+            portfolioAnalysisAsyncExecutor.requestAiAnalysis(ANALYSIS_ID, USER_ID);
+
+            // then
+            assertThat(analysis.getStatus()).isEqualTo(AnalysisStatus.PENDING);
+            assertThat(analysis.getPortfolio().getAiAnalysisCount()).isZero();
+        }
+
+        @Test
+        @DisplayName("성공 - 이미 성공 처리된 분석은 외부 API를 호출하지 않고 분석 횟수를 중복 증가시키지 않는다")
         void success_already_success_no_duplicate_count() {
             // given
             PortfolioAnalysis analysis = pendingAnalysis();
@@ -239,18 +271,8 @@ class PortfolioAnalysisAsyncExecutorTest {
                     new BigDecimal("60.00")
             );
             ReflectionTestUtils.setField(analysis.getPortfolio(), "aiAnalysisCount", 1L);
-            AiPortfolioAnalysisResponseDto response = new AiPortfolioAnalysisResponseDto(
-                    ANALYSIS_ID,
-                    "요약 문장입니다.",
-                    null,
-                    "권고 문장입니다."
-            );
 
             given(portfolioAnalysisRepository.findById(ANALYSIS_ID)).willReturn(Optional.of(analysis));
-            givenTradeSnapshot();
-            given(userServiceClient.getTendency(USER_ID)).willReturn(success(null));
-            given(aiServiceClient.analyzePortfolio(eq(USER_ID), eq("USER"), any(AiPortfolioAnalysisRequestDto.class)))
-                    .willReturn(new ExternalApiResponseDto<>(200, "SUCCESS", response, null));
 
             // when
             portfolioAnalysisAsyncExecutor.requestAiAnalysis(ANALYSIS_ID, USER_ID);
@@ -258,7 +280,16 @@ class PortfolioAnalysisAsyncExecutorTest {
             // then
             assertThat(analysis.getStatus()).isEqualTo(AnalysisStatus.SUCCESS);
             assertThat(analysis.getPortfolio().getAiAnalysisCount()).isEqualTo(1L);
+            then(tradeServiceClient).should(never()).getAnalysisSnapshot(any(UUID.class));
+            then(userServiceClient).should(never()).getTendency(any(UUID.class));
+            then(aiServiceClient).should(never())
+                    .analyzePortfolio(any(UUID.class), any(String.class), any(AiPortfolioAnalysisRequestDto.class));
         }
+    }
+
+    private void givenPendingAnalysisExists() {
+        given(portfolioAnalysisRepository.existsByIdAndStatus(ANALYSIS_ID, AnalysisStatus.PENDING))
+                .willReturn(true);
     }
 
     private void givenTradeSnapshot() {

@@ -12,6 +12,7 @@ import com.moni.portfolio.domain.repository.PortfolioRepository;
 import com.moni.portfolio.presentation.dto.response.PortfolioAnalysisCreateResponseDto;
 import com.moni.portfolio.presentation.dto.response.PortfolioAnalysisResponseDto;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -35,6 +36,7 @@ public class PortfolioAnalysisService {
     private static final int DEFAULT_SIZE = 10;
     private static final int MAX_SIZE = 50;
     private static final ZoneId ANALYSIS_DAILY_LIMIT_ZONE = ZoneId.of("Asia/Seoul");
+    private static final String PENDING_TIMEOUT_MESSAGE = "포트폴리오 AI 분석 처리 시간이 초과되었습니다.";
     private static final List<AnalysisStatus> VISIBLE_ANALYSIS_STATUSES = List.of(
             AnalysisStatus.PENDING,
             AnalysisStatus.SUCCESS
@@ -45,9 +47,14 @@ public class PortfolioAnalysisService {
     private final PortfolioAnalysisPolicyService portfolioAnalysisPolicyService;
     private final PortfolioAnalysisAsyncExecutor portfolioAnalysisAsyncExecutor;
 
+    @Value("${portfolio.analysis.pending-timeout.timeout-minutes:10}")
+    private long pendingTimeoutMinutes;
+
     @Transactional
     public PortfolioAnalysisCreateResponseDto requestAnalysis(UUID userId) {
         Portfolio portfolio = findPortfolioForUpdate(userId);
+        failStalePendingAnalyses(portfolio.getId());
+
         Optional<PortfolioAnalysis> pendingAnalysis = findPendingAnalysisToday(portfolio);
         if (pendingAnalysis.isPresent()) {
             return PortfolioAnalysisCreateResponseDto.from(pendingAnalysis.get());
@@ -81,8 +88,11 @@ public class PortfolioAnalysisService {
         return toResponse(analysis);
     }
 
+    @Transactional
     public PortfolioAnalysisResponseDto getAnalysis(UUID userId, UUID analysisId) {
         Portfolio portfolio = findPortfolio(userId);
+        failStalePendingAnalysis(analysisId, portfolio.getId());
+
         PortfolioAnalysis analysis = portfolioAnalysisRepository.findByIdAndPortfolioId(analysisId, portfolio.getId())
                 .orElseThrow(() -> new CustomException(PortfolioErrorCode.PORTFOLIO_ANALYSIS_NOT_FOUND));
 
@@ -115,6 +125,29 @@ public class PortfolioAnalysisService {
 
     private PortfolioAnalysisResponseDto toResponse(PortfolioAnalysis analysis) {
         return PortfolioAnalysisResponseDto.from(analysis);
+    }
+
+    private void failStalePendingAnalyses(UUID portfolioId) {
+        LocalDateTime now = LocalDateTime.now(ANALYSIS_DAILY_LIMIT_ZONE);
+        LocalDateTime cutoffDateTime = now.minusMinutes(pendingTimeoutMinutes);
+        portfolioAnalysisRepository.failPendingByPortfolioIdCreatedBefore(
+                portfolioId,
+                cutoffDateTime,
+                PENDING_TIMEOUT_MESSAGE,
+                now
+        );
+    }
+
+    private void failStalePendingAnalysis(UUID analysisId, UUID portfolioId) {
+        LocalDateTime now = LocalDateTime.now(ANALYSIS_DAILY_LIMIT_ZONE);
+        LocalDateTime cutoffDateTime = now.minusMinutes(pendingTimeoutMinutes);
+        portfolioAnalysisRepository.failPendingByIdAndPortfolioIdCreatedBefore(
+                analysisId,
+                portfolioId,
+                cutoffDateTime,
+                PENDING_TIMEOUT_MESSAGE,
+                now
+        );
     }
 
     private Portfolio findPortfolio(UUID userId) {

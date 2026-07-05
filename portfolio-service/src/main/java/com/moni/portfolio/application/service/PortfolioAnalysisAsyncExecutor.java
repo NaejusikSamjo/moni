@@ -27,6 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -50,21 +51,35 @@ public class PortfolioAnalysisAsyncExecutor {
     private final PortfolioAnalysisRepository portfolioAnalysisRepository;
 
     @Async(AsyncConfig.PORTFOLIO_ANALYSIS_TASK_EXECUTOR)
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public void requestAiAnalysis(UUID analysisId, UUID userId) {
         PortfolioAnalysis analysis = portfolioAnalysisRepository.findById(analysisId)
                 .orElseThrow(() -> new CustomException(PortfolioErrorCode.PORTFOLIO_ANALYSIS_NOT_FOUND));
 
+        if (analysis.getStatus() != AnalysisStatus.PENDING) {
+            log.info(
+                    "PENDING 상태가 아닌 포트폴리오 AI 분석 작업을 건너뜁니다. analysisId={}, status={}",
+                    analysisId,
+                    analysis.getStatus()
+            );
+            return;
+        }
+
         try {
             PortfolioAnalysisSnapshot snapshot = createSnapshot(userId);
             AiPortfolioAnalysisRequestDto request = snapshot.toAiRequest(analysisId, userId);
-            boolean alreadySucceeded = analysis.getStatus() == AnalysisStatus.SUCCESS;
             ExternalApiResponseDto<AiPortfolioAnalysisResponseDto> response = aiServiceClient.analyzePortfolio(
                     userId,
                     DEFAULT_USER_ROLE,
                     request
             );
             AiPortfolioAnalysisResponseDto data = validateResponse(analysisId, response);
+
+            if (!isPendingAnalysis(analysisId)) {
+                log.warn("포트폴리오 AI 분석 완료 전 상태가 변경되어 결과 저장을 건너뜁니다. analysisId={}", analysisId);
+                return;
+            }
+
             analysis.succeed(
                     mergeSummary(data),
                     snapshot.totalReturnRate(),
@@ -72,19 +87,29 @@ public class PortfolioAnalysisAsyncExecutor {
                     request.concentrationScore(),
                     request.concentrationThreshold()
             );
-            if (!alreadySucceeded) {
-                analysis.getPortfolio().increaseAiAnalysisCount();
-            }
+            analysis.getPortfolio().increaseAiAnalysisCount();
         } catch (RetryableException exception) {
-            analysis.fail(truncate(PortfolioErrorCode.AI_SERVICE_TIMEOUT.getMessage()));
+            failIfPending(analysisId, analysis, PortfolioErrorCode.AI_SERVICE_TIMEOUT.getMessage());
         } catch (FeignException exception) {
-            analysis.fail(truncate(PortfolioErrorCode.AI_SERVICE_ERROR.getMessage()));
+            failIfPending(analysisId, analysis, PortfolioErrorCode.AI_SERVICE_ERROR.getMessage());
         } catch (CustomException exception) {
-            analysis.fail(truncate(exception.getMessage()));
+            failIfPending(analysisId, analysis, exception.getMessage());
         } catch (RuntimeException exception) {
             log.warn("포트폴리오 AI 분석 처리 실패. analysisId={}", analysisId, exception);
-            analysis.fail(truncate(PortfolioErrorCode.AI_SERVICE_ERROR.getMessage()));
+            failIfPending(analysisId, analysis, PortfolioErrorCode.AI_SERVICE_ERROR.getMessage());
         }
+    }
+
+    private void failIfPending(UUID analysisId, PortfolioAnalysis analysis, String errorMessage) {
+        if (!isPendingAnalysis(analysisId)) {
+            log.warn("포트폴리오 AI 분석 실패 처리 전 상태가 변경되어 실패 저장을 건너뜁니다. analysisId={}", analysisId);
+            return;
+        }
+        analysis.fail(truncate(errorMessage));
+    }
+
+    private boolean isPendingAnalysis(UUID analysisId) {
+        return portfolioAnalysisRepository.existsByIdAndStatus(analysisId, AnalysisStatus.PENDING);
     }
 
     private PortfolioAnalysisSnapshot createSnapshot(UUID userId) {

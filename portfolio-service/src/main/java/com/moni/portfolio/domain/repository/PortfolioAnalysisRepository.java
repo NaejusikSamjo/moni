@@ -18,6 +18,8 @@ public interface PortfolioAnalysisRepository {
 
     Optional<PortfolioAnalysis> findByIdAndPortfolioId(UUID id, UUID portfolioId);
 
+    boolean existsByIdAndStatus(UUID id, AnalysisStatus status);
+
     Optional<PortfolioAnalysis> findLatestSuccessByPortfolioId(UUID portfolioId);
 
     Optional<PortfolioAnalysis> findPendingByPortfolioIdAndCreatedAtBetween(
@@ -37,5 +39,20 @@ public interface PortfolioAnalysisRepository {
             List<AnalysisStatus> statuses,
             LocalDateTime startDateTime,
             LocalDateTime endDateTime
+    );
+
+    int failPendingByPortfolioIdCreatedBefore(
+            UUID portfolioId,
+            LocalDateTime cutoffDateTime,
+            String errorMessage,
+            LocalDateTime analyzedAt
+    );
+
+    int failPendingByIdAndPortfolioIdCreatedBefore(
+            UUID id,
+            UUID portfolioId,
+            LocalDateTime cutoffDateTime,
+            String errorMessage,
+            LocalDateTime analyzedAt
     );
 }

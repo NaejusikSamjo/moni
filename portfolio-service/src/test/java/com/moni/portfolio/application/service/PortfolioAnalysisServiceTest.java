@@ -11,10 +11,12 @@ import com.moni.portfolio.domain.repository.PortfolioAnalysisRepository;
 import com.moni.portfolio.domain.repository.PortfolioRepository;
 import com.moni.portfolio.presentation.dto.response.PortfolioAnalysisCreateResponseDto;
 import com.moni.portfolio.presentation.dto.response.PortfolioAnalysisResponseDto;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -35,6 +37,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 
 @DisplayName("PortfolioAnalysisService 테스트")
@@ -59,6 +62,11 @@ class PortfolioAnalysisServiceTest {
 
     @InjectMocks
     private PortfolioAnalysisService portfolioAnalysisService;
+
+    @BeforeEach
+    void setUp() {
+        ReflectionTestUtils.setField(portfolioAnalysisService, "pendingTimeoutMinutes", 10L);
+    }
 
     @Nested
     @DisplayName("requestAnalysis()")
@@ -86,6 +94,37 @@ class PortfolioAnalysisServiceTest {
             assertThat(portfolio.getAiAnalysisCount()).isZero();
             then(portfolioAnalysisPolicyService).should().validateRequest(USER_ID, portfolio);
             then(portfolioAnalysisAsyncExecutor).should().requestAiAnalysis(ANALYSIS_ID, USER_ID);
+        }
+
+        @Test
+        @DisplayName("성공 - 오늘 진행 중인 분석 조회 전에 오래된 PENDING 분석을 FAILED 처리한다")
+        void success_fail_stale_pending_before_daily_check() {
+            // given
+            Portfolio portfolio = portfolio();
+            given(portfolioRepository.findByUserIdForUpdate(USER_ID)).willReturn(Optional.of(portfolio));
+            given(portfolioAnalysisRepository.save(any(PortfolioAnalysis.class)))
+                    .willAnswer(invocation -> {
+                        PortfolioAnalysis analysis = invocation.getArgument(0);
+                        ReflectionTestUtils.setField(analysis, "id", ANALYSIS_ID);
+                        return analysis;
+                    });
+
+            // when
+            portfolioAnalysisService.requestAnalysis(USER_ID);
+
+            // then
+            InOrder inOrder = inOrder(portfolioAnalysisRepository);
+            inOrder.verify(portfolioAnalysisRepository).failPendingByPortfolioIdCreatedBefore(
+                    eq(PORTFOLIO_ID),
+                    any(LocalDateTime.class),
+                    eq("포트폴리오 AI 분석 처리 시간이 초과되었습니다."),
+                    any(LocalDateTime.class)
+            );
+            inOrder.verify(portfolioAnalysisRepository).findPendingByPortfolioIdAndCreatedAtBetween(
+                    eq(PORTFOLIO_ID),
+                    any(LocalDateTime.class),
+                    any(LocalDateTime.class)
+            );
         }
 
         @Test
@@ -158,6 +197,43 @@ class PortfolioAnalysisServiceTest {
     }
 
     @Nested
+    @DisplayName("getAnalysis()")
+    class GetAnalysis {
+
+        @Test
+        @DisplayName("성공 - 단건 조회 전 해당 분석 ID의 오래된 PENDING 분석을 FAILED 처리한다")
+        void success_fail_stale_pending_analysis_before_get_analysis() {
+            // given
+            Portfolio portfolio = portfolio();
+            PortfolioAnalysis analysis = PortfolioAnalysis.request(portfolio);
+            ReflectionTestUtils.setField(analysis, "id", ANALYSIS_ID);
+
+            given(portfolioRepository.findByUserId(USER_ID)).willReturn(Optional.of(portfolio));
+            given(portfolioAnalysisRepository.findByIdAndPortfolioId(ANALYSIS_ID, PORTFOLIO_ID))
+                    .willReturn(Optional.of(analysis));
+
+            // when
+            PortfolioAnalysisResponseDto result = portfolioAnalysisService.getAnalysis(USER_ID, ANALYSIS_ID);
+
+            // then
+            assertThat(result.analysisId()).isEqualTo(ANALYSIS_ID);
+            then(portfolioAnalysisRepository).should().failPendingByIdAndPortfolioIdCreatedBefore(
+                    eq(ANALYSIS_ID),
+                    eq(PORTFOLIO_ID),
+                    any(LocalDateTime.class),
+                    eq("포트폴리오 AI 분석 처리 시간이 초과되었습니다."),
+                    any(LocalDateTime.class)
+            );
+            then(portfolioAnalysisRepository).should(never()).failPendingByPortfolioIdCreatedBefore(
+                    any(UUID.class),
+                    any(LocalDateTime.class),
+                    any(String.class),
+                    any(LocalDateTime.class)
+            );
+        }
+    }
+
+    @Nested
     @DisplayName("getAnalyses()")
     class GetAnalyses {
 
@@ -204,6 +280,19 @@ class PortfolioAnalysisServiceTest {
                     eq(PORTFOLIO_ID),
                     eq(List.of(AnalysisStatus.PENDING, AnalysisStatus.SUCCESS)),
                     any(PageRequest.class)
+            );
+            then(portfolioAnalysisRepository).should(never()).failPendingByPortfolioIdCreatedBefore(
+                    any(UUID.class),
+                    any(LocalDateTime.class),
+                    any(String.class),
+                    any(LocalDateTime.class)
+            );
+            then(portfolioAnalysisRepository).should(never()).failPendingByIdAndPortfolioIdCreatedBefore(
+                    any(UUID.class),
+                    any(UUID.class),
+                    any(LocalDateTime.class),
+                    any(String.class),
+                    any(LocalDateTime.class)
             );
         }
     }

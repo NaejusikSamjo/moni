@@ -60,6 +60,8 @@ portfolio:
       max-pool-size: 16
       queue-capacity: 100
       await-termination-seconds: 30
+    pending-timeout:
+      timeout-minutes: 10
 
 management:
   endpoints:
