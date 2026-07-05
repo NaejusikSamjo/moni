@@ -17,9 +17,8 @@ import com.moni.portfolio.infrastructure.client.dto.request.AiPortfolioAnalysisR
 import com.moni.portfolio.infrastructure.client.dto.request.AiPortfolioHoldingRequestDto;
 import com.moni.portfolio.infrastructure.client.dto.request.AiPortfolioTendencyAnalysisRequestDto;
 import com.moni.portfolio.infrastructure.client.dto.response.ExternalApiResponseDto;
+import com.moni.portfolio.infrastructure.client.dto.response.TradeAssetAnalysisSnapshotResponseDto;
 import com.moni.portfolio.infrastructure.client.dto.response.TradeAssetHoldingResponseDto;
-import com.moni.portfolio.infrastructure.client.dto.response.TradeAssetHoldingsResponseDto;
-import com.moni.portfolio.infrastructure.client.dto.response.TradeAssetResponseDto;
 import com.moni.portfolio.infrastructure.client.dto.response.UserTendencyResponseDto;
 import com.moni.portfolio.presentation.dto.response.PortfolioAnalysisCreateResponseDto;
 import com.moni.portfolio.presentation.dto.response.PortfolioAnalysisResponseDto;
@@ -35,7 +34,6 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -49,7 +47,6 @@ public class PortfolioAnalysisService {
     private static final int DEFAULT_SIZE = 10;
     private static final int MAX_SIZE = 50;
     private static final BigDecimal CONCENTRATION_THRESHOLD = new BigDecimal("60.00");
-    private static final String DEFAULT_ASSET_HOLDINGS_SORT = "evaluationAmount,desc";
 
     private final PortfolioRepository portfolioRepository;
     private final PortfolioAnalysisRepository portfolioAnalysisRepository;
@@ -108,22 +105,21 @@ public class PortfolioAnalysisService {
     }
 
     private PortfolioAnalysisSnapshot createSnapshot(UUID userId) {
-        TradeAssetResponseDto asset = getAssets(userId);
-        List<TradeAssetHoldingResponseDto> holdings = getAssetHoldings(userId);
-        if (holdings.isEmpty()) {
+        TradeAssetAnalysisSnapshotResponseDto snapshot = getAnalysisSnapshot(userId);
+        if (snapshot.holdings().isEmpty()) {
             throw new CustomException(PortfolioErrorCode.INVALID_PORTFOLIO_QUERY);
         }
 
-        List<PortfolioHoldingSnapshot> holdingSnapshots = holdings.stream()
+        List<PortfolioHoldingSnapshot> holdingSnapshots = snapshot.holdings().stream()
                 .map(this::toHoldingSnapshot)
                 .toList();
         BigDecimal concentrationScore = calculateHoldingConcentrationScore(holdingSnapshots);
         AiPortfolioTendencyAnalysisRequestDto tendencyAnalysis =
-                createTendencyAnalysis(userId, asset, concentrationScore, holdingSnapshots);
+                createTendencyAnalysis(userId, snapshot, concentrationScore, holdingSnapshots);
 
         return new PortfolioAnalysisSnapshot(
-                asset.stockEvaluationAmount(),
-                asset.totalReturnRate(),
+                snapshot.stockEvaluationAmount(),
+                snapshot.totalReturnRate(),
                 concentrationScore,
                 CONCENTRATION_THRESHOLD,
                 holdingSnapshots,
@@ -133,7 +129,7 @@ public class PortfolioAnalysisService {
 
     private AiPortfolioTendencyAnalysisRequestDto createTendencyAnalysis(
             UUID userId,
-            TradeAssetResponseDto asset,
+            TradeAssetAnalysisSnapshotResponseDto snapshot,
             BigDecimal concentrationScore,
             List<PortfolioHoldingSnapshot> holdingSnapshots
     ) {
@@ -144,8 +140,8 @@ public class PortfolioAnalysisService {
 
         TendencySuitabilityResult result = portfolioRiskCalculator.calculate(
                 userTendency,
-                asset.totalAsset(),
-                asset.stockEvaluationAmount(),
+                snapshot.totalAsset(),
+                snapshot.stockEvaluationAmount(),
                 concentrationScore,
                 holdingSnapshots.size()
         );
@@ -232,45 +228,18 @@ public class PortfolioAnalysisService {
                 .orElseThrow(() -> new CustomException(PortfolioErrorCode.PORTFOLIO_NOT_FOUND));
     }
 
-    private TradeAssetResponseDto getAssets(UUID userId) {
-        TradeAssetResponseDto asset = requestTradeData(() -> tradeServiceClient.getAssets(userId));
-        if (asset.totalAsset() == null
-                || asset.stockEvaluationAmount() == null
-                || asset.totalReturnRate() == null) {
+    private TradeAssetAnalysisSnapshotResponseDto getAnalysisSnapshot(UUID userId) {
+        TradeAssetAnalysisSnapshotResponseDto snapshot =
+                requestTradeData(() -> tradeServiceClient.getAnalysisSnapshot(userId));
+        if (snapshot.totalAsset() == null
+                || snapshot.stockEvaluationAmount() == null
+                || snapshot.totalReturnRate() == null
+                || snapshot.holdings() == null) {
             throw new CustomException(PortfolioErrorCode.TRADE_RESPONSE_INVALID);
         }
 
-        return asset;
-    }
-
-    private List<TradeAssetHoldingResponseDto> getAssetHoldings(UUID userId) {
-        TradeAssetHoldingsResponseDto firstPage = getAssetHoldingPage(userId, DEFAULT_PAGE);
-        List<TradeAssetHoldingResponseDto> tradeHoldings = new ArrayList<>(firstPage.content());
-
-        for (int page = 1; page < firstPage.totalPages(); page++) {
-            TradeAssetHoldingsResponseDto nextPage = getAssetHoldingPage(userId, page);
-            tradeHoldings.addAll(nextPage.content());
-        }
-
-        return tradeHoldings.stream()
-                .peek(this::validateAssetHolding)
-                .toList();
-    }
-
-    private TradeAssetHoldingsResponseDto getAssetHoldingPage(UUID userId, int page) {
-        TradeAssetHoldingsResponseDto response = requestTradeData(
-                () -> tradeServiceClient.getAssetHoldings(
-                        userId,
-                        page,
-                        DEFAULT_SIZE,
-                        DEFAULT_ASSET_HOLDINGS_SORT
-                )
-        );
-
-        if (response.content() == null || response.totalPages() < 0) {
-            throw new CustomException(PortfolioErrorCode.TRADE_RESPONSE_INVALID);
-        }
-        return response;
+        snapshot.holdings().forEach(this::validateAssetHolding);
+        return snapshot;
     }
 
     private void validateAssetHolding(TradeAssetHoldingResponseDto holding) {

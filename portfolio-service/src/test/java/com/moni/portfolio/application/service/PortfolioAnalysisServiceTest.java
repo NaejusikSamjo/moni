@@ -16,9 +16,8 @@ import com.moni.portfolio.infrastructure.client.UserServiceClient;
 import com.moni.portfolio.infrastructure.client.dto.request.AiPortfolioAnalysisRequestDto;
 import com.moni.portfolio.infrastructure.client.dto.request.AiPortfolioTendencyAnalysisRequestDto;
 import com.moni.portfolio.infrastructure.client.dto.response.ExternalApiResponseDto;
+import com.moni.portfolio.infrastructure.client.dto.response.TradeAssetAnalysisSnapshotResponseDto;
 import com.moni.portfolio.infrastructure.client.dto.response.TradeAssetHoldingResponseDto;
-import com.moni.portfolio.infrastructure.client.dto.response.TradeAssetHoldingsResponseDto;
-import com.moni.portfolio.infrastructure.client.dto.response.TradeAssetResponseDto;
 import com.moni.portfolio.infrastructure.client.dto.response.UserTendencyResponseDto;
 import com.moni.portfolio.presentation.dto.response.PortfolioAnalysisCreateResponseDto;
 import org.junit.jupiter.api.DisplayName;
@@ -93,17 +92,11 @@ class PortfolioAnalysisServiceTest {
             );
 
             given(portfolioRepository.findByUserIdForUpdate(USER_ID)).willReturn(Optional.of(portfolio));
-            given(tradeServiceClient.getAssets(USER_ID))
-                    .willReturn(success(new TradeAssetResponseDto(
-                            new BigDecimal("10000000.00"),
-                            new BigDecimal("5841500.00"),
-                            new BigDecimal("4158500.00"),
-                            new BigDecimal("10000000.00"),
-                            new BigDecimal("-177500.00"),
-                            new BigDecimal("-1.7750")
-                    )));
-            given(tradeServiceClient.getAssetHoldings(USER_ID, 0, 10, "evaluationAmount,desc"))
-                    .willReturn(success(new TradeAssetHoldingsResponseDto(
+            given(tradeServiceClient.getAnalysisSnapshot(USER_ID))
+                    .willReturn(success(snapshot(
+                            "10000000.00",
+                            "4158500.00",
+                            "-1.7750",
                             List.of(
                                     holding(
                                             "000660",
@@ -127,12 +120,7 @@ class PortfolioAnalysisServiceTest {
                                             "-1.9762",
                                             "49.50"
                                     )
-                            ),
-                            0,
-                            10,
-                            2,
-                            1,
-                            "evaluationAmount,desc"
+                            )
                     )));
             given(userServiceClient.getTendency(USER_ID)).willReturn(success(userTendency));
             given(portfolioRiskCalculator.calculate(
@@ -195,24 +183,8 @@ class PortfolioAnalysisServiceTest {
             // given
             Portfolio portfolio = portfolio();
             given(portfolioRepository.findByUserIdForUpdate(USER_ID)).willReturn(Optional.of(portfolio));
-            given(tradeServiceClient.getAssets(USER_ID))
-                    .willReturn(success(new TradeAssetResponseDto(
-                            new BigDecimal("10000000.00"),
-                            new BigDecimal("10000000.00"),
-                            BigDecimal.ZERO,
-                            new BigDecimal("10000000.00"),
-                            BigDecimal.ZERO,
-                            BigDecimal.ZERO
-                    )));
-            given(tradeServiceClient.getAssetHoldings(USER_ID, 0, 10, "evaluationAmount,desc"))
-                    .willReturn(success(new TradeAssetHoldingsResponseDto(
-                            List.of(),
-                            0,
-                            10,
-                            0,
-                            0,
-                            "evaluationAmount,desc"
-                    )));
+            given(tradeServiceClient.getAnalysisSnapshot(USER_ID))
+                    .willReturn(success(snapshot("10000000.00", "0.00", "0.00", List.of())));
 
             // when & then
             assertThatThrownBy(() -> portfolioAnalysisService.requestAnalysis(USER_ID))
@@ -241,7 +213,7 @@ class PortfolioAnalysisServiceTest {
                             assertThat(exception.getErrorCode())
                                     .isEqualTo(PortfolioErrorCode.PORTFOLIO_ANALYSIS_DAILY_LIMIT_EXCEEDED));
 
-            then(tradeServiceClient).should(never()).getAssets(USER_ID);
+            then(tradeServiceClient).should(never()).getAnalysisSnapshot(USER_ID);
             then(portfolioAnalysisRepository).should(never()).save(any(PortfolioAnalysis.class));
         }
 
@@ -262,7 +234,7 @@ class PortfolioAnalysisServiceTest {
                             assertThat(exception.getErrorCode())
                                     .isEqualTo(PortfolioErrorCode.PORTFOLIO_ANALYSIS_FREE_LIMIT_EXCEEDED));
 
-            then(tradeServiceClient).should(never()).getAssets(USER_ID);
+            then(tradeServiceClient).should(never()).getAnalysisSnapshot(USER_ID);
             then(portfolioAnalysisRepository).should(never()).save(any(PortfolioAnalysis.class));
         }
 
@@ -278,17 +250,11 @@ class PortfolioAnalysisServiceTest {
             );
 
             given(portfolioRepository.findByUserIdForUpdate(USER_ID)).willReturn(Optional.of(portfolio));
-            given(tradeServiceClient.getAssets(USER_ID))
-                    .willReturn(success(new TradeAssetResponseDto(
-                            new BigDecimal("10000000.00"),
-                            new BigDecimal("5841500.00"),
-                            new BigDecimal("4158500.00"),
-                            new BigDecimal("10000000.00"),
-                            new BigDecimal("-177500.00"),
-                            new BigDecimal("-1.7750")
-                    )));
-            given(tradeServiceClient.getAssetHoldings(USER_ID, 0, 10, "evaluationAmount,desc"))
-                    .willReturn(success(new TradeAssetHoldingsResponseDto(
+            given(tradeServiceClient.getAnalysisSnapshot(USER_ID))
+                    .willReturn(success(snapshot(
+                            "10000000.00",
+                            "4158500.00",
+                            "-1.7750",
                             List.of(holding(
                                     "000660",
                                     "SK하이닉스",
@@ -299,12 +265,7 @@ class PortfolioAnalysisServiceTest {
                                     "-100000.00",
                                     "-4.5455",
                                     "100.00"
-                            )),
-                            0,
-                            10,
-                            1,
-                            1,
-                            "evaluationAmount,desc"
+                            ))
                     )));
             given(userServiceClient.getTendency(USER_ID)).willReturn(success(userTendency));
             given(portfolioRiskCalculator.calculate(
@@ -343,6 +304,25 @@ class PortfolioAnalysisServiceTest {
         Portfolio portfolio = Portfolio.create(USER_ID);
         ReflectionTestUtils.setField(portfolio, "id", PORTFOLIO_ID);
         return portfolio;
+    }
+
+    private TradeAssetAnalysisSnapshotResponseDto snapshot(
+            String totalAsset,
+            String stockEvaluationAmount,
+            String totalReturnRate,
+            List<TradeAssetHoldingResponseDto> holdings
+    ) {
+        return new TradeAssetAnalysisSnapshotResponseDto(
+                new BigDecimal(totalAsset),
+                BigDecimal.ZERO,
+                new BigDecimal(stockEvaluationAmount),
+                new BigDecimal("10000000.00"),
+                BigDecimal.ZERO,
+                new BigDecimal(totalReturnRate),
+                BigDecimal.ZERO,
+                BigDecimal.ZERO,
+                holdings
+        );
     }
 
     private TradeAssetHoldingResponseDto holding(
