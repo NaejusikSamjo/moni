@@ -69,3 +69,77 @@ loki.write "default" {
     environment = "prod",
   }
 }
+
+// ============================================================
+// 메트릭 수집 — Eureka SD → prometheus.remote_write → monitor-ec2
+// 사이드카는 moni-network 내부에 있어 Docker IP(172.18.x.x) 직접 접근 가능
+// ============================================================
+
+discovery.eureka "moni" {
+  server           = "http://eureka-server:8761/eureka"
+  refresh_interval = "30s"
+}
+
+discovery.relabel "moni_meta" {
+  targets = discovery.eureka.moni.targets
+
+  rule {
+    source_labels = ["__meta_eureka_app_name"]
+    target_label  = "application"
+    action        = "lowercase"
+  }
+  rule {
+    source_labels = ["__meta_eureka_app_instance_id"]
+    target_label  = "instance"
+  }
+  // prometheus.scrape=true 없는 서비스(api-gateway, config-server 등) 제외
+  rule {
+    source_labels = ["__meta_eureka_app_instance_metadata_prometheus_scrape"]
+    regex         = "true"
+    action        = "keep"
+  }
+}
+
+// 전체 메트릭 (60초) — 대시보드 상세용
+prometheus.scrape "moni_services" {
+  targets         = discovery.relabel.moni_meta.output
+  scrape_interval = "60s"
+  metrics_path    = "/actuator/prometheus"
+  job_name        = "moni-services"
+  forward_to      = [prometheus.remote_write.monitoring.receiver]
+}
+
+// 헬스 감시 (30초) — up 지표만, ServiceDown 알림용
+prometheus.scrape "moni_health" {
+  targets         = discovery.relabel.moni_meta.output
+  scrape_interval = "30s"
+  metrics_path    = "/actuator/prometheus"
+  job_name        = "moni-health"
+  forward_to      = [prometheus.relabel.health_filter.receiver]
+}
+
+prometheus.relabel "health_filter" {
+  rule {
+    source_labels = ["__name__"]
+    regex         = "up"
+    action        = "keep"
+  }
+  forward_to = [prometheus.remote_write.monitoring.receiver]
+}
+
+prometheus.remote_write "monitoring" {
+  endpoint {
+    url = sys.env("PROMETHEUS_REMOTE_WRITE_URL")
+
+    queue_config {
+      capacity             = 10000
+      max_samples_per_send = 2000
+      batch_send_deadline  = "10s"
+      max_shards           = 10
+    }
+  }
+
+  external_labels = {
+    environment = "prod",
+  }
+}

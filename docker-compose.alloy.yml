@@ -16,4 +16,5 @@ services:
       - "127.0.0.1:12346:12345"
     environment:
       LOKI_URL: ${LOKI_URL}
+      PROMETHEUS_REMOTE_WRITE_URL: ${PROMETHEUS_REMOTE_WRITE_URL}
 
