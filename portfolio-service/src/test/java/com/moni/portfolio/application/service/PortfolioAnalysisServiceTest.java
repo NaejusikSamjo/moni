@@ -152,7 +152,7 @@ class PortfolioAnalysisServiceTest {
             // then
             assertThat(result.analysisId()).isEqualTo(ANALYSIS_ID);
             assertThat(result.status()).isEqualTo(AnalysisStatus.PENDING);
-            assertThat(portfolio.getAiAnalysisCount()).isEqualTo(1L);
+            assertThat(portfolio.getAiAnalysisCount()).isZero();
             then(portfolioAnalysisPolicyService).should().validateRequest(USER_ID, portfolio);
 
             ArgumentCaptor<AiPortfolioAnalysisRequestDto> aiRequestCaptor =
@@ -329,7 +329,7 @@ class PortfolioAnalysisServiceTest {
 
             // then
             assertThat(result.analysisId()).isEqualTo(ANALYSIS_ID);
-            assertThat(portfolio.getAiAnalysisCount()).isEqualTo(1L);
+            assertThat(portfolio.getAiAnalysisCount()).isZero();
             then(portfolioAnalysisAsyncExecutor).should()
                     .requestAiAnalysis(any(UUID.class), any(AiPortfolioAnalysisRequestDto.class));
         }

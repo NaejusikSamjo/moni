@@ -2,6 +2,7 @@ package com.moni.portfolio.application.service;
 
 import com.moni.common.error.exception.CustomException;
 import com.moni.portfolio.domain.entity.PortfolioAnalysis;
+import com.moni.portfolio.domain.enums.AnalysisStatus;
 import com.moni.portfolio.domain.exception.PortfolioErrorCode;
 import com.moni.portfolio.domain.repository.PortfolioAnalysisRepository;
 import com.moni.portfolio.global.config.AsyncConfig;
@@ -37,6 +38,7 @@ public class PortfolioAnalysisAsyncExecutor {
                 .orElseThrow(() -> new CustomException(PortfolioErrorCode.PORTFOLIO_ANALYSIS_NOT_FOUND));
 
         try {
+            boolean alreadySucceeded = analysis.getStatus() == AnalysisStatus.SUCCESS;
             ExternalApiResponseDto<AiPortfolioAnalysisResponseDto> response = aiServiceClient.analyzePortfolio(
                     request.userId(),
                     DEFAULT_USER_ROLE,
@@ -48,6 +50,9 @@ public class PortfolioAnalysisAsyncExecutor {
                     request.concentrationScore(),
                     request.concentrationThreshold()
             );
+            if (!alreadySucceeded) {
+                analysis.getPortfolio().increaseAiAnalysisCount();
+            }
         } catch (RetryableException exception) {
             analysis.fail(truncate(PortfolioErrorCode.AI_SERVICE_TIMEOUT.getMessage()));
         } catch (FeignException exception) {

@@ -9,6 +9,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -62,15 +63,18 @@ public class PortfolioAnalysisRepositoryImpl implements PortfolioAnalysisReposit
     }
 
     @Override
-    public boolean existsByPortfolioIdAndCreatedAtBetween(
+    public boolean existsByPortfolioIdAndStatusInAndCreatedAtBetween(
             UUID portfolioId,
+            List<AnalysisStatus> statuses,
             LocalDateTime startDateTime,
             LocalDateTime endDateTime
     ) {
-        return portfolioAnalysisJpaRepository.existsByPortfolioIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
-                portfolioId,
-                startDateTime,
-                endDateTime
-        );
+        return portfolioAnalysisJpaRepository
+                .existsByPortfolioIdAndStatusInAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+                        portfolioId,
+                        statuses,
+                        startDateTime,
+                        endDateTime
+                );
     }
 }

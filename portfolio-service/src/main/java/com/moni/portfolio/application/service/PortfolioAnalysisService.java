@@ -78,7 +78,6 @@ public class PortfolioAnalysisService {
                 snapshot.totalEvaluationAmount()
         );
         PortfolioAnalysis savedAnalysis = portfolioAnalysisRepository.save(analysis);
-        portfolio.increaseAiAnalysisCount();
 
         requestAiAnalysisAfterCommit(
                 savedAnalysis.getId(),

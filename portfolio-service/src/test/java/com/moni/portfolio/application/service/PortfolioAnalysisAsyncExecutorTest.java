@@ -88,6 +88,7 @@ class PortfolioAnalysisAsyncExecutorTest {
             assertThat(analysis.getConcentrationScore()).isEqualByComparingTo("64.20");
             assertThat(analysis.getConcentrationThreshold()).isEqualByComparingTo("60.00");
             assertThat(analysis.getErrorMessage()).isNull();
+            assertThat(analysis.getPortfolio().getAiAnalysisCount()).isEqualTo(1L);
             then(aiServiceClient).should().analyzePortfolio(USER_ID, "USER", request);
         }
 
@@ -114,6 +115,34 @@ class PortfolioAnalysisAsyncExecutorTest {
             // then
             assertThat(analysis.getStatus()).isEqualTo(AnalysisStatus.FAILED);
             assertThat(analysis.getErrorMessage()).isEqualTo("AI 서비스 응답 데이터가 올바르지 않습니다.");
+            assertThat(analysis.getPortfolio().getAiAnalysisCount()).isZero();
+        }
+
+        @Test
+        @DisplayName("성공 - 이미 성공 처리된 분석은 AI 분석 횟수를 중복 증가시키지 않는다")
+        void success_already_success_no_duplicate_count() {
+            // given
+            PortfolioAnalysis analysis = pendingAnalysis();
+            analysis.succeed("이전 요약입니다.", new BigDecimal("64.20"), new BigDecimal("60.00"));
+            ReflectionTestUtils.setField(analysis.getPortfolio(), "aiAnalysisCount", 1L);
+            AiPortfolioAnalysisRequestDto request = request();
+            AiPortfolioAnalysisResponseDto response = new AiPortfolioAnalysisResponseDto(
+                    ANALYSIS_ID,
+                    "요약 문장입니다.",
+                    null,
+                    "권고 문장입니다."
+            );
+
+            given(portfolioAnalysisRepository.findById(ANALYSIS_ID)).willReturn(Optional.of(analysis));
+            given(aiServiceClient.analyzePortfolio(USER_ID, "USER", request))
+                    .willReturn(new ExternalApiResponseDto<>(200, "SUCCESS", response, null));
+
+            // when
+            portfolioAnalysisAsyncExecutor.requestAiAnalysis(ANALYSIS_ID, request);
+
+            // then
+            assertThat(analysis.getStatus()).isEqualTo(AnalysisStatus.SUCCESS);
+            assertThat(analysis.getPortfolio().getAiAnalysisCount()).isEqualTo(1L);
         }
     }
 

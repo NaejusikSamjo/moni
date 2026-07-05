@@ -1,10 +1,12 @@
 package com.moni.portfolio.domain.repository;
 
 import com.moni.portfolio.domain.entity.PortfolioAnalysis;
+import com.moni.portfolio.domain.enums.AnalysisStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -26,8 +28,9 @@ public interface PortfolioAnalysisRepository {
 
     Page<PortfolioAnalysis> findAllByPortfolioId(UUID portfolioId, Pageable pageable);
 
-    boolean existsByPortfolioIdAndCreatedAtBetween(
+    boolean existsByPortfolioIdAndStatusInAndCreatedAtBetween(
             UUID portfolioId,
+            List<AnalysisStatus> statuses,
             LocalDateTime startDateTime,
             LocalDateTime endDateTime
     );

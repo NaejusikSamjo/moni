@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -25,8 +26,9 @@ interface PortfolioAnalysisJpaRepository extends JpaRepository<PortfolioAnalysis
 
     Page<PortfolioAnalysis> findAllByPortfolioIdOrderByAnalyzedAtDesc(UUID portfolioId, Pageable pageable);
 
-    boolean existsByPortfolioIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+    boolean existsByPortfolioIdAndStatusInAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
             UUID portfolioId,
+            List<AnalysisStatus> statuses,
             LocalDateTime startDateTime,
             LocalDateTime endDateTime
     );

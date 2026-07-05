@@ -2,6 +2,7 @@ package com.moni.portfolio.application.policy;
 
 import com.moni.common.error.exception.CustomException;
 import com.moni.portfolio.domain.entity.Portfolio;
+import com.moni.portfolio.domain.enums.AnalysisStatus;
 import com.moni.portfolio.domain.enums.SubscriptionStatus;
 import com.moni.portfolio.domain.exception.PortfolioErrorCode;
 import com.moni.portfolio.domain.repository.PortfolioAnalysisRepository;
@@ -18,12 +19,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
@@ -60,6 +64,13 @@ class PortfolioAnalysisPolicyServiceTest {
             // when & then
             assertThatCode(() -> portfolioAnalysisPolicyService.validateRequest(USER_ID, portfolio))
                     .doesNotThrowAnyException();
+
+            then(portfolioAnalysisRepository).should().existsByPortfolioIdAndStatusInAndCreatedAtBetween(
+                    eq(PORTFOLIO_ID),
+                    eq(List.of(AnalysisStatus.PENDING, AnalysisStatus.SUCCESS)),
+                    any(LocalDateTime.class),
+                    any(LocalDateTime.class)
+            );
         }
 
         @Test
@@ -67,8 +78,9 @@ class PortfolioAnalysisPolicyServiceTest {
         void fail_daily_limit_exceeded() {
             // given
             Portfolio portfolio = portfolio(0L);
-            given(portfolioAnalysisRepository.existsByPortfolioIdAndCreatedAtBetween(
+            given(portfolioAnalysisRepository.existsByPortfolioIdAndStatusInAndCreatedAtBetween(
                     any(UUID.class),
+                    anyList(),
                     any(LocalDateTime.class),
                     any(LocalDateTime.class)
             )).willReturn(true);
@@ -130,8 +142,9 @@ class PortfolioAnalysisPolicyServiceTest {
     }
 
     private void givenNoAnalysisToday() {
-        given(portfolioAnalysisRepository.existsByPortfolioIdAndCreatedAtBetween(
+        given(portfolioAnalysisRepository.existsByPortfolioIdAndStatusInAndCreatedAtBetween(
                 any(UUID.class),
+                anyList(),
                 any(LocalDateTime.class),
                 any(LocalDateTime.class)
         )).willReturn(false);
