@@ -4,15 +4,21 @@ import com.moni.ai.domain.entity.NewsEntity;
 import com.moni.ai.domain.enums.WatchCompany;
 import com.moni.ai.domain.repository.NewsRepository;
 import com.moni.ai.presentation.dto.request.NewsCreateReqDto;
+import com.moni.ai.presentation.dto.request.NewsSearchReqDto;
 import com.moni.ai.presentation.dto.response.NewsCreateResDto;
+import com.moni.ai.presentation.dto.response.NewsResDto;
 import com.moni.ai.presentation.dto.response.WatchCompanyResDto;
+import com.moni.common.response.paging.PageRes;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.document.Document;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +28,7 @@ import java.util.concurrent.CompletableFuture;
 @Component
 @RequiredArgsConstructor
 @Slf4j
+
 public class NewsService {
 
     private final AsyncNewsCollectService asyncNewsCollectService;
@@ -72,5 +79,29 @@ public class NewsService {
 
         // 5. 반환
         return NewsCreateResDto.from(saved);
+    }
+
+    @Transactional(readOnly = true)
+    public PageRes<NewsResDto> getNewsList(NewsSearchReqDto request, Pageable pageable) {
+        LocalDate targetDate = request.getDate() != null ? request.getDate() : LocalDate.now();
+        LocalDate minDate = targetDate.minusDays(3); // 최대 3일 전까지
+
+        LocalDate currentDate = targetDate;
+
+        while (!currentDate.isBefore(minDate)) {
+            // 해당 날짜로 조회
+            request.setDate(currentDate);
+            Page<NewsEntity> page = newsRepository.searchNews(request, pageable);
+
+            if (!page.isEmpty()) {
+                return new PageRes<>(page.map(NewsResDto::from));
+            }
+
+            // 데이터 없으면 하루 전으로
+            currentDate = currentDate.minusDays(1);
+        }
+
+        // 3일 내 데이터 없으면 빈 페이지 반환
+        return new PageRes<>(Page.empty(pageable));
     }
 }
