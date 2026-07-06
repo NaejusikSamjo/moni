@@ -40,4 +40,10 @@ public class SubscriptionQueryService {
     public Optional<Subscription> findCancellingSubscription(UUID userId) {
         return subscriptionJpaRepository.findByUserIdAndStatus(userId, SubscriptionStatus.CANCELLING);
     }
+
+    @Transactional(readOnly = true)
+    public Subscription findSuspendedSubscription(UUID userId) {
+        return subscriptionJpaRepository.findByUserIdAndStatus(userId, SubscriptionStatus.SUSPENDED)
+                .orElseThrow(() -> new PaymentException(PaymentErrorCode.SUBSCRIPTION_NOT_FOUND));
+    }
 }

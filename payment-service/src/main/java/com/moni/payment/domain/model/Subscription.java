@@ -57,6 +57,9 @@ public class Subscription {
     @Column(name = "billing_key_deleted_at")
     private Instant billingKeyDeletedAt;
 
+    @Column(name = "retry_count", nullable = false)
+    private int retryCount;
+
     @Version
     private Long version;
 
@@ -181,6 +184,16 @@ public class Subscription {
         this.updatedAt = Instant.now();
 
         histories.add(SubscriptionHistory.of(id, previousStatus, SubscriptionStatus.ACTIVE, reason));
+    }
+
+    public void incrementRetryCount() {
+        this.retryCount++;
+        this.updatedAt = Instant.now();
+    }
+
+    public void resetRetryCount() {
+        this.retryCount = 0;
+        this.updatedAt = Instant.now();
     }
 
     public void extendBillingDate(LocalDate nextBillingDate) {

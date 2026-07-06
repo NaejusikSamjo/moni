@@ -22,6 +22,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class SubscriptionCommandService {
 
+    private static final int MAX_RETRY_COUNT = 3;
+
     private final SubscriptionJpaRepository subscriptionJpaRepository;
     private final SubscriptionHistoryRepository subscriptionHistoryRepository;
     private final ApplicationEventPublisher applicationEventPublisher;
@@ -63,6 +65,39 @@ public class SubscriptionCommandService {
         subscriptionJpaRepository.save(subscription);
         subscriptionHistoryRepository.saveAll(subscription.getHistories());
         log.info("구독 CANCELLED 전환 완료: subscriptionId={}", subscriptionId);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void handlePaymentFailure(UUID subscriptionId) {
+        Subscription subscription = loadSubscription(subscriptionId);
+        subscription.incrementRetryCount();
+        if (subscription.getRetryCount() >= MAX_RETRY_COUNT) {
+            subscription.suspend("정기결제 " + MAX_RETRY_COUNT + "회 연속 실패로 구독 정지");
+            subscriptionHistoryRepository.saveAll(subscription.getHistories());
+            log.warn("구독 SUSPENDED 전환: subscriptionId={}", subscriptionId);
+        }
+        subscriptionJpaRepository.save(subscription);
+        log.info("결제 실패 처리: subscriptionId={}, retryCount={}", subscriptionId, subscription.getRetryCount());
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void resetRetryCount(UUID subscriptionId) {
+        Subscription subscription = loadSubscription(subscriptionId);
+        subscription.resetRetryCount();
+        subscriptionJpaRepository.save(subscription);
+        log.info("재시도 횟수 초기화: subscriptionId={}", subscriptionId);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void reactivateFromSuspended(UUID subscriptionId) {
+        Subscription subscription = loadSubscription(subscriptionId);
+        subscription.reactivate("사용자 재활성화 요청");
+        subscription.resetRetryCount();
+        subscription.extendBillingDate(LocalDate.now().plusMonths(1));
+        subscriptionJpaRepository.save(subscription);
+        subscriptionHistoryRepository.saveAll(subscription.getHistories());
+        subscription.pullDomainEvents().forEach(applicationEventPublisher::publishEvent);
+        log.info("SUSPENDED 구독 재활성화 완료: subscriptionId={}", subscriptionId);
     }
 
     private Subscription loadSubscription(UUID subscriptionId) {

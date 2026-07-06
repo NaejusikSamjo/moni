@@ -68,6 +68,7 @@ public class SubscribeScheduleUseCase {
                     subscription.getBillingKey().getValue(), subscription.getAmount(), merchantId);
         } catch (Exception e) {
             paymentCommandService.failPayment(new FailPaymentCommand(paymentId, "PG_ERROR", ACTOR));
+            subscriptionCommandService.handlePaymentFailure(subscriptionId);
             log.error("정기결제 PG 호출 실패: subscriptionId={}, paymentId={}", subscriptionId, paymentId, e);
             return;
         }
@@ -75,6 +76,7 @@ public class SubscribeScheduleUseCase {
         if (!pgResult.success()) {
             paymentCommandService.failPayment(
                     new FailPaymentCommand(paymentId, pgResult.rawResponse(), ACTOR));
+            subscriptionCommandService.handlePaymentFailure(subscriptionId);
             log.warn("정기결제 PG 거절: subscriptionId={}, paymentId={}", subscriptionId, paymentId);
             return;
         }
@@ -85,6 +87,7 @@ public class SubscribeScheduleUseCase {
                         pgResult.rawResponse(), ACTOR));
 
         subscriptionCommandService.extendBillingDate(subscriptionId, LocalDate.now().plusMonths(1));
+        subscriptionCommandService.resetRetryCount(subscriptionId);
 
         log.info("정기결제 완료: subscriptionId={}, paymentId={}", subscriptionId, paymentId);
     }
