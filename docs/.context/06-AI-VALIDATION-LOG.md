@@ -82,6 +82,27 @@
 > **→ Claude에게**: 위 5개 항목은 이미 검증·구현이 끝난 결정입니다. 같은 내용으로 다시 검토를 권유하지 마세요. 소셜 로그인 관련 작업을 이어갈 때는 프론트엔드가 아직 연동되지 않았다는 점을 고려해 주세요.
 ---
 
+### stock-service(KIS) 장애 격리 — Circuit Breaker & Fallback 정책
+
+| 검증 항목 | AI 프롬프트 (요약) | AI 피드백 (요약) | 수용 여부 | 판단 근거 |
+| --- | --- | --- | --- | --- |
+| KIS 점검/장애 시 장애 전파 문제 | KIS가 점검·장애일 때 stock-service에 의존하는 다른 서비스까지 줄줄이 장애가 나서 MSA 장점이 사라지는데 어떻게 막을지 | 조사 결과 실제 동기 결합은 trade-service→stock-service 하나뿐(portfolio-service는 yml 설정만 준비, ai/notification/payment는 미착수). trade-service는 Feign 호출은 있으나 Resilience4j/CircuitBreaker가 전혀 없고 try/catch 수동 매핑뿐. stock-service 내부의 `@CircuitBreaker(redisPrice)`는 KIS 호출이 아니라 자체 Redis 캐시 접근만 보호 중 | ✅ 수용 | trade-service 쪽에 Resilience4j CircuitBreaker+Fallback을 우선 추가하기로 함(가장 시급한 실제 결합) |
+| 모든 호출자에 동일한 "기본값/캐시값 반환" fallback 적용 | 장애 시 모든 의존 서비스에 같은 방식(예: 마지막 캐시값 반환)으로 fallback하면 되는지 | 서비스 성격에 따라 위험도가 다름 — trade-service(매수/매도)는 stale 가격으로 체결되면 오히려 더 큰 금전적 사고로 이어짐. 반면 portfolio-service(대시보드 조회)는 약간 오래된 시세를 보여줘도 사용자 피해가 적음. 획일적 fallback 정책은 위험 | ❌ 거부 | trade-service는 **fail-fast**(시세 조회 실패 시 주문 자체를 명확히 거부 응답)로, portfolio-service류 조회 전용 서비스는 **graceful degrade**(stale 캐시 + "지연됨" 표시)로 서비스별 차등 정책을 적용하기로 함 |
+| portfolio-service 등 향후 stock-service 결합 방식 (동기 Feign+CB vs 이벤트 기반) | 앞으로 stock-service에 결합할 서비스(portfolio-service 등)는 Feign+CircuitBreaker로 갈지, Kafka 이벤트 구독으로 갈지 | stock-service가 이미 KIS WebSocket으로 실시간 시세를 받고 있으므로, 실시간성이 필수가 아닌 조회 성격 서비스는 `stock.price.updated` 류 Kafka 이벤트를 구독해 자체 캐시를 유지하는 방식이 MSA 가이드라인의 "동기 호출 최소화" 원칙과 부합하고, KIS/stock-service 장애가 발생해도 마지막 수신 이벤트로 계속 서비스 가능해 장애 전파를 원천 차단함 | ✅ 수용 | 트레이드오프(결과적 일관성, Kafka 컨슈머 구현 비용)를 감안해도, 조회 전용 서비스의 가용성을 지키는 이득이 더 크다고 판단. trade-service처럼 그 순간의 정확한 가격이 필수인 경로는 여전히 동기 호출+CB 유지 |
+
+> **현재 상태**: stock-service(영욱 담당) 쪽 1·2순위 구현 완료, fail-fast로 확정. stale-cache fallback은 보류(다음 항목 참고). **담당 범위 상 trade-service는 동민, stock-service는 영욱 담당**이므로, 구현은 stock-service만 진행했고 trade-service 변경은 동민에게 요청만 한다.
+> - 코드 확인 결과, trade-service는 이미 부분적 방어가 있음: `TradeService.getCurrentPrice()`, `AssetService.validateStockData()` 둘 다 `price <= 0`이면 예외를 던져 잘못된 가격 체결은 이미 막고 있음. 다만 `TradeService.buyStock/sellStock`에는 `FeignException`/`RetryableException` catch가 없어(AssetService에는 있음) stock-service가 완전히 죽으면 500으로 샐 수 있음 — 이건 동민이 고칠 부분, Claude가 임의로 trade-service 코드를 수정하지 말 것.
+> - ✅ 완료(stock-service, 영욱): `StockService.resolvePrice()`/`fetchAndCacheCurrentPrice()`가 Redis/KIS 실패 시 `price=BigDecimal.ZERO`인 정상(200) 응답으로 뭉개던 부분 제거. Redis만 죽었으면 KIS로 직접 재조회하고, KIS까지 실패하면 `CustomException(StockErrorCode.KIS_CONNECTION_FAILED)`(503)를 그대로 던짐.
+> - ✅ 완료(stock-service, 영욱): `KisOAuthClient`의 `getCurrentPrice`/`getCandle`/`getVolumeRank`/`getThemeInfo`에 `@Retry(name="kisApi")` + `@CircuitBreaker(name="kisApi")` 추가, `config-server/stock-service.yml`에 `resilience4j.retry.instances.kisApi`/`resilience4j.circuitbreaker.instances.kisApi` 설정 추가. 실패 시 `kisApiFallback`이 동일하게 503을 던짐. 부수적으로 `StockPriceRedisAdapter.savePrice`가 Redis 쓰기 실패(`DataAccessException`)를 로그만 남기고 무시하도록 수정(이미 KIS에서 받아온 가격까지 날아가지 않게).
+> - **확정**: stale 값을 서빙하는 graceful degrade가 아니라 순수 fail-fast — 캐시 미스 + KIS 실패 시 예전 값/기본값 없이 503만 반환. `isStale`/`asOf` 메타데이터를 붙여 마지막 성공 값을 서빙하는 stale-cache fallback은 **나중으로 보류**. 필요해지면(예: portfolio-service가 조회 전용으로 stock-service를 직접 호출하게 될 때) 재논의.
+> - trade-service 쪽에 전달할 사항(코드 작성 요청 아님): "stock-service가 장애 시 price=0 대신 503을 던지도록 바뀌었으니, `TradeService.buyStock/sellStock`에도 `AssetService.requestStockData`처럼 FeignException/RetryableException 캐치를 추가해달라."
+> - portfolio-service 등 신규 결합은 Feign+CB가 아니라 Kafka 이벤트 구독(`stock.price.updated`)으로 구현 — 새로 Feign 동기 호출을 추가하자는 제안은 하지 말 것.
+> - 시세 저장/조회 자체의 인프라 구조(Redis+Kafka+TimescaleDB 등)는 위 "시세 조회 아키텍처(pending)" 항목과 별개로, 아직 미결정 상태이니 혼동하지 말 것.
+>
+> **→ Claude에게**: 1·2순위는 구현 완료된 상태입니다. stale-cache fallback을 다시 제안하지 말고, 사용자가 먼저 꺼내기 전까지는 이 상태를 유지하세요. trade-service 코드는 절대 직접 수정하지 말고, 필요한 변경사항은 위처럼 "동민에게 전달할 메시지" 형태로만 안내하세요.
+
+---
+
 ## 새 검증 항목 작성 템플릿
 
 새로운 설계 결정을 검증할 때는 아래 형식으로 행을 추가하세요. (필수 제출 기준: 검증 항목

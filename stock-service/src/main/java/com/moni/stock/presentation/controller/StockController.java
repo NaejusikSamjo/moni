@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -34,17 +35,6 @@ import java.util.Map;
 public class StockController {
 
     private final StockQueryUseCase stockQueryUseCase;
-    private final StockMasterService stockMasterService;
-
-    @Operation(summary = "초기 코스피, 코스닥, 테마 마스터 파일 전처리, 저장 로직", description = "초기 한번만 실행하면 되는 로직임.")
-    @PostMapping("/download/stocks")
-    public Map<String, String> downloadStocks() {
-        stockMasterService.runOnceOnStartupKosdaq();
-        stockMasterService.runOnceOnStartupKospi();
-        stockMasterService.updateThemeMasters();
-
-        return Map.of("message", "success download stocks");
-    }
 
     @Operation(summary = "주식 조회 기능 (검색)", description = "주식 조회 기능을 제공한다, 검색어는 필수가 아니다, 페이징처리가 된다.")
     @GetMapping("/search")
