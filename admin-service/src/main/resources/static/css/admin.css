@@ -232,3 +232,53 @@ tbody tr:hover { background: #fafafa; }
 .form-input:focus { border-color: #4f6ef7; }
 .form-textarea { min-height: 120px; resize: vertical; font-family: inherit; }
 .form-actions { margin-top: 8px; }
+
+.modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+}
+.modal-box {
+    background: #fff;
+    border-radius: 10px;
+    padding: 32px 28px;
+    width: 480px;
+    max-width: calc(100vw - 48px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.16);
+}
+.modal-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin-bottom: 16px;
+}
+.modal-warning {
+    background: #fff2f0;
+    border: 1px solid #ffccc7;
+    border-radius: 6px;
+    padding: 12px 14px;
+    font-size: 13px;
+    color: #cf1322;
+    line-height: 1.7;
+    margin-bottom: 20px;
+}
+.confirm-phrase {
+    display: inline-block;
+    background: #f0f2f5;
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 13px;
+    font-family: monospace;
+    color: #1a1a2e;
+    margin-bottom: 8px;
+}
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 20px;
+}

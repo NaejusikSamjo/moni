@@ -1,8 +1,6 @@
 package com.moni.admin.application.service;
 
-import com.moni.admin.infrastructure.client.AiAdminClient;
 import com.moni.admin.infrastructure.client.UserAdminClient;
-import com.moni.admin.infrastructure.client.dto.request.NewsCreateRequest;
 import com.moni.admin.infrastructure.client.dto.response.AdminUserResponse;
 import com.moni.admin.infrastructure.client.dto.response.DeletedUserResponse;
 import com.moni.admin.infrastructure.client.dto.response.PageResponse;
@@ -15,10 +13,9 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class AdminFacadeService {
+public class AdminUserService {
 
     private final UserAdminClient userAdminClient;
-    private final AiAdminClient aiAdminClient;
 
     public PageResponse<AdminUserResponse> getUsers(Pageable pageable) {
         return userAdminClient.getUsers(pageable);
@@ -39,17 +36,4 @@ public class AdminFacadeService {
     public void deleteUser(UUID userId) {
         userAdminClient.delete(userId);
     }
-
-    public void fetchAllNews() {
-        aiAdminClient.fetchAllNews();
-    }
-
-    public void fetchMarketNews() {
-        aiAdminClient.fetchMarketNews();
-    }
-
-    public void createNews(NewsCreateRequest request) {
-        aiAdminClient.createNews(request);
-    }
-
 }
