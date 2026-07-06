@@ -9,6 +9,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -34,6 +35,11 @@ public class PortfolioAnalysisRepositoryImpl implements PortfolioAnalysisReposit
     }
 
     @Override
+    public boolean existsByIdAndStatus(UUID id, AnalysisStatus status) {
+        return portfolioAnalysisJpaRepository.existsByIdAndStatus(id, status);
+    }
+
+    @Override
     public Optional<PortfolioAnalysis> findLatestSuccessByPortfolioId(UUID portfolioId) {
         return portfolioAnalysisJpaRepository.findFirstByPortfolioIdAndStatusOrderByAnalyzedAtDesc(
                 portfolioId,
@@ -42,20 +48,82 @@ public class PortfolioAnalysisRepositoryImpl implements PortfolioAnalysisReposit
     }
 
     @Override
-    public Page<PortfolioAnalysis> findAllByPortfolioId(UUID portfolioId, Pageable pageable) {
-        return portfolioAnalysisJpaRepository.findAllByPortfolioIdOrderByAnalyzedAtDesc(portfolioId, pageable);
-    }
-
-    @Override
-    public boolean existsByPortfolioIdAndUpdatedAtBetween(
+    public Optional<PortfolioAnalysis> findPendingByPortfolioIdAndCreatedAtBetween(
             UUID portfolioId,
             LocalDateTime startDateTime,
             LocalDateTime endDateTime
     ) {
-        return portfolioAnalysisJpaRepository.existsByPortfolioIdAndUpdatedAtGreaterThanEqualAndUpdatedAtLessThan(
+        return portfolioAnalysisJpaRepository
+                .findFirstByPortfolioIdAndStatusAndCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtDesc(
+                        portfolioId,
+                        AnalysisStatus.PENDING,
+                        startDateTime,
+                        endDateTime
+                );
+    }
+
+    @Override
+    public Page<PortfolioAnalysis> findAllByPortfolioIdAndStatusIn(
+            UUID portfolioId,
+            List<AnalysisStatus> statuses,
+            Pageable pageable
+    ) {
+        return portfolioAnalysisJpaRepository.findAllByPortfolioIdAndStatusInOrderByAnalyzedAtDesc(
                 portfolioId,
-                startDateTime,
-                endDateTime
+                statuses,
+                pageable
+        );
+    }
+
+    @Override
+    public boolean existsByPortfolioIdAndStatusInAndCreatedAtBetween(
+            UUID portfolioId,
+            List<AnalysisStatus> statuses,
+            LocalDateTime startDateTime,
+            LocalDateTime endDateTime
+    ) {
+        return portfolioAnalysisJpaRepository
+                .existsByPortfolioIdAndStatusInAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+                        portfolioId,
+                        statuses,
+                        startDateTime,
+                        endDateTime
+                );
+    }
+
+    @Override
+    public int failPendingByPortfolioIdCreatedBefore(
+            UUID portfolioId,
+            LocalDateTime cutoffDateTime,
+            String errorMessage,
+            LocalDateTime analyzedAt
+    ) {
+        return portfolioAnalysisJpaRepository.failPendingByPortfolioIdCreatedBefore(
+                AnalysisStatus.PENDING,
+                AnalysisStatus.FAILED,
+                portfolioId,
+                cutoffDateTime,
+                errorMessage,
+                analyzedAt
+        );
+    }
+
+    @Override
+    public int failPendingByIdAndPortfolioIdCreatedBefore(
+            UUID id,
+            UUID portfolioId,
+            LocalDateTime cutoffDateTime,
+            String errorMessage,
+            LocalDateTime analyzedAt
+    ) {
+        return portfolioAnalysisJpaRepository.failPendingByIdAndPortfolioIdCreatedBefore(
+                AnalysisStatus.PENDING,
+                AnalysisStatus.FAILED,
+                id,
+                portfolioId,
+                cutoffDateTime,
+                errorMessage,
+                analyzedAt
         );
     }
 }
