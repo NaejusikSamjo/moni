@@ -125,12 +125,26 @@ public class Subscription {
         SubscriptionStatus previousStatus = this.status;
 
         this.status = SubscriptionStatus.CANCELLING;
-        this.nextBillingDate = null;
+        // nextBillingDate는 스케줄러가 CANCELLED 전환 기준으로 사용하므로 유지
         this.billingKeyDeletedAt = Instant.now();
         this.updatedAt = Instant.now();
 
         histories.add(SubscriptionHistory.of(id, previousStatus, SubscriptionStatus.CANCELLING, reason));
         domainEvents.add(new SubscriptionCancelledEvent(id, userId, reason));
+    }
+
+    public void reactivateFromCancelling(BillingKey reactivatedBillingKey) {
+        this.status.validateTransitionTo(SubscriptionStatus.ACTIVE);
+        SubscriptionStatus previousStatus = this.status;
+
+        this.billingKey = reactivatedBillingKey;
+        this.status = SubscriptionStatus.ACTIVE;
+        this.nextBillingDate = LocalDate.now().plusMonths(1);
+        this.billingKeyDeletedAt = null;
+        this.updatedAt = Instant.now();
+
+        histories.add(SubscriptionHistory.of(id, previousStatus, SubscriptionStatus.ACTIVE, "CANCELLING 상태에서 재구독"));
+        domainEvents.add(new SubscriptionActivatedEvent(id, userId, reactivatedBillingKey));
     }
 
     public void completeCancellation(String reason) {
