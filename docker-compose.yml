@@ -256,6 +256,7 @@ services:
     expose:
       - "19096"
     environment:
+      TZ: Asia/Seoul # 시간 고정
       DB_URL: ${AI_DB_URL}
       DB_USERNAME: ${AI_DB_USERNAME}
       DB_PASSWORD: ${AI_DB_PASSWORD}
