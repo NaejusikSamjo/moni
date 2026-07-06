@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Slf4j
@@ -28,13 +29,21 @@ public class SubscriptionCommandService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void activateSubscription(ActivateSubscriptionCommand command) {
         Subscription subscription = Subscription.create(command.userId());
-        subscription.activate(BillingKey.of(command.billingKeyValue()));
+        subscription.activate(BillingKey.of(command.billingKeyValue()), command.amount());
 
         Subscription saved = subscriptionJpaRepository.save(subscription);
         subscriptionHistoryRepository.saveAll(subscription.getHistories());
         subscription.pullDomainEvents().forEach(applicationEventPublisher::publishEvent);
 
         log.info("구독 ACTIVE 저장: subscriptionId={}, userId={}", saved.getId(), command.userId());
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void extendBillingDate(UUID subscriptionId, LocalDate nextBillingDate) {
+        Subscription subscription = loadSubscription(subscriptionId);
+        subscription.extendBillingDate(nextBillingDate);
+        subscriptionJpaRepository.save(subscription);
+        log.info("결제일 연장: subscriptionId={}, nextBillingDate={}", subscriptionId, nextBillingDate);
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)

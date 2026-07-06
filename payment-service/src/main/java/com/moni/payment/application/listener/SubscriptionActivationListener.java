@@ -36,7 +36,7 @@ public class SubscriptionActivationListener {
                     BillingKey.of(event.billingKeyValue()));
         } else {
             subscriptionCommandService.activateSubscription(
-                    new ActivateSubscriptionCommand(event.userId(), event.billingKeyValue()));
+                    new ActivateSubscriptionCommand(event.userId(), event.billingKeyValue(), event.amount()));
         }
     }
 }

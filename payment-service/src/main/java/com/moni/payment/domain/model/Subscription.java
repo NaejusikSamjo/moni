@@ -3,6 +3,7 @@ package com.moni.payment.domain.model;
 import com.moni.payment.domain.event.SubscriptionActivatedEvent;
 import com.moni.payment.domain.event.SubscriptionCancelledEvent;
 import com.moni.payment.domain.model.converter.BillingKeyConverter;
+import com.moni.payment.domain.model.converter.MoneyConverter;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
@@ -35,6 +36,10 @@ public class Subscription {
     @Convert(converter = BillingKeyConverter.class)
     @Column(name = "billing_key")
     private BillingKey billingKey;
+
+    @Convert(converter = MoneyConverter.class)
+    @Column(name = "amount", precision = 19, scale = 4)
+    private Money amount;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 30)
@@ -108,11 +113,12 @@ public class Subscription {
                 id, userId, billingKey, status, nextBillingDate, createdAt, updatedAt, version, histories);
     }
 
-    public void activate(BillingKey billingKey) {
+    public void activate(BillingKey billingKey, Money subscriptionAmount) {
         this.status.validateTransitionTo(SubscriptionStatus.ACTIVE);
         SubscriptionStatus previousStatus = this.status;
 
         this.billingKey = billingKey;
+        this.amount = subscriptionAmount;
         this.status = SubscriptionStatus.ACTIVE;
         this.updatedAt = Instant.now();
 
