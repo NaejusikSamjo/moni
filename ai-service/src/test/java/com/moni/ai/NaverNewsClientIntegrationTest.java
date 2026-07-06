@@ -115,7 +115,7 @@ class NaverNewsClientIntegrationTest {
     @DisplayName("삼성전자 AI 분석 결과 반환 확인")
     void 삼성전자_AI_분석() {
         // when
-        CompanyIssueResDto result = aiService.companyAnalyze("005930", null);
+        CompanyIssueResDto result = aiService.companyAnalyze("005930");
 
         // then
         assertThat(result).isNotNull();
