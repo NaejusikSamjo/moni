@@ -99,8 +99,10 @@ public class AiService {
                     .build();
 
             CompanyIssueAnalysisEntity saved = analysisSaveService.save(entity);
-
+            CompanyIssueResDto dto = CompanyIssueResDto.toDto(saved);
+            analysisSaveService.cacheAnalysis(ticker,dto);
             analysisSaveService.saveLog(combinePrompt(systemPrompt,query,filterExpression),saved,null);
+
 
             log.info("[{}] 분석 결과 저장 완료 - sentiment: {}", ticker, sentiment);
 
@@ -131,11 +133,12 @@ public class AiService {
                 log.warn("[{}] 분석 진행 중 - 락 획득 실패", keyword);
                 throw new CustomException(AiErrorCode.ANALYSIS_IN_PROGRESS);
             }
+
             // 유효한 캐시 조회
             Optional<MarketNewsAnalysisEntity> cached = analysisSaveService.getCachedMarketAnalysis(keyword);
             if (cached.isPresent()) {
                 log.info("[{}] 마켓 분석 존재", keyword);
-                throw new CustomException(AiErrorCode.ANALYSIS_ALREADY_EXISTS);
+                return MarketAnalysisResDto.from(cached.get());
             }
 
             BeanOutputConverter<AiNewsAnalysisResDto> parser = new BeanOutputConverter<>(AiNewsAnalysisResDto.class);
@@ -150,13 +153,15 @@ public class AiService {
 
             AiNewsAnalysisResDto llmResult = llmAnalysisService.createLlmAnalysis(systemPrompt, query, filterExpression);
 
+            LocalDateTime expiredAt= LocalDateTime.now().plusHours(CACHE_HOURS);
             MarketNewsAnalysisEntity entity = MarketNewsAnalysisEntity.builder()
                     .summary(llmResult.getSummary())
-                    .expiredAt(LocalDateTime.now().plusHours(CACHE_HOURS))
+                    .expiredAt(expiredAt)
                     .build();
 
             MarketNewsAnalysisEntity saved = analysisSaveService.save(entity);
             analysisSaveService.saveLog(combinePrompt(systemPrompt,query,filterExpression),null,saved);
+
 
             log.info("[{}] 분석 결과 저장 완료", keyword);
             return MarketAnalysisResDto.from(saved);
@@ -177,9 +182,18 @@ public class AiService {
 
         WatchCompany.fromTicker(ticker);
 
-        return analysisSaveService.getLatestAnalysis(ticker)
+        Optional<CompanyIssueResDto> cached = analysisSaveService.getCachedAnalysisFromRedis(ticker);
+        if (cached.isPresent()) {
+            return cached.get();
+        }
+
+        CompanyIssueResDto dto =analysisSaveService.getLatestAnalysis(ticker)
                 .map(CompanyIssueResDto::toDto)
                 .orElseThrow(()-> new CustomException(AiErrorCode.AI_NOT_FOUND));
+
+        analysisSaveService.cacheAnalysis(ticker,dto);
+        log.debug("[{}] 분석 Redis 캐시 재저장", ticker);
+        return dto;
     }
 
 
