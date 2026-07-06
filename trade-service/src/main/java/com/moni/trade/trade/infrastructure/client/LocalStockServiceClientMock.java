@@ -1,5 +1,6 @@
 package com.moni.trade.trade.infrastructure.client;
 
+import com.moni.trade.trade.infrastructure.client.dto.BatchStockRequestDto;
 import com.moni.trade.trade.infrastructure.client.dto.ExternalApiResponseDto;
 import com.moni.trade.trade.infrastructure.client.dto.StockPriceResponseDto;
 import org.springframework.context.annotation.Primary;
@@ -7,6 +8,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
 
 /** local 프로파일 전용 - stock-service 없이 고정 가격을 반환한다. */
@@ -27,8 +29,21 @@ public class LocalStockServiceClientMock implements StockServiceClient {
 
     @Override
     public ExternalApiResponseDto<StockPriceResponseDto> getStock(String ticker) {
-        BigDecimal price = MOCK_PRICES.getOrDefault(ticker, DEFAULT_PRICE);
         return new ExternalApiResponseDto<>(200, "OK",
-                new StockPriceResponseDto(ticker, "Mock Stock", price), null);
+                createMockStock(ticker), null);
+    }
+
+    @Override
+    public ExternalApiResponseDto<List<StockPriceResponseDto>> getStocks(BatchStockRequestDto request) {
+        List<StockPriceResponseDto> stocks = request.tickers().stream()
+                .map(this::createMockStock)
+                .toList();
+
+        return new ExternalApiResponseDto<>(200, "OK", stocks, null);
+    }
+
+    private StockPriceResponseDto createMockStock(String ticker) {
+        BigDecimal price = MOCK_PRICES.getOrDefault(ticker, DEFAULT_PRICE);
+        return new StockPriceResponseDto(ticker, "Mock Stock", price);
     }
 }
