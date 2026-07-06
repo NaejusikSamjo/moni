@@ -4,6 +4,7 @@ import com.moni.common.error.exception.CustomException;
 import com.moni.user.auth.domain.exception.TokenErrorCode;
 import com.moni.user.auth.presentation.dto.response.LoginResponse;
 import com.moni.user.global.jwt.JwtUtil;
+import com.moni.user.global.redis.CasResult;
 import com.moni.user.global.redis.RedisService;
 import com.moni.user.user.domain.entity.User;
 import org.junit.jupiter.api.BeforeEach;
@@ -132,6 +133,66 @@ class TokenServiceTest {
             assertThatThrownBy(() -> tokenService.validateAndGetUserId("refresh-token"))
                     .isInstanceOf(CustomException.class)
                     .hasFieldOrPropertyWithValue("errorCode", TokenErrorCode.REFRESH_TOKEN_MISMATCH);
+        }
+    }
+
+    @Nested
+    @DisplayName("Refresh Token 원자적 rotate")
+    class RotateRefreshToken {
+
+        @Test
+        @DisplayName("정상적으로 새 토큰을 발급하고 Redis 값을 원자적으로 교체한다")
+        void rotate_success() {
+            // given
+            given(jwtUtil.createAccessToken(mockUser.getId(), mockUser.getEmail(), mockUser.getRole().name()))
+                    .willReturn("new-access-token");
+            given(jwtUtil.createRefreshToken(mockUser.getId())).willReturn("new-refresh-token");
+            given(jwtUtil.getRefreshTokenKey(mockUser.getId())).willReturn("refresh:" + userId);
+            given(jwtUtil.getRefreshTokenExpiration()).willReturn(2592000000L);
+            given(redisService.compareAndSet(
+                    eq("refresh:" + userId), eq("old-refresh-token"), eq("new-refresh-token"), any(Duration.class)))
+                    .willReturn(CasResult.SUCCESS);
+
+            // when
+            LoginResponse response = tokenService.rotateRefreshToken(mockUser, "old-refresh-token");
+
+            // then
+            assertThat(response.getAccessToken()).isEqualTo("new-access-token");
+            assertThat(response.getRefreshToken()).isEqualTo("new-refresh-token");
+        }
+
+        @Test
+        @DisplayName("Redis에 저장된 토큰이 없으면 예외를 던진다")
+        void rotate_fail_notFound() {
+            // given
+            given(jwtUtil.createAccessToken(any(), any(), any())).willReturn("new-access-token");
+            given(jwtUtil.createRefreshToken(any())).willReturn("new-refresh-token");
+            given(jwtUtil.getRefreshTokenKey(any())).willReturn("refresh:" + userId);
+            given(jwtUtil.getRefreshTokenExpiration()).willReturn(2592000000L);
+            given(redisService.compareAndSet(anyString(), anyString(), anyString(), any(Duration.class)))
+                    .willReturn(CasResult.NOT_FOUND);
+
+            // when & then
+            assertThatThrownBy(() -> tokenService.rotateRefreshToken(mockUser, "old-refresh-token"))
+                    .isInstanceOf(CustomException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", TokenErrorCode.REFRESH_TOKEN_NOT_FOUND);
+        }
+
+        @Test
+        @DisplayName("동시 요청으로 이미 다른 토큰으로 교체됐다면(재사용 시도) 예외를 던진다")
+        void rotate_fail_reused() {
+            // given
+            given(jwtUtil.createAccessToken(any(), any(), any())).willReturn("new-access-token");
+            given(jwtUtil.createRefreshToken(any())).willReturn("new-refresh-token");
+            given(jwtUtil.getRefreshTokenKey(any())).willReturn("refresh:" + userId);
+            given(jwtUtil.getRefreshTokenExpiration()).willReturn(2592000000L);
+            given(redisService.compareAndSet(anyString(), anyString(), anyString(), any(Duration.class)))
+                    .willReturn(CasResult.MISMATCH);
+
+            // when & then
+            assertThatThrownBy(() -> tokenService.rotateRefreshToken(mockUser, "old-refresh-token"))
+                    .isInstanceOf(CustomException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", TokenErrorCode.REFRESH_TOKEN_REUSED);
         }
     }
 

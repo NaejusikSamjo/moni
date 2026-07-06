@@ -1,30 +1,30 @@
 package com.moni.trade.asset.application.service;
 
 import com.moni.common.error.exception.CustomException;
-import com.moni.common.response.paging.PageRes;
-import com.moni.trade.account.application.service.AccountService;
-import com.moni.trade.account.presentation.dto.response.AccountResponseDto;
+import com.moni.trade.account.domain.entity.Account;
+import com.moni.trade.account.domain.exception.AccountErrorCode;
+import com.moni.trade.account.domain.repository.AccountRepository;
 import com.moni.trade.asset.application.calculator.AssetCalculator;
-import com.moni.trade.asset.application.calculator.model.AccountInput;
 import com.moni.trade.asset.application.calculator.model.AssetResult;
 import com.moni.trade.asset.application.calculator.model.HoldingInput;
 import com.moni.trade.asset.application.calculator.model.HoldingResult;
 import com.moni.trade.asset.application.calculator.model.PriceInput;
-import com.moni.trade.asset.application.calculator.model.TradeInput;
+import com.moni.trade.asset.application.calculator.model.StockSummaryResult;
 import com.moni.trade.asset.domain.exception.AssetErrorCode;
+import com.moni.trade.asset.presentation.dto.response.AssetAnalysisSnapshotResponseDto;
 import com.moni.trade.asset.presentation.dto.response.AssetHoldingResponseDto;
 import com.moni.trade.asset.presentation.dto.response.AssetHoldingsResponseDto;
 import com.moni.trade.asset.presentation.dto.response.AssetResponseDto;
-import com.moni.trade.holding.application.service.HoldingService;
-import com.moni.trade.holding.presentation.dto.response.HoldingResponseDto;
-import com.moni.trade.trade.application.service.TradeService;
+import com.moni.trade.holding.domain.entity.Holding;
+import com.moni.trade.holding.domain.repository.HoldingRepository;
 import com.moni.trade.trade.infrastructure.client.StockServiceClient;
+import com.moni.trade.trade.infrastructure.client.dto.BatchStockRequestDto;
 import com.moni.trade.trade.infrastructure.client.dto.ExternalApiResponseDto;
 import com.moni.trade.trade.infrastructure.client.dto.StockPriceResponseDto;
-import com.moni.trade.trade.presentation.dto.response.TradeResponseDto;
 import feign.FeignException;
 import feign.RetryableException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
@@ -35,8 +35,12 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -46,25 +50,28 @@ public class AssetService {
     private static final int DEFAULT_PAGE = 0;
     private static final int DEFAULT_SIZE = 10;
     private static final int MAX_SIZE = 50;
+    private static final int ANALYSIS_SNAPSHOT_HOLDING_LIMIT = 10;
     private static final BigDecimal INITIAL_PRINCIPAL_AMOUNT = new BigDecimal("10000000");
     private static final String DEFAULT_SORT = "evaluationAmount,desc";
     private static final String EVALUATION_AMOUNT_ASC = "evaluationAmount,asc";
 
-    private final AccountService accountService;
-    private final HoldingService holdingService;
-    private final TradeService tradeService;
+    private final AccountRepository accountRepository;
+    private final HoldingRepository holdingRepository;
     private final AssetCalculator assetCalculator;
     private final StockServiceClient stockServiceClient;
 
     /** 자산 조회 로직 */
     public AssetResponseDto getAssets(UUID userId) {
-        AccountInput account = getAccount(userId);
-        List<HoldingInput> holdings = getHoldings(userId);
+        Account account = getAccount(userId);
+        BigDecimal cashBalance = account.getBalance();
+        List<HoldingInput> holdings = getHoldings(account.getId());
         List<PriceInput> prices = getPrices(holdings);
-        List<TradeInput> trades = getTrades(userId);
-        BigDecimal cashBalance = assetCalculator.calculateCashBalance(account.principalAmount(), trades);
-        AccountInput calculatedAccount = new AccountInput(cashBalance, account.principalAmount());
-        AssetResult result = assetCalculator.calculateAssets(calculatedAccount, holdings, prices);
+        AssetResult result = assetCalculator.calculateAssets(
+                cashBalance,
+                INITIAL_PRINCIPAL_AMOUNT,
+                holdings,
+                prices
+        );
 
         return AssetResponseDto.from(result);
     }
@@ -76,11 +83,13 @@ public class AssetService {
         String resolvedSort = resolveSort(sort);
 
         // Trade 보유 종목 전체를 조회한 뒤 각 ticker의 현재가를 Stock에서 조회
-        List<HoldingInput> holdings = getHoldings(userId);
+        Account account = getAccount(userId);
+        List<HoldingInput> holdings = getHoldings(account.getId());
         List<PriceInput> prices = getPrices(holdings);
 
         // 평가금액, 평가손익, 수익률과 비중은 페이지를 나누기 전에 전체 종목 기준으로 계산
         List<HoldingResult> holdingResults = assetCalculator.calculateHoldings(holdings, prices);
+        StockSummaryResult stockSummary = assetCalculator.calculateStockSummary(holdings, holdingResults);
 
         // 계산 결과의 평가금액을 기준으로 오름차순 또는 기본 내림차순 정렬
         Comparator<HoldingResult> comparator = Comparator.comparing(HoldingResult::evaluationAmount);
@@ -109,6 +118,8 @@ public class AssetService {
         }
 
         return new AssetHoldingsResponseDto(
+                stockSummary.stockProfitLoss(),
+                stockSummary.stockReturnRate(),
                 content,
                 resolvedPage,
                 resolvedSize,
@@ -118,23 +129,40 @@ public class AssetService {
         );
     }
 
-    private AccountInput getAccount(UUID userId) {
-        AccountResponseDto account = accountService.findAccountByUserId(userId);
+    /** AI 분석용 자산 스냅샷 조회 로직 */
+    public AssetAnalysisSnapshotResponseDto getAnalysisSnapshot(UUID userId) {
+        Account account = getAccount(userId);
+        BigDecimal cashBalance = account.getBalance();
+        List<HoldingInput> holdings = getHoldings(account.getId());
+        List<PriceInput> prices = getPrices(holdings);
 
-        if (account.balance() == null) {
-            throw new CustomException(AssetErrorCode.TRADE_RESPONSE_INVALID);
-        }
+        AssetResult assetResult = assetCalculator.calculateAssets(
+                cashBalance,
+                INITIAL_PRINCIPAL_AMOUNT,
+                holdings,
+                prices
+        );
 
-        return new AccountInput(account.balance(), INITIAL_PRINCIPAL_AMOUNT);
+        List<HoldingResult> holdingResults = assetCalculator.calculateHoldings(holdings, prices).stream()
+                .sorted(Comparator.comparing(HoldingResult::weight).reversed())
+                .limit(ANALYSIS_SNAPSHOT_HOLDING_LIMIT)
+                .toList();
+
+        return AssetAnalysisSnapshotResponseDto.from(assetResult, holdingResults);
     }
 
-    private List<HoldingInput> getHoldings(UUID userId) {
-        PageData<HoldingResponseDto> firstPage = getHoldingPage(userId, DEFAULT_PAGE);
-        List<HoldingResponseDto> tradeHoldings = new ArrayList<>(firstPage.content());
+    private Account getAccount(UUID userId) {
+        return accountRepository.findByUserId(userId)
+                .orElseThrow(() -> new CustomException(AccountErrorCode.ACCOUNT_NOT_FOUND));
+    }
 
-        for (int page = 1; page < firstPage.totalPages(); page++) {
-            PageData<HoldingResponseDto> nextPage = getHoldingPage(userId, page);
-            tradeHoldings.addAll(nextPage.content());
+    private List<HoldingInput> getHoldings(UUID accountId) {
+        Page<Holding> firstPage = getHoldingPage(accountId, DEFAULT_PAGE);
+        List<Holding> tradeHoldings = new ArrayList<>(firstPage.getContent());
+
+        for (int page = 1; page < firstPage.getTotalPages(); page++) {
+            Page<Holding> nextPage = getHoldingPage(accountId, page);
+            tradeHoldings.addAll(nextPage.getContent());
         }
 
         return tradeHoldings.stream()
@@ -142,52 +170,41 @@ public class AssetService {
                 .toList();
     }
 
-    private List<TradeInput> getTrades(UUID userId) {
-        PageData<TradeResponseDto> firstPage = getTradePage(userId, DEFAULT_PAGE);
-        List<TradeResponseDto> trades = new ArrayList<>(firstPage.content());
-
-        for (int page = 1; page < firstPage.totalPages(); page++) {
-            PageData<TradeResponseDto> nextPage = getTradePage(userId, page);
-            trades.addAll(nextPage.content());
-        }
-
-        return trades.stream()
-                .map(this::toTradeInput)
-                .toList();
-    }
-
-    private PageData<TradeResponseDto> getTradePage(UUID userId, int page) {
-        PageRequest pageable = PageRequest.of(page, DEFAULT_SIZE, Sort.by("createdAt").descending());
-        return PageData.from(tradeService.findTrades(userId, pageable));
-    }
-
-    private TradeInput toTradeInput(TradeResponseDto trade) {
-        if (trade == null) {
-            throw new CustomException(AssetErrorCode.TRADE_RESPONSE_INVALID);
-        }
-
-        return new TradeInput(
-                trade.tradeType(),
-                trade.totalAmount(),
-                trade.status()
-        );
-    }
-
     private List<PriceInput> getPrices(List<HoldingInput> holdings) {
+        if (holdings.isEmpty()) {
+            return List.of();
+        }
+
+        List<String> tickers = holdings.stream()
+                .map(HoldingInput::ticker)
+                .distinct()
+                .toList();
+
+        //
+        System.out.println("tickers: [ ");
+        for (String ticker : tickers) {
+            System.out.print(ticker + " ");
+        }
+        System.out.println("]");
+        //
+        
+        List<StockPriceResponseDto> stocks = requestStockData(
+                () -> stockServiceClient.getStocks(new BatchStockRequestDto(tickers))
+        );
+
+        Map<String, StockPriceResponseDto> stockMap = stocks.stream()
+                .peek(stock -> validateStockData(stock, Set.copyOf(tickers)))
+                .collect(Collectors.toMap(
+                        StockPriceResponseDto::ticker,
+                        Function.identity(),
+                        (existing, ignored) -> existing
+                ));
+
         return holdings.stream()
                 .map(holding -> {
-                    StockPriceResponseDto stock = requestStockData(
-                            () -> stockServiceClient.getStock(holding.ticker())
-                    );
-
-                    if (stock.ticker() == null || !holding.ticker().equals(stock.ticker())) {
-                        throw new CustomException(AssetErrorCode.STOCK_RESPONSE_INVALID);
-                    }
-                    if (stock.price() == null) {
+                    StockPriceResponseDto stock = stockMap.get(holding.ticker());
+                    if (stock == null) {
                         throw new CustomException(AssetErrorCode.STOCK_PRICE_NOT_FOUND);
-                    }
-                    if (stock.name() == null || stock.name().isBlank()) {
-                        throw new CustomException(AssetErrorCode.STOCK_RESPONSE_INVALID);
                     }
 
                     return new PriceInput(stock.ticker(), stock.name(), stock.price());
@@ -195,26 +212,29 @@ public class AssetService {
                 .toList();
     }
 
-    private PageData<HoldingResponseDto> getHoldingPage(UUID userId, int page) {
-        PageRequest pageable = PageRequest.of(page, DEFAULT_SIZE, Sort.by("createdAt").descending());
-        return PageData.from(holdingService.findHoldings(userId, pageable));
+    private void validateStockData(StockPriceResponseDto stock, Set<String> requestedTickers) {
+        if (stock == null || stock.ticker() == null || !requestedTickers.contains(stock.ticker())) {
+            throw new CustomException(AssetErrorCode.STOCK_RESPONSE_INVALID);
+        }
+        if (stock.price() == null || stock.price().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new CustomException(AssetErrorCode.STOCK_PRICE_NOT_FOUND);
+        }
+        if (stock.name() == null || stock.name().isBlank()) {
+            throw new CustomException(AssetErrorCode.STOCK_RESPONSE_INVALID);
+        }
     }
 
-    private HoldingInput toHoldingInput(HoldingResponseDto holding) {
-        if (holding == null
-                || holding.ticker() == null
-                || holding.ticker().isBlank()
-                || holding.quantity() == null
-                || holding.averagePrice() == null
-                || holding.totalAmount() == null) {
-            throw new CustomException(AssetErrorCode.TRADE_RESPONSE_INVALID);
-        }
+    private Page<Holding> getHoldingPage(UUID accountId, int page) {
+        PageRequest pageable = PageRequest.of(page, DEFAULT_SIZE, Sort.by("createdAt").descending());
+        return holdingRepository.findByAccountId(accountId, pageable);
+    }
 
+    private HoldingInput toHoldingInput(Holding holding) {
         return new HoldingInput(
-                holding.ticker(),
-                holding.quantity(),
-                holding.averagePrice(),
-                holding.totalAmount()
+                holding.getTicker(),
+                holding.getQuantity(),
+                holding.getAveragePrice(),
+                holding.getTotalAmount()
         );
     }
 
@@ -266,16 +286,4 @@ public class AssetService {
         return (int) ((totalElements + size - 1) / size);
     }
 
-    private record PageData<T>(
-            List<T> content,
-            int totalPages
-    ) {
-
-        private static <T> PageData<T> from(PageRes<T> page) {
-            if (page == null || page.getContent() == null || page.getTotalPages() < 0) {
-                throw new CustomException(AssetErrorCode.TRADE_RESPONSE_INVALID);
-            }
-            return new PageData<>(page.getContent(), page.getTotalPages());
-        }
-    }
 }
