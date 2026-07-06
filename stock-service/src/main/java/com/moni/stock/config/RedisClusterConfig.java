@@ -3,6 +3,7 @@ package com.moni.stock.config;
 import io.lettuce.core.SocketOptions;
 import io.lettuce.core.cluster.ClusterClientOptions;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,8 +19,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Configuration
+@ConditionalOnProperty(name = "stock.redis.mode", havingValue = "cluster", matchIfMissing = true)
 @ConfigurationProperties(prefix = "spring.data.redis.cluster")
-public class RedisConfig {
+public class RedisClusterConfig {
 
     private List<String> nodes = new ArrayList<>();
 

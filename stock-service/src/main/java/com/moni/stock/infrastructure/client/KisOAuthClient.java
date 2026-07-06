@@ -80,7 +80,7 @@ public class KisOAuthClient {
                 .retrieve()
                 .body(JsonNode.class);
 
-        log.debug("테마 : {}", body);
+        //log.debug("테마 : {}", body);
         return body;
 
     }
@@ -105,7 +105,7 @@ public class KisOAuthClient {
                 .retrieve()
                 .body(JsonNode.class);
 
-        log.info("candle : {}", body);
+        //.info("candle : {}", body);
         return body;
 
     }
