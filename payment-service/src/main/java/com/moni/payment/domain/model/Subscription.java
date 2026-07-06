@@ -49,6 +49,9 @@ public class Subscription {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    @Column(name = "billing_key_deleted_at")
+    private Instant billingKeyDeletedAt;
+
     @Version
     private Long version;
 
@@ -123,6 +126,7 @@ public class Subscription {
 
         this.status = SubscriptionStatus.CANCELLING;
         this.nextBillingDate = null;
+        this.billingKeyDeletedAt = Instant.now();
         this.updatedAt = Instant.now();
 
         histories.add(SubscriptionHistory.of(id, previousStatus, SubscriptionStatus.CANCELLING, reason));
