@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.moni.stock.domain.entity.StockPrice;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
@@ -12,6 +14,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class StockPriceRedisAdapter {
@@ -28,7 +31,11 @@ public class StockPriceRedisAdapter {
         try {
             String key = PRICE_KEY_PREFIX + stockPrice.getTicker();
             redisTemplate.opsForValue().set(key, objectMapper.writeValueAsString(stockPrice), PRICE_TTL);
-        } catch (JsonProcessingException ignored) {}
+        } catch (JsonProcessingException ignored) {
+        } catch (DataAccessException e) {
+            // 캐시 저장은 best-effort: Redis가 죽어있어도 이미 KIS에서 받아온 가격 자체는 그대로 응답해야 함
+            log.warn("Redis 캐시 저장 실패, ticker={}", stockPrice.getTicker(), e);
+        }
     }
 
     @CircuitBreaker(name = "redisPrice", fallbackMethod = "getPriceFallback")
