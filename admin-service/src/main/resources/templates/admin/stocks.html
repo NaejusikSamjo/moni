@@ -16,11 +16,11 @@
                 코스피·코스닥 종목 마스터와 테마 마스터를 KIS에서 다운로드해 DB에 저장합니다.<br/>
                 <strong>서비스 운영 중 실행 시 오동작이 발생할 수 있습니다.</strong> 최초 초기화 시에만 사용하세요.
             </p>
-            <button type="button" class="btn btn-danger" onclick="openDownloadModal()">데이터 다운로드</button>
+            <button type="button" class="btn btn-danger" data-modal-open="downloadModal">데이터 다운로드</button>
         </div>
     </div>
 
-    <div id="downloadModal" class="modal-overlay" onclick="handleOverlayClick(event)">
+    <div id="downloadModal" class="modal-overlay">
         <div class="modal-box">
             <p class="modal-title">2차 관리자 인증</p>
             <div class="modal-warning">
@@ -33,17 +33,18 @@
                     <code class="confirm-phrase">확인합니다</code>
                     <input type="text" name="confirmation" id="confirmInput"
                            class="form-input" autocomplete="off"
-                           placeholder="확인합니다"/>
+                           placeholder="확인합니다"
+                           data-confirm-input data-confirm-phrase="확인합니다"/>
                 </div>
                 <div class="modal-actions">
-                    <button type="button" class="btn btn-secondary" onclick="closeDownloadModal()">취소</button>
-                    <button type="submit" id="confirmBtn" class="btn btn-danger"
-                            disabled data-loading-text="다운로드 중... (최대 10분 소요)">실행</button>
+                    <button type="button" class="btn btn-secondary" data-modal-close="downloadModal">취소</button>
+                    <button type="submit" class="btn btn-danger"
+                            disabled data-confirm-btn data-loading-text="다운로드 중... (최대 10분 소요)">실행</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
-<script th:src="@{/js/stock-download.js}"></script>
+<script th:src="@{/js/confirm-modal.js}"></script>
 </body>
 </html>
