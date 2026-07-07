@@ -17,7 +17,8 @@ public enum AiErrorCode implements ErrorCode {
     PORTFOLIO_LLM_PROVIDER_FAILED("AI-008", "포트폴리오 분석 LLM 호출 중 오류가 발생했습니다.", HttpStatus.BAD_GATEWAY),
     PORTFOLIO_LLM_RESPONSE_INVALID("AI-009", "포트폴리오 분석 LLM 응답 구조가 올바르지 않습니다.", HttpStatus.BAD_GATEWAY),
     AI_RESPONSE_FAILED("AI-010", "AI 응답이 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
-    MARKET_KEYWORD_MISMATCH("AI-011","분석되지 않는 시장 키워드 입니다.", HttpStatus.NOT_FOUND)
+    MARKET_KEYWORD_MISMATCH("AI-011","분석되지 않는 시장 키워드 입니다.", HttpStatus.NOT_FOUND),
+    ANALYSIS_IN_PROGRESS("AI-012", "분석이 진행 중입니다. 잠시 후 다시 시도해주세요.", HttpStatus.CONFLICT);
     ;
 
 

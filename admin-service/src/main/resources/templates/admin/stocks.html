@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{admin/layout/default :: layout(~{::title}, ~{::#page-content}, 'stocks', ~{::script})}">
+<head>
+    <title>주식 관리 - moni 관리자</title>
+</head>
+<body>
+<div id="page-content">
+    <h2 class="page-title">주식 관리</h2>
+
+    <div class="news-grid">
+        <div class="news-card">
+            <p class="news-card-title">주식 · 테마 데이터 다운로드</p>
+            <p class="news-card-desc">
+                코스피·코스닥 종목 마스터와 테마 마스터를 KIS에서 다운로드해 DB에 저장합니다.<br/>
+                <strong>서비스 운영 중 실행 시 오동작이 발생할 수 있습니다.</strong> 최초 초기화 시에만 사용하세요.
+            </p>
+            <button type="button" class="btn btn-danger" data-modal-open="downloadModal">데이터 다운로드</button>
+        </div>
+    </div>
+
+    <div id="downloadModal" class="modal-overlay">
+        <div class="modal-box">
+            <p class="modal-title">2차 관리자 인증</p>
+            <div class="modal-warning">
+                정상 작동 중인 서비스에서 해당 기능을 사용할 경우 오동작이 발생할 수 있습니다.<br/>
+                내용을 확인하셨다면 아래 문구를 입력하세요.
+            </div>
+            <form th:action="@{/admin/stocks/download}" method="post" data-loading>
+                <div class="form-group">
+                    <label class="form-label" for="confirmInput">확인 문구 입력</label>
+                    <code class="confirm-phrase">확인합니다</code>
+                    <input type="text" name="confirmation" id="confirmInput"
+                           class="form-input" autocomplete="off"
+                           placeholder="확인합니다"
+                           data-confirm-input data-confirm-phrase="확인합니다"/>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" data-modal-close="downloadModal">취소</button>
+                    <button type="submit" class="btn btn-danger"
+                            disabled data-confirm-btn data-loading-text="다운로드 중... (최대 10분 소요)">실행</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<script th:src="@{/js/confirm-modal.js}"></script>
+</body>
+</html>

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:fragment="layout(title, content, activeMenu, extraScripts)">
+<head>
+    <meta charset="UTF-8"/>
+    <title th:replace="${title}">moni 관리자</title>
+    <link rel="stylesheet" th:href="@{/css/admin.css}"/>
+</head>
+<body>
+
+<header class="header">
+    <span class="logo">moni 관리자</span>
+    <nav>
+        <a th:href="@{/admin/dashboard}" th:classappend="${activeMenu == 'dashboard'} ? ' active'">대시보드</a>
+        <a th:href="@{/admin/users}" th:classappend="${activeMenu == 'users'} ? ' active'">사용자 관리</a>
+        <a th:href="@{/admin/users/deleted}" th:classappend="${activeMenu == 'deletedUsers'} ? ' active'">삭제된 사용자</a>
+        <a th:href="@{/admin/news}" th:classappend="${activeMenu == 'news'} ? ' active'">뉴스 관리</a>
+        <a th:href="@{/admin/stocks}" th:classappend="${activeMenu == 'stocks'} ? ' active'">주식 관리</a>
+    </nav>
+    <form id="logout-form" class="logout-form" th:action="@{/admin/logout}" method="post">
+        <span class="nav-username" sec:authentication="name"></span>
+        <button type="submit" class="logout-btn">로그아웃</button>
+    </form>
+</header>
+
+<main class="main">
+    <div th:if="${successMsg}" class="alert alert-success" th:text="${successMsg}"></div>
+    <div th:if="${errorMsg}" class="alert alert-error" th:text="${errorMsg}"></div>
+    <th:block th:replace="${content}"/>
+</main>
+
+<script th:src="@{/js/inactivity.js}"></script>
+<script th:src="@{/js/form-loading.js}"></script>
+<th:block th:replace="${extraScripts}"/>
+
+</body>
+</html>

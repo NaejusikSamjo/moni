@@ -1,35 +1,16 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{admin/layout/default :: layout(~{::title}, ~{::#page-content}, 'news', ~{})}">
 <head>
-    <meta charset="UTF-8"/>
     <title>뉴스 직접 등록 - moni 관리자</title>
-    <link rel="stylesheet" th:href="@{/css/admin.css}"/>
 </head>
 <body>
-
-<header class="header">
-    <span class="logo">moni 관리자</span>
-    <nav>
-        <a th:href="@{/admin/dashboard}">대시보드</a>
-        <a th:href="@{/admin/users}">사용자 관리</a>
-        <a th:href="@{/admin/users/deleted}">삭제된 사용자</a>
-        <a th:href="@{/admin/news}" class="active">뉴스 관리</a>
-    </nav>
-    <form id="logout-form" class="logout-form" th:action="@{/admin/logout}" method="post">
-        <span class="nav-username" sec:authentication="name"></span>
-        <button type="submit" class="logout-btn">로그아웃</button>
-    </form>
-</header>
-
-<main class="main">
+<div id="page-content">
     <div class="page-header-row">
         <h2 class="page-title">뉴스 직접 등록</h2>
         <a th:href="@{/admin/news}" class="btn btn-secondary">뒤로가기</a>
     </div>
-
-    <div th:if="${successMsg}" class="alert alert-success" th:text="${successMsg}"></div>
-    <div th:if="${errorMsg}" class="alert alert-error" th:text="${errorMsg}"></div>
 
     <div class="form-card">
         <form th:action="@{/admin/news/register}" method="post">
@@ -66,8 +47,6 @@
             </div>
         </form>
     </div>
-</main>
-
-<script th:src="@{/js/inactivity.js}"></script>
+</div>
 </body>
 </html>
