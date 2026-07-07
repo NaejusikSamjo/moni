@@ -141,6 +141,20 @@ class SubscribeScheduleUseCaseTest {
         }
 
         @Test
+        void 정기결제_성공_시_activateSubscription은_호출되지_않는다() {
+            Subscription subscription = activeSubscriptionWithAmount();
+            given(subscriptionJpaRepository.findActiveSubscriptionsDueBefore(
+                    eq(SubscriptionStatus.ACTIVE), any(LocalDate.class)))
+                    .willReturn(List.of(subscription));
+            given(paymentCommandService.recordPendingPayment(any())).willReturn(PAYMENT_ID);
+            given(tossPaymentsAdapter.requestBillingPayment(any(), any(), any())).willReturn(PG_SUCCESS);
+
+            subscribeScheduleUseCase.execute();
+
+            then(subscriptionCommandService).should(never()).activateSubscription(any());
+        }
+
+        @Test
         void 한_건_처리_실패가_다음_구독_처리를_중단시키지_않는다() {
             Subscription first = activeSubscriptionWithAmount();
             Subscription second = activeSubscriptionWithAmount();

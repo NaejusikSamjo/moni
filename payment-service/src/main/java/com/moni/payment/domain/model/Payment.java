@@ -155,7 +155,7 @@ public class Payment {
         this.updatedAt = Instant.now();
         this.updatedBy = actor;
 
-        domainEvents.add(new PaymentCompletedEvent(id, userId, amount, pgPaymentKey, billingKeyValue));
+        domainEvents.add(new PaymentCompletedEvent(id, userId, amount, pgPaymentKey, billingKeyValue, paymentType));
     }
 
     public PaymentHistory pullLatestHistory() {
