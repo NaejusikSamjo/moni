@@ -27,6 +27,12 @@ spring:
           default:
             connect-timeout: 3000
             read-timeout: 5000
+          aiAdminClient:
+            connect-timeout: 10000
+            read-timeout: 600000
+          stockAdminClient:
+            connect-timeout: 10000
+            read-timeout: 900000
   security:
     oauth2:
       client:

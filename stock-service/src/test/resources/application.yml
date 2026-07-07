@@ -23,6 +23,10 @@ spring:
     exclude:
       - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
       - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
+  data:
+    redis:
+      # Redis 쓰기 성능 벤치마크(@Tag("benchmark"))에서만 실제로 쓰임
+      password: ${REDIS_CLUSTER_PASSWORD:}
 
 kis:
   app-key: test-key

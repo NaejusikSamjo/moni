@@ -3,6 +3,7 @@ package com.moni.payment.domain.model;
 import com.moni.payment.domain.event.SubscriptionActivatedEvent;
 import com.moni.payment.domain.event.SubscriptionCancelledEvent;
 import com.moni.payment.domain.model.converter.BillingKeyConverter;
+import com.moni.payment.domain.model.converter.MoneyConverter;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
@@ -36,6 +37,10 @@ public class Subscription {
     @Column(name = "billing_key")
     private BillingKey billingKey;
 
+    @Convert(converter = MoneyConverter.class)
+    @Column(name = "amount", precision = 19, scale = 4)
+    private Money amount;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 30)
     private SubscriptionStatus status;
@@ -48,6 +53,12 @@ public class Subscription {
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
+    @Column(name = "billing_key_deleted_at")
+    private Instant billingKeyDeletedAt;
+
+    @Column(name = "retry_count", nullable = false)
+    private int retryCount;
 
     @Version
     private Long version;
@@ -105,11 +116,12 @@ public class Subscription {
                 id, userId, billingKey, status, nextBillingDate, createdAt, updatedAt, version, histories);
     }
 
-    public void activate(BillingKey billingKey) {
+    public void activate(BillingKey billingKey, Money subscriptionAmount) {
         this.status.validateTransitionTo(SubscriptionStatus.ACTIVE);
         SubscriptionStatus previousStatus = this.status;
 
         this.billingKey = billingKey;
+        this.amount = subscriptionAmount;
         this.status = SubscriptionStatus.ACTIVE;
         this.updatedAt = Instant.now();
 
@@ -122,11 +134,26 @@ public class Subscription {
         SubscriptionStatus previousStatus = this.status;
 
         this.status = SubscriptionStatus.CANCELLING;
-        this.nextBillingDate = null;
+        // nextBillingDate는 스케줄러가 CANCELLED 전환 기준으로 사용하므로 유지
+        this.billingKeyDeletedAt = Instant.now();
         this.updatedAt = Instant.now();
 
         histories.add(SubscriptionHistory.of(id, previousStatus, SubscriptionStatus.CANCELLING, reason));
         domainEvents.add(new SubscriptionCancelledEvent(id, userId, reason));
+    }
+
+    public void reactivateFromCancelling(BillingKey reactivatedBillingKey) {
+        this.status.validateTransitionTo(SubscriptionStatus.ACTIVE);
+        SubscriptionStatus previousStatus = this.status;
+
+        this.billingKey = reactivatedBillingKey;
+        this.status = SubscriptionStatus.ACTIVE;
+        this.nextBillingDate = LocalDate.now().plusMonths(1);
+        this.billingKeyDeletedAt = null;
+        this.updatedAt = Instant.now();
+
+        histories.add(SubscriptionHistory.of(id, previousStatus, SubscriptionStatus.ACTIVE, "CANCELLING 상태에서 재구독"));
+        domainEvents.add(new SubscriptionActivatedEvent(id, userId, reactivatedBillingKey));
     }
 
     public void completeCancellation(String reason) {
@@ -157,6 +184,16 @@ public class Subscription {
         this.updatedAt = Instant.now();
 
         histories.add(SubscriptionHistory.of(id, previousStatus, SubscriptionStatus.ACTIVE, reason));
+    }
+
+    public void incrementRetryCount() {
+        this.retryCount++;
+        this.updatedAt = Instant.now();
+    }
+
+    public void resetRetryCount() {
+        this.retryCount = 0;
+        this.updatedAt = Instant.now();
     }
 
     public void extendBillingDate(LocalDate nextBillingDate) {

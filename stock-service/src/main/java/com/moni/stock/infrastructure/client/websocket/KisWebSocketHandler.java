@@ -15,6 +15,7 @@ import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 
 @Slf4j
 @Component
@@ -36,7 +37,7 @@ public class KisWebSocketHandler extends TextWebSocketHandler {
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         String payload = message.getPayload();
-        log.info("RAW: {}", payload.length() > 80 ? payload.substring(0, 80) : payload);
+        //log.info("RAW: {}", payload.length() > 80 ? payload.substring(0, 80) : payload);
 
         // JSON 응답 처리 (PINGPONG, 구독 응답 등)
         if (payload.startsWith("{")) {
@@ -59,7 +60,7 @@ public class KisWebSocketHandler extends TextWebSocketHandler {
             String rtCd = node.path("body").path("rt_cd").asText(); //연결 성공 여부 (0:성공, 1:실패)
             String msg1 = node.path("body").path("msg1").asText(); //메시지
             String trKey = node.path("header").path("tr_key").asText(); //ticker
-            log.info("KIS 메시지 수신: tr_id={}, tr_key={}, rt_cd={}, msg={}", trId, trKey, rtCd, msg1);
+            //log.info("KIS 메시지 수신: tr_id={}, tr_key={}, rt_cd={}, msg={}", trId, trKey, rtCd, msg1);
             if ("0".equals(rtCd) && "H0STCNT0".equals(trId)) {
                 //연결 중인 stock 세션에 저장
                 kisWebSocketManager.confirmSubscribed(trKey);
@@ -82,12 +83,16 @@ public class KisWebSocketHandler extends TextWebSocketHandler {
             if (data.length < 14) return;
 
             try {
+
+                StockPrice price = stockPriceRedisAdapter.getPrice(data[0]).get();
+
                 StockPrice stockPrice = StockPrice.builder()
                         .ticker(data[0]) //ticker
                         .currentPrice(new BigDecimal(data[2])) //현재가
                         .askPrice(new BigDecimal(data[10]))  // 매도호가1
                         .bidPrice(new BigDecimal(data[11]))  // 매수호가1
                         .volume(Long.parseLong(data[13]))    // 누적거래량
+                        .section(price.getSection())
                         .build();
 
             stockPriceRedisAdapter.savePrice(stockPrice);

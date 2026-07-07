@@ -161,6 +161,42 @@ class AuthServiceTest {
     }
 
     @Nested
+    @DisplayName("토큰 갱신")
+    class Refresh {
+
+        @Test
+        @DisplayName("정상적으로 토큰을 rotate한다")
+        void refresh_success() {
+            // given
+            given(tokenService.getVerifiedUserId("old-refresh-token")).willReturn(mockUser.getId());
+            given(userRepository.findById(mockUser.getId())).willReturn(Optional.of(mockUser));
+            given(tokenService.rotateRefreshToken(mockUser, "old-refresh-token"))
+                    .willReturn(new LoginResponse("new-access-token", "new-refresh-token"));
+
+            // when
+            LoginResponse response = authService.refresh("old-access-token", "old-refresh-token");
+
+            // then
+            assertThat(response.getAccessToken()).isEqualTo("new-access-token");
+            assertThat(response.getRefreshToken()).isEqualTo("new-refresh-token");
+            verify(tokenService).blacklistAccessToken("old-access-token", "refresh");
+        }
+
+        @Test
+        @DisplayName("유저를 찾을 수 없으면 예외를 던진다")
+        void refresh_fail_userNotFound() {
+            // given
+            given(tokenService.getVerifiedUserId("old-refresh-token")).willReturn(mockUser.getId());
+            given(userRepository.findById(mockUser.getId())).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> authService.refresh("old-access-token", "old-refresh-token"))
+                    .isInstanceOf(CustomException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", AuthErrorCode.USER_NOT_FOUND);
+        }
+    }
+
+    @Nested
     @DisplayName("로그아웃")
     class Logout {
 

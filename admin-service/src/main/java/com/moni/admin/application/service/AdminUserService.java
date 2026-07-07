@@ -13,7 +13,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class AdminFacadeService {
+public class AdminUserService {
 
     private final UserAdminClient userAdminClient;
 
@@ -36,5 +36,4 @@ public class AdminFacadeService {
     public void deleteUser(UUID userId) {
         userAdminClient.delete(userId);
     }
-
 }

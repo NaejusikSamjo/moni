@@ -23,6 +23,15 @@ checkstyleMain {
     source = fileTree('src/main/java')  // src/main/java만 검사
 }
 
+configurations.configureEach {
+    resolutionStrategy.eachDependency { DependencyResolveDetails details ->
+        if (details.requested.group == 'io.swagger.core.v3') {
+            details.useVersion '2.2.38'
+            details.because 'swagger 버전 통일'
+        }
+    }
+}
+
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
@@ -61,5 +70,7 @@ dependencies {
     //security
     implementation 'org.springframework.boot:spring-boot-starter-security'
 
-
+    //redis & redisson
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    implementation 'org.redisson:redisson-spring-boot-starter:3.27.2'
 }

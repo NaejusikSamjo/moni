@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{admin/layout/default :: layout(~{::title}, ~{::#page-content}, 'news', ~{})}">
+<head>
+    <title>뉴스 직접 등록 - moni 관리자</title>
+</head>
+<body>
+<div id="page-content">
+    <div class="page-header-row">
+        <h2 class="page-title">뉴스 직접 등록</h2>
+        <a th:href="@{/admin/news}" class="btn btn-secondary">뒤로가기</a>
+    </div>
+
+    <div class="form-card">
+        <form th:action="@{/admin/news/register}" method="post">
+            <div class="form-group">
+                <label for="ticker" class="form-label">티커 (최대 6자)</label>
+                <input id="ticker" type="text" name="ticker" class="form-input" maxlength="6" placeholder="예: 005930" required/>
+            </div>
+            <div class="form-group">
+                <label for="companyName" class="form-label">회사명</label>
+                <input id="companyName" type="text" name="companyName" class="form-input" placeholder="예: 삼성전자" required/>
+            </div>
+            <div class="form-group">
+                <label for="title" class="form-label">제목</label>
+                <input id="title" type="text" name="title" class="form-input" placeholder="뉴스 제목" required/>
+            </div>
+            <div class="form-group">
+                <label for="content" class="form-label">본문</label>
+                <textarea id="content" name="content" class="form-input form-textarea" placeholder="뉴스 본문 내용" required></textarea>
+            </div>
+            <div class="form-group">
+                <label for="source" class="form-label">출처 (최대 50자)</label>
+                <input id="source" type="text" name="source" class="form-input" maxlength="50" placeholder="예: 연합뉴스" required/>
+            </div>
+            <div class="form-group">
+                <label for="url" class="form-label">URL</label>
+                <input id="url" type="url" name="url" class="form-input" placeholder="https://..." required/>
+            </div>
+            <div class="form-group">
+                <label for="publishedAt" class="form-label">발행일시</label>
+                <input id="publishedAt" type="datetime-local" name="publishedAt" class="form-input" required/>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">등록</button>
+            </div>
+        </form>
+    </div>
+</div>
+</body>
+</html>
