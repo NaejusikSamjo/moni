@@ -157,15 +157,13 @@ class SubscriptionTest {
         }
 
         @Test
-        void cancel_후_SubscriptionCancelledEvent가_발행된다() {
+        void cancel_후_도메인_이벤트가_발행되지_않는다() {
             Subscription subscription = activeSubscription();
             subscription.pullDomainEvents(); // activate 이벤트 소비
 
             subscription.cancel("사용자 요청");
 
-            List<Object> events = subscription.pullDomainEvents();
-            assertThat(events).hasSize(1);
-            assertThat(events.get(0)).isInstanceOf(SubscriptionCancelledEvent.class);
+            assertThat(subscription.pullDomainEvents()).isEmpty();
         }
 
         @Test
@@ -263,6 +261,19 @@ class SubscriptionTest {
             assertThat(subscription.getHistories()).hasSize(prevSize + 1);
             assertThat(subscription.getHistories().get(prevSize).getToStatus())
                     .isEqualTo(SubscriptionStatus.CANCELLED);
+        }
+
+        @Test
+        void completeCancellation_후_SubscriptionCancelledEvent가_발행된다() {
+            Subscription subscription = activeSubscription();
+            subscription.cancel("테스트");
+            subscription.pullDomainEvents(); // cancel 이벤트 없지만 클리어
+
+            subscription.completeCancellation("만료일 도래");
+
+            List<Object> events = subscription.pullDomainEvents();
+            assertThat(events).hasSize(1);
+            assertThat(events.get(0)).isInstanceOf(SubscriptionCancelledEvent.class);
         }
 
         @Test

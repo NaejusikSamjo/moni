@@ -64,6 +64,7 @@ public class SubscriptionCommandService {
         subscription.completeCancellation("만료일 도래로 인한 구독 자동 해지");
         subscriptionJpaRepository.save(subscription);
         subscriptionHistoryRepository.saveAll(subscription.getHistories());
+        subscription.pullDomainEvents().forEach(applicationEventPublisher::publishEvent);
         log.info("구독 CANCELLED 전환 완료: subscriptionId={}", subscriptionId);
     }
 

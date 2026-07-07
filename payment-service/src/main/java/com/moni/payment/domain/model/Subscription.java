@@ -139,7 +139,6 @@ public class Subscription {
         this.updatedAt = Instant.now();
 
         histories.add(SubscriptionHistory.of(id, previousStatus, SubscriptionStatus.CANCELLING, reason));
-        domainEvents.add(new SubscriptionCancelledEvent(id, userId, reason));
     }
 
     public void reactivateFromCancelling(BillingKey reactivatedBillingKey) {
@@ -164,6 +163,7 @@ public class Subscription {
         this.updatedAt = Instant.now();
 
         histories.add(SubscriptionHistory.of(id, previousStatus, SubscriptionStatus.CANCELLED, reason));
+        domainEvents.add(new SubscriptionCancelledEvent(id, userId, reason));
     }
 
     public void suspend(String reason) {
