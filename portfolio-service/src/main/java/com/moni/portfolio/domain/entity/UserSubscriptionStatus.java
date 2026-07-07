@@ -102,4 +102,22 @@ public class UserSubscriptionStatus extends BaseEntity {
     public boolean isPaidPlan() {
         return subscribed && status.isPaidPlan();
     }
+
+    public boolean isSameOrAfterLastEvent(Instant occurredAt) {
+        return lastOccurredAt.isBefore(occurredAt) || lastOccurredAt.equals(occurredAt);
+    }
+
+    public void update(
+            UUID subscriptionId,
+            boolean subscribed,
+            SubscriptionStatus status,
+            String lastEventType,
+            Instant lastOccurredAt
+    ) {
+        this.subscriptionId = subscriptionId;
+        this.subscribed = subscribed;
+        this.status = status;
+        this.lastEventType = lastEventType;
+        this.lastOccurredAt = lastOccurredAt;
+    }
 }
