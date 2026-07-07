@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.List;
 
-@FeignClient(name = "stock-service", configuration = FeignConfig.class)
+@FeignClient(name = "stock-service", configuration = FeignConfig.class, primary = false)
 public interface StockServiceClient {
 
     @GetMapping("/api/v1/stocks/{ticker}")
