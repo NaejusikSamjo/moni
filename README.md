@@ -29,11 +29,7 @@
 
 </div>
 
----
-
 ## 프로젝트 소개
-
----
 
 초보 투자자를 위해 복잡한 금융 정보를 AI로 단순화하고, 실제 자금 없이 모의 매수·매도를 경험할 수 있는 **모의 투자 플랫폼**입니다.
 
@@ -56,13 +52,9 @@
 
 ## 프로젝트 목표
 
----
-
 추후 작성 예정
 
 ## 배포 주소
-
----
 
 | 환경          | URL                                                |
 |:------------|:---------------------------------------------------|
@@ -71,11 +63,7 @@
 | Admin       | [https://admin.moni.my](https://admin.moni.my)     |
 | Grafana     | [https://grafana.moni.my](https://grafana.moni.my) |
 
----
-
 ## 팀원 소개
-
----
 
 |                    **혜수 (Leader)**                     |                    **영욱 (Sub-Leader)**                    |                         **설아**                         |                          **동민**                           |                         **지은**                          |                          **동원**                           |
 |:------------------------------------------------------:|:---------------------------------------------------------:|:------------------------------------------------------:|:---------------------------------------------------------:|:-------------------------------------------------------:|:---------------------------------------------------------:|
@@ -83,11 +71,7 @@
 |        [@hyesuhan](https://github.com/hyesuhan)        |      [@kimyounguk1](https://github.com/kimyounguk1)       |        [@seola12e](https://github.com/seola12e)        |      [@DONGMIN-777](https://github.com/DONGMIN-777)       |       [@Jieunbakk](https://github.com/Jieunbakk)        |      [@won2dev-lab](https://github.com/won2dev-lab)       |
 |        Notification Service<br>Payment Service         |                       Stock Service                       |                   Portfolio Service                    |                       Trade Service                       |                       AI Service                        |               User Service<br>Admin Service               |
 
----
-
 ## 기술 스택
-
----
 
 | 분류           | 기술                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 |:-------------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -101,11 +85,7 @@
 | Tools        | ![Swagger](https://img.shields.io/badge/Swagger-85EA2D?style=flat&logo=swagger&logoColor=black) ![Checkstyle](https://img.shields.io/badge/Checkstyle-0A0A0A?style=flat&logoColor=white)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | CI/CD        | ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=flat&logo=githubactions&logoColor=white)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 
----
-
 ## 마이크로서비스 구성
-
----
 
 | 서비스                  |  포트   | 핵심 기능                                                             |
 |:---------------------|:-----:|:------------------------------------------------------------------|
@@ -141,11 +121,7 @@
 | Zookeeper       |    22181    | Kafka 코디네이션                      |
 | Kafka           |    29092    | 메시지 브로커                          |
 
----
-
 ## 패키지 구조
-
----
 
 <details>
 <summary>패키지 구조 보기</summary>
@@ -215,11 +191,7 @@ admin-service
 
 </details>
 
----
-
 ## 도메인 정의
-
----
 
 | 도메인          | 설명                                               |
 |:-------------|:-------------------------------------------------|
@@ -267,19 +239,11 @@ PENDING(결제 대기)
 
 FeignClient 호출에는 timeout을 명시하고 Resilience4j Circuit Breaker + Fallback을 적용합니다.
 
----
-
 ## 핵심 비즈니스 로직
-
----
 
 추후 작성 예정
 
----
-
 ## ERD 명세서
-
----
 
 <details>
 <summary>ERD 보기</summary>
@@ -313,8 +277,6 @@ FeignClient 호출에는 timeout을 명시하고 Resilience4j Circuit Breaker + 
 
 ## API 명세서
 
----
-
 > **공통 사항**
 > - Base URL: `http://localhost:8080/api/v1`
 > - 인증: JWT (`Authorization: Bearer {token}`), 회원가입·로그인 API 제외
@@ -330,11 +292,7 @@ FeignClient 호출에는 timeout을 명시하고 Resilience4j Circuit Breaker + 
 | Payment Service      | [![Swagger](https://img.shields.io/badge/Swagger-85EA2D?style=flat&logo=swagger&logoColor=black)](https://editor.swagger.io/?url=https://raw.githubusercontent.com/NaejusikSamjo/moni/develop/docs/swagger/payment-service.json)      |
 | AI Service           | [![Swagger](https://img.shields.io/badge/Swagger-85EA2D?style=flat&logo=swagger&logoColor=black)](https://editor.swagger.io/?url=https://raw.githubusercontent.com/NaejusikSamjo/moni/develop/docs/swagger/ai-service.json)           |
 
----
-
 ## 인프라 아키텍처
-
----
 
 ![인프라 다이어그램](docs/images/infra-diagram.png)
 
@@ -350,11 +308,7 @@ FeignClient 호출에는 timeout을 명시하고 Resilience4j Circuit Breaker + 
 | `docker-compose.monitor.yml`      | Tempo · Loki · Promtail · Prometheus · Grafana — 모니터링 전용 EC2에서 실행              |
 | `docker-compose.alloy.yml`        | Grafana Alloy — 메트릭·로그·트레이스 수집, Loki·Prometheus·Tempo로 전송 (운영용)                |
 
----
-
 ## CI/CD
-
----
 
 ![CI/CD Flow](docs/images/CI_CD-flow.png)
 
@@ -362,11 +316,7 @@ GitHub Actions 기반 파이프라인이 구성되어 있으며, 결과는 Disco
 
 자세한 내용은 [배포 가이드 문서](docs/guides/deployment.md)를 확인하세요.
 
----
-
 ## 실행 방법
-
----
 
 ### 사전 요구사항
 
