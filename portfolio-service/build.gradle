@@ -13,5 +13,4 @@ dependencies {
     runtimeOnly 'org.postgresql:postgresql'
     testRuntimeOnly 'com.h2database:h2'
     testImplementation testFixtures(project(':common'))
-    testImplementation 'org.springframework.kafka:spring-kafka-test'
 }
