@@ -41,9 +41,6 @@ spring:
           trade-service:
             connectTimeout: 1000
             readTimeout: 3000
-          payment-service:
-            connectTimeout: 1000
-            readTimeout: 2000
           user-service:
             connectTimeout: 1000
             readTimeout: 2000

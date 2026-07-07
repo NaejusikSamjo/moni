@@ -1,14 +1,11 @@
 package com.moni.portfolio.application.policy;
 
 import com.moni.common.error.exception.CustomException;
+import com.moni.portfolio.application.service.UserSubscriptionStatusQueryService;
 import com.moni.portfolio.domain.entity.Portfolio;
 import com.moni.portfolio.domain.enums.AnalysisStatus;
-import com.moni.portfolio.domain.enums.SubscriptionStatus;
 import com.moni.portfolio.domain.exception.PortfolioErrorCode;
 import com.moni.portfolio.domain.repository.PortfolioAnalysisRepository;
-import com.moni.portfolio.infrastructure.client.PaymentServiceClient;
-import com.moni.portfolio.infrastructure.client.dto.response.ExternalApiResponseDto;
-import com.moni.portfolio.infrastructure.client.dto.response.SubscriptionStatusResponseDto;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -43,7 +40,7 @@ class PortfolioAnalysisPolicyServiceTest {
     private PortfolioAnalysisRepository portfolioAnalysisRepository;
 
     @Mock
-    private PaymentServiceClient paymentServiceClient;
+    private UserSubscriptionStatusQueryService userSubscriptionStatusQueryService;
 
     @InjectMocks
     private PortfolioAnalysisPolicyService portfolioAnalysisPolicyService;
@@ -58,8 +55,8 @@ class PortfolioAnalysisPolicyServiceTest {
             // given
             Portfolio portfolio = portfolio(4L);
             givenNoAnalysisToday();
-            given(paymentServiceClient.getSubscriptionStatus(USER_ID))
-                    .willReturn(success(freePlan()));
+            given(userSubscriptionStatusQueryService.isPaidPlan(USER_ID))
+                    .willReturn(false);
 
             // when & then
             assertThatCode(() -> portfolioAnalysisPolicyService.validateRequest(USER_ID, portfolio))
@@ -74,7 +71,7 @@ class PortfolioAnalysisPolicyServiceTest {
         }
 
         @Test
-        @DisplayName("실패 - 오늘 이미 분석 이력이 있으면 결제 상태 조회 없이 차단한다")
+        @DisplayName("실패 - 오늘 이미 분석 이력이 있으면 구독 상태 조회 없이 차단한다")
         void fail_daily_limit_exceeded() {
             // given
             Portfolio portfolio = portfolio(0L);
@@ -91,7 +88,7 @@ class PortfolioAnalysisPolicyServiceTest {
                             assertThat(exception.getErrorCode())
                                     .isEqualTo(PortfolioErrorCode.PORTFOLIO_ANALYSIS_DAILY_LIMIT_EXCEEDED));
 
-            then(paymentServiceClient).should(never()).getSubscriptionStatus(USER_ID);
+            then(userSubscriptionStatusQueryService).should(never()).isPaidPlan(USER_ID);
         }
 
         @Test
@@ -100,8 +97,8 @@ class PortfolioAnalysisPolicyServiceTest {
             // given
             Portfolio portfolio = portfolio(5L);
             givenNoAnalysisToday();
-            given(paymentServiceClient.getSubscriptionStatus(USER_ID))
-                    .willReturn(success(freePlan()));
+            given(userSubscriptionStatusQueryService.isPaidPlan(USER_ID))
+                    .willReturn(false);
 
             // when & then
             assertThatThrownBy(() -> portfolioAnalysisPolicyService.validateRequest(USER_ID, portfolio))
@@ -116,28 +113,12 @@ class PortfolioAnalysisPolicyServiceTest {
             // given
             Portfolio portfolio = portfolio(5L);
             givenNoAnalysisToday();
-            given(paymentServiceClient.getSubscriptionStatus(USER_ID))
-                    .willReturn(success(paidPlan()));
+            given(userSubscriptionStatusQueryService.isPaidPlan(USER_ID))
+                    .willReturn(true);
 
             // when & then
             assertThatCode(() -> portfolioAnalysisPolicyService.validateRequest(USER_ID, portfolio))
                     .doesNotThrowAnyException();
-        }
-
-        @Test
-        @DisplayName("실패 - Payment 서비스 구독 상태 응답 데이터가 없으면 차단한다")
-        void fail_payment_response_invalid() {
-            // given
-            Portfolio portfolio = portfolio(0L);
-            givenNoAnalysisToday();
-            given(paymentServiceClient.getSubscriptionStatus(USER_ID))
-                    .willReturn(success(null));
-
-            // when & then
-            assertThatThrownBy(() -> portfolioAnalysisPolicyService.validateRequest(USER_ID, portfolio))
-                    .isInstanceOfSatisfying(CustomException.class, exception ->
-                            assertThat(exception.getErrorCode())
-                                    .isEqualTo(PortfolioErrorCode.PAYMENT_RESPONSE_INVALID));
         }
     }
 
@@ -157,21 +138,4 @@ class PortfolioAnalysisPolicyServiceTest {
         return portfolio;
     }
 
-    private SubscriptionStatusResponseDto freePlan() {
-        return new SubscriptionStatusResponseDto(false, null, null, null, null);
-    }
-
-    private SubscriptionStatusResponseDto paidPlan() {
-        return new SubscriptionStatusResponseDto(
-                true,
-                UUID.fromString("00000000-0000-0000-0000-000000000020"),
-                SubscriptionStatus.ACTIVE,
-                null,
-                9900L
-        );
-    }
-
-    private <T> ExternalApiResponseDto<T> success(T data) {
-        return new ExternalApiResponseDto<>(200, "SUCCESS", data, null);
-    }
 }

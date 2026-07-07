@@ -1,15 +1,11 @@
 package com.moni.portfolio.application.policy;
 
 import com.moni.common.error.exception.CustomException;
+import com.moni.portfolio.application.service.UserSubscriptionStatusQueryService;
 import com.moni.portfolio.domain.entity.Portfolio;
 import com.moni.portfolio.domain.enums.AnalysisStatus;
 import com.moni.portfolio.domain.exception.PortfolioErrorCode;
 import com.moni.portfolio.domain.repository.PortfolioAnalysisRepository;
-import com.moni.portfolio.infrastructure.client.PaymentServiceClient;
-import com.moni.portfolio.infrastructure.client.dto.response.ExternalApiResponseDto;
-import com.moni.portfolio.infrastructure.client.dto.response.SubscriptionStatusResponseDto;
-import feign.FeignException;
-import feign.RetryableException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -31,11 +27,12 @@ public class PortfolioAnalysisPolicyService {
     );
 
     private final PortfolioAnalysisRepository portfolioAnalysisRepository;
-    private final PaymentServiceClient paymentServiceClient;
+    private final UserSubscriptionStatusQueryService userSubscriptionStatusQueryService;
 
     public void validateRequest(UUID userId, Portfolio portfolio) {
         validateDailyAnalysisLimit(portfolio);
-        if (!isPaidPlan(userId) && portfolio.getAiAnalysisCount() >= FREE_PLAN_AI_ANALYSIS_LIMIT) {
+        if (!userSubscriptionStatusQueryService.isPaidPlan(userId)
+                && portfolio.getAiAnalysisCount() >= FREE_PLAN_AI_ANALYSIS_LIMIT) {
             throw new CustomException(PortfolioErrorCode.PORTFOLIO_ANALYSIS_FREE_LIMIT_EXCEEDED);
         }
     }
@@ -51,21 +48,6 @@ public class PortfolioAnalysisPolicyService {
                 endDateTime
         )) {
             throw new CustomException(PortfolioErrorCode.PORTFOLIO_ANALYSIS_DAILY_LIMIT_EXCEEDED);
-        }
-    }
-
-    private boolean isPaidPlan(UUID userId) {
-        try {
-            ExternalApiResponseDto<SubscriptionStatusResponseDto> response =
-                    paymentServiceClient.getSubscriptionStatus(userId);
-            if (response == null || response.data() == null) {
-                throw new CustomException(PortfolioErrorCode.PAYMENT_RESPONSE_INVALID);
-            }
-            return response.data().isPaidPlan();
-        } catch (RetryableException exception) {
-            throw new CustomException(PortfolioErrorCode.PAYMENT_SERVICE_TIMEOUT);
-        } catch (FeignException exception) {
-            throw new CustomException(PortfolioErrorCode.PAYMENT_SERVICE_ERROR);
         }
     }
 }

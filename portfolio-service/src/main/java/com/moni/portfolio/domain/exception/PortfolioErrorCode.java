@@ -17,14 +17,11 @@ public enum PortfolioErrorCode implements ErrorCode {
 
     TRADE_RESPONSE_INVALID("PORTFOLIO-101", "Trade 서비스 응답 데이터가 올바르지 않습니다.", HttpStatus.BAD_GATEWAY),
     AI_RESPONSE_INVALID("PORTFOLIO-102", "AI 서비스 응답 데이터가 올바르지 않습니다.", HttpStatus.BAD_GATEWAY),
-    PAYMENT_RESPONSE_INVALID("PORTFOLIO-103", "Payment 서비스 구독 상태 응답 데이터가 올바르지 않습니다.", HttpStatus.BAD_GATEWAY),
 
     TRADE_SERVICE_ERROR("PORTFOLIO-901", "Trade 서비스 연동 중 오류가 발생했습니다.", HttpStatus.BAD_GATEWAY),
     TRADE_SERVICE_TIMEOUT("PORTFOLIO-902", "Trade 서비스 응답 시간이 초과되었습니다.", HttpStatus.GATEWAY_TIMEOUT),
     AI_SERVICE_ERROR("PORTFOLIO-903", "AI 서비스 연동 중 오류가 발생했습니다.", HttpStatus.BAD_GATEWAY),
-    AI_SERVICE_TIMEOUT("PORTFOLIO-904", "AI 서비스 응답 시간이 초과되었습니다.", HttpStatus.GATEWAY_TIMEOUT),
-    PAYMENT_SERVICE_ERROR("PORTFOLIO-905", "Payment 서비스 연동 중 오류가 발생했습니다.", HttpStatus.BAD_GATEWAY),
-    PAYMENT_SERVICE_TIMEOUT("PORTFOLIO-906", "Payment 서비스 응답 시간이 초과되었습니다.", HttpStatus.GATEWAY_TIMEOUT),
+    AI_SERVICE_TIMEOUT("PORTFOLIO-904", "AI 서비스 응답 시간이 초과되었습니다.", HttpStatus.GATEWAY_TIMEOUT)
     ;
 
     private final String code;
