@@ -164,29 +164,30 @@
 | published_at | TIMESTAMP    |              | 뉴스 발행일                                           |
 | + base audit |              |              | `created_at, created_by, deleted_at, deleted_by` |
 
-### `news_embedding` — 임베딩 데이터 (벡터 DB 연결 브릿지 테이블)
+### `p_market_news` — 거시 시장 뉴스
+
+| 컬럼명          | 데이터 타입        | 제약 조건        | 설명                                                                       |
+|--------------|---------------|--------------|--------------------------------------------------------------------------|
+| id           | VARCHAR(36)   | PK, Not Null |                                                                          |
+| title        | VARCHAR(255)  |              | 뉴스 제목                                                                    |
+| keyword      | VARCHAR(50)   |              | 키워드 (ex: 달러, 연준 등)                                                       |
+| content      | TEXT          |              | 뉴스 내용                                                                    |
+| source       | VARCHAR(50)   |              | 출처 (언론사 등)                                                               |
+| url          | VARCHAR(255)  |              | 뉴스 URL                                                                   |
+| published_at | TIMESTAMP     |              | 뉴스 발행일                                                                   |
+| + base audit |               |              | `created_at, created_by, updated_at, updated_by, deleted_at, deleted_by` |
+
+### `p_market_news_analysis` — 거시 시장 분석
 
 | 컬럼명          | 데이터 타입      | 제약 조건        | 설명                                                                       |
 |--------------|-------------|--------------|--------------------------------------------------------------------------|
 | id           | VARCHAR(36) | PK, Not Null |                                                                          |
-| news_id      | VARCHAR(36) | FK, Not Null | `news.id` 참조                                                             |
-| vector_id    | VARCHAR(36) |              | 벡터 DB 내 vector id                                                        |
-| chunk_index  | INT         |              | 청크 인덱스                                                                   |
+| keyword      | VARCHAR(50) |              |                                                                          |
+| summary      | TEXT        |              | 뉴스 요약                                                                    |
+| expired_at   | TIMESTAMP   |              | 분석 유효 기간                                                                 |
 | + base audit |             |              | `created_at, created_by, updated_at, updated_by, deleted_at, deleted_by` |
 
-### `news_summary` — 뉴스 요약
-
-| 컬럼명          | 데이터 타입      | 제약 조건        | 설명                                               |
-|--------------|-------------|--------------|--------------------------------------------------|
-| id           | VARCHAR(36) | PK, Not Null |                                                  |
-| news_id      | VARCHAR(36) | FK, Not Null | `news.id` 참조                                     |
-| ticker       | VARCHAR(10) |              | 종목코드                                             |
-| summary      | TEXT        |              | 뉴스 요약                                            |
-| sentiment    | VARCHAR(10) |              | 평가: `POSITIVE` / `NEGATIVE` / `NEUTRAL`          |
-| expired_at   | TIMESTAMP   |              | 분석 유효 기간                                         |
-| + base audit |             |              | `created_at, created_by, deleted_at, deleted_by` |
-
-### `company_issue_analysis` — 기업 이슈 분석
+### `p_company_issue_analysis` — 기업 이슈 분석
 
 | 컬럼명          | 데이터 타입      | 제약 조건        | 설명                                               |
 |--------------|-------------|--------------|--------------------------------------------------|
@@ -196,6 +197,16 @@
 | sentiment    | VARCHAR(10) |              | 평가: `POSITIVE` / `NEGATIVE` / `NEUTRAL`          |
 | expired_at   | TIMESTAMP   |              | 분석 유효 기간                                         |
 | + base audit |             |              | `created_at, created_by, deleted_at, deleted_by` |
+
+### `p_ai_log` — ai 프롬프트 저장
+
+| 컬럼명                     | 데이터  타입     | 제약  조건       | 설명                                               |
+|-------------------------|-------------|--------------|--------------------------------------------------|
+| id                      | VARCHAR(36) | PK, Not Null |                                                  |
+| company_analysis_id     | VARCHAR(36) | FK           | 기업 이슈 분석 id                                      |
+| market_news_analysis_id | VARCHAR(36) | FK           | 거시시장 분석 id                                       |
+| prompt                  | TEXT        |              | 작성 프롬프트                                          |
+| + base audit            |             |              | `created_at, created_by, deleted_at, deleted_by` |
 
 ---
 
