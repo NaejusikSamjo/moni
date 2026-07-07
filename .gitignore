@@ -46,3 +46,6 @@ logs/
 
 ### Docker volumes ###
 .docker-volumes/
+
+*/.DS_Store
+.DS_Store

@@ -2,12 +2,15 @@ package com.moni.payment.infrastructure.repository;
 
 import com.moni.payment.domain.model.MerchantId;
 import com.moni.payment.domain.model.Payment;
+import com.moni.payment.domain.model.PaymentStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -18,4 +21,6 @@ public interface PaymentJpaRepository extends JpaRepository<Payment, UUID> {
     @Query(value = "SELECT p FROM Payment p WHERE p.userId = :userId ORDER BY p.createdAt DESC",
            countQuery = "SELECT count(p) FROM Payment p WHERE p.userId = :userId")
     Page<Payment> findByUserIdPaged(@Param("userId") UUID userId, Pageable pageable);
+
+    List<Payment> findByStatusAndExpiresAtBefore(PaymentStatus status, Instant expiresAt);
 }
