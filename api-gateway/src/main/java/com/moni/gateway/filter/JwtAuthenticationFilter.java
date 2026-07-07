@@ -4,11 +4,13 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
+import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -25,13 +27,18 @@ import java.util.List;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
+
+    private static final String BLACKLIST_PREFIX = "blacklist:access:";
 
     @Value("${jwt.secret-key}")
     private String secretKey;
 
     @Value("${gateway.secret}")
     private String gatewaySecret;
+
+    private final ReactiveStringRedisTemplate redisTemplate;
 
     private SecretKey key;
 
@@ -121,7 +128,15 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                 }
             };
 
-            return chain.filter(exchange.mutate().request(mutatedRequest).build());
+            return redisTemplate.hasKey(BLACKLIST_PREFIX + token)
+                    .flatMap(isBlacklisted -> {
+                        if (Boolean.TRUE.equals(isBlacklisted)) {
+                            log.warn("[Gateway] 블랙리스트 토큰 차단 - userId={}", userId);
+                            exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+                            return exchange.getResponse().setComplete();
+                        }
+                        return chain.filter(exchange.mutate().request(mutatedRequest).build());
+                    });
 
         } catch (JwtException e) {
             log.warn("[Gateway] JWT 검증 실패: {}", e.getMessage());
