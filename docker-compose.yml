@@ -45,6 +45,9 @@ services:
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
       GATEWAY_SECRET: ${GATEWAY_SECRET}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
     depends_on:
       eureka-server:
         condition: service_healthy

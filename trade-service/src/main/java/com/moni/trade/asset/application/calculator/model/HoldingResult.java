@@ -5,7 +5,7 @@ import java.math.BigDecimal;
 public record HoldingResult(
         String ticker,
         String name,
-        Long quantity,
+        BigDecimal quantity,
         BigDecimal averagePurchasePrice,
         BigDecimal currentPrice,
         BigDecimal evaluationAmount,

@@ -232,7 +232,7 @@ public class AssetService {
     private HoldingInput toHoldingInput(Holding holding) {
         return new HoldingInput(
                 holding.getTicker(),
-                holding.getQuantity().longValue(),
+                holding.getQuantity(),
                 holding.getAveragePrice(),
                 holding.getTotalAmount()
         );
