@@ -2,6 +2,7 @@ package com.moni.portfolio.application.policy;
 
 import com.moni.common.error.exception.CustomException;
 import com.moni.portfolio.domain.entity.Portfolio;
+import com.moni.portfolio.domain.enums.AnalysisStatus;
 import com.moni.portfolio.domain.exception.PortfolioErrorCode;
 import com.moni.portfolio.domain.repository.PortfolioAnalysisRepository;
 import com.moni.portfolio.infrastructure.client.PaymentServiceClient;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -23,6 +25,10 @@ public class PortfolioAnalysisPolicyService {
 
     private static final long FREE_PLAN_AI_ANALYSIS_LIMIT = 5L;
     private static final ZoneId ANALYSIS_DAILY_LIMIT_ZONE = ZoneId.of("Asia/Seoul");
+    private static final List<AnalysisStatus> DAILY_LIMIT_STATUSES = List.of(
+            AnalysisStatus.PENDING,
+            AnalysisStatus.SUCCESS
+    );
 
     private final PortfolioAnalysisRepository portfolioAnalysisRepository;
     private final PaymentServiceClient paymentServiceClient;
@@ -38,8 +44,9 @@ public class PortfolioAnalysisPolicyService {
         LocalDate today = LocalDate.now(ANALYSIS_DAILY_LIMIT_ZONE);
         LocalDateTime startDateTime = today.atStartOfDay();
         LocalDateTime endDateTime = today.plusDays(1).atStartOfDay();
-        if (portfolioAnalysisRepository.existsByPortfolioIdAndUpdatedAtBetween(
+        if (portfolioAnalysisRepository.existsByPortfolioIdAndStatusInAndCreatedAtBetween(
                 portfolio.getId(),
+                DAILY_LIMIT_STATUSES,
                 startDateTime,
                 endDateTime
         )) {
