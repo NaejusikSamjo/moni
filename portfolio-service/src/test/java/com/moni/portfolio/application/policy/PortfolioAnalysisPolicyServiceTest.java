@@ -55,8 +55,6 @@ class PortfolioAnalysisPolicyServiceTest {
             // given
             Portfolio portfolio = portfolio(4L);
             givenNoAnalysisToday();
-            given(userSubscriptionStatusQueryService.isPaidPlan(USER_ID))
-                    .willReturn(false);
 
             // when & then
             assertThatCode(() -> portfolioAnalysisPolicyService.validateRequest(USER_ID, portfolio))
@@ -68,6 +66,7 @@ class PortfolioAnalysisPolicyServiceTest {
                     any(LocalDateTime.class),
                     any(LocalDateTime.class)
             );
+            then(userSubscriptionStatusQueryService).should(never()).isPaidPlan(USER_ID);
         }
 
         @Test

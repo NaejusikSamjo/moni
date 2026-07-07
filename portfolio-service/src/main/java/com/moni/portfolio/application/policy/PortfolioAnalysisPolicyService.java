@@ -31,8 +31,11 @@ public class PortfolioAnalysisPolicyService {
 
     public void validateRequest(UUID userId, Portfolio portfolio) {
         validateDailyAnalysisLimit(portfolio);
-        if (!userSubscriptionStatusQueryService.isPaidPlan(userId)
-                && portfolio.getAiAnalysisCount() >= FREE_PLAN_AI_ANALYSIS_LIMIT) {
+        if (portfolio.getAiAnalysisCount() < FREE_PLAN_AI_ANALYSIS_LIMIT) {
+            return;
+        }
+
+        if (!userSubscriptionStatusQueryService.isPaidPlan(userId)) {
             throw new CustomException(PortfolioErrorCode.PORTFOLIO_ANALYSIS_FREE_LIMIT_EXCEEDED);
         }
     }
