@@ -127,12 +127,19 @@
 
 ## 5. AI 서비스 (ai-service, 담당: 지은/설아)
 
-| 기능          | URL                                            | Method | 비고                                                                  |
-|-------------|------------------------------------------------|--------|---------------------------------------------------------------------|
-| 기업 이슈 분석    | `/api/v1/ai/stocks/{stockCode}/issue-analysis` | GET    |                                                                     |
-| 뉴스 요약 조회    | `/api/v1/ai/stocks/{stockCode}/news-summary`   | GET    |                                                                     |
-| 포트폴리오 AI 분석 | `/api/v1/ai/portfolio/analysis`                | POST   | header: `Authorization` 필요. portfolio-service가 호출하는 내부 API / 담당: 설아 |
-| 뉴스 fetch    | `/api/v1/ai/news/fetch`                        | POST   | 스케줄러 또는 매니저용. body 예: `{"stockCode": "..."}` → 특정 종목 뉴스만 fetch      |
+| 기능             | URL                                  | Method | 비고                                                                  |
+|----------------|--------------------------------------|--------|---------------------------------------------------------------------|
+| 기업 이슈 분석       | `/api/v1/ai/{ticker}/issue-analysis` | GET    |                                                                     |
+| 뉴스 요약 조회       | `/api/v1/ai/{ticker}/news-summary`   | GET    |                                                                     |
+| 포트폴리오 AI 분석    | `/api/v1/ai/portfolio/analysis`      | POST   | header: `Authorization` 필요. portfolio-service가 호출하는 내부 API / 담당: 설아 |
+| 뉴스 fetch       | `/api/v1/ai/admin/news/fetch`        | POST   | 스케줄러 또는 매니저용.       |
+| AI 분석 가능 기업 조회 | `/api/v1/ai`                         | GET    |                                                                     |
+| News 직접 등록     | `/api/v1/admin/ai/news/ticker`       | POST   |                                                                     |
+| 거시 시장 뉴스 fetch | `/api/v1/admin/ai/news/market/fetch` | POST   | 스케줄러 또는 매니저용.                                                               |
+| 뉴스 목록 조회       | `/api/v1/aai/news` | GET    |                                                              |
+
+
+
 
 ---
 

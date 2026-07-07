@@ -11,8 +11,10 @@ import com.moni.stock.domain.exception.StockErrorCode;
 import com.moni.stock.domain.repository.StockRepository;
 import com.moni.stock.domain.type.ChartIndex;
 import com.moni.stock.infrastructure.client.KisOAuthClient;
+import com.moni.stock.infrastructure.redis.RedisUnavailableException;
 import com.moni.stock.infrastructure.redis.StockPriceRedisAdapter;
 import com.moni.stock.infrastructure.redis.ThemeRankingRedisAdapter;
+import com.moni.stock.presentation.dto.request.BatchStockRequest;
 import com.moni.stock.presentation.dto.response.StockChartResponse;
 import com.moni.stock.presentation.dto.response.StockResDto;
 import com.moni.stock.presentation.dto.response.ThemeRankingResponse;
@@ -54,13 +56,7 @@ public class StockService implements StockQueryUseCase {
             stockPage = stockRepository.findAll(pageable);
         }
 
-        Page<StockResDto> dtoPage = stockPage.map(stock -> {
-            kisWebSocketInitializer.wsSubscribe(stock.getTicker());
-            BigDecimal currentPrice = stockPriceRedisAdapter.getPrice(stock.getTicker())
-                    .map(StockPrice::getCurrentPrice)
-                    .orElseGet(() -> fetchAndCacheCurrentPrice(stock.getTicker()));
-            return new StockResDto(stock.getTicker(), stock.getName(), currentPrice);
-        });
+        Page<StockResDto> dtoPage = stockPage.map(this::resolveStockResDto);
 
         return new PageRes<>(dtoPage);
 
@@ -74,29 +70,45 @@ public class StockService implements StockQueryUseCase {
 
         kisWebSocketInitializer.wsSubscribe(stock.getTicker());
 
-        BigDecimal price = stockPriceRedisAdapter.getPrice(ticker)
-                .map(StockPrice::getCurrentPrice)
-                .orElseGet(() -> fetchAndCacheCurrentPrice(ticker));
-
-        return new StockResDto(ticker, stock.getName(), price);
+        // 단일 종목 조회는 거래/자산 계산에도 쓰이므로 가격 조회 실패 시 그대로 예외를 전파한다(fail-fast).
+        StockPrice stockPrice = resolvePrice(ticker);
+        return new StockResDto(ticker, stock.getName(), stockPrice.getCurrentPrice(), stockPrice.getSection(), true);
     }
 
-    private BigDecimal fetchAndCacheCurrentPrice(String ticker) {
+    // 목록/배치 조회는 종목 하나의 가격 조회 실패가 전체 응답을 막지 않도록 종목 단위로 격리한다.
+    private StockResDto resolveStockResDto(Stock stock) {
+        kisWebSocketInitializer.wsSubscribe(stock.getTicker());
         try {
-            JsonNode output = kisOAuthClient.getCurrentPrice(ticker).path("output");
-            BigDecimal price = new BigDecimal(output.path("stck_prpr").asText("0"));
-            StockPrice stockPrice = StockPrice.builder()
-                    .ticker(ticker)
-                    .currentPrice(price)
-                    .askPrice(new BigDecimal(output.path("stck_askp").asText("0")))
-                    .bidPrice(new BigDecimal(output.path("stck_bidp").asText("0")))
-                    .volume(output.path("acml_vol").asLong())
-                    .build();
-            stockPriceRedisAdapter.savePrice(stockPrice);
-            return price;
-        } catch (Exception e) {
-            return BigDecimal.ZERO;
+            StockPrice stockPrice = resolvePrice(stock.getTicker());
+            return new StockResDto(stock.getTicker(), stock.getName(), stockPrice.getCurrentPrice(), stockPrice.getSection(), true);
+        } catch (CustomException e) {
+            return new StockResDto(stock.getTicker(), stock.getName(), null, null, false);
         }
+    }
+
+    private StockPrice resolvePrice(String ticker) {
+        try {
+            return stockPriceRedisAdapter.getPrice(ticker)
+                    .orElseGet(() -> fetchAndCacheCurrentPrice(ticker));
+        } catch (RedisUnavailableException e) {
+            // Redis 캐시를 못 쓰더라도 KIS가 살아있으면 그대로 서비스는 가능해야 함
+            return fetchAndCacheCurrentPrice(ticker);
+        }
+    }
+
+    private StockPrice fetchAndCacheCurrentPrice(String ticker) {
+        JsonNode output = kisOAuthClient.getCurrentPrice(ticker).path("output");
+        BigDecimal price = new BigDecimal(output.path("stck_prpr").asText("0"));
+        StockPrice stockPrice = StockPrice.builder()
+                .ticker(ticker)
+                .currentPrice(price)
+                .askPrice(new BigDecimal(output.path("stck_askp").asText("0")))
+                .bidPrice(new BigDecimal(output.path("stck_bidp").asText("0")))
+                .volume(output.path("acml_vol").asLong())
+                .section(output.path("bstp_kor_isnm").asText())
+                .build();
+        stockPriceRedisAdapter.savePrice(stockPrice);
+        return stockPrice;
     }
 
     @Override
@@ -193,6 +205,15 @@ public class StockService implements StockQueryUseCase {
         return TopVolumeResponse.builder()
                 .stocks(stocks)
                 .build();
+    }
+
+    @Override
+    public List<StockResDto> getStockDetailList(BatchStockRequest tickers) {
+        List<Stock> stocks = stockRepository.findByTickerIn(tickers.getTickers());
+
+        return stocks.stream()
+                .map(this::resolveStockResDto)
+                .toList();
     }
 
 

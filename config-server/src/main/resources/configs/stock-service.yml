@@ -13,7 +13,7 @@ spring:
     generate-ddl: true
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false
     open-in-view: false
     properties:
       hibernate:
@@ -28,6 +28,14 @@ spring:
         max-redirects: 3
       password: ${REDIS_CLUSTER_PASSWORD}
 
+# 단일 Redis, Redis Cluster 선택 설정 (기본 Redis Cluster)
+stock:
+  redis:
+    mode: ${STOCK_REDIS_MODE:cluster}
+    standalone:
+      host: ${REDIS_STANDALONE_HOST:redis}
+      port: ${REDIS_STANDALONE_PORT:6379}
+
 kis:
   app-key: ${KIS_APP_KEY:}
   app-secret: ${KIS_APP_SECRET:}
@@ -36,6 +44,27 @@ kis:
   mock: false
   connect-timeout: 2000
   read-timeout: 3000
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      redisPrice:
+        sliding-window-size: 20
+        minimum-number-of-calls: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 5s
+        permitted-number-of-calls-in-half-open-state: 5
+      kisApi:
+        sliding-window-size: 20
+        minimum-number-of-calls: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 5
+  retry:
+    instances:
+      kisApi:
+        max-attempts: 2
+        wait-duration: 200ms
 
 eureka:
   client:

@@ -1,36 +1,31 @@
 package com.moni.portfolio.application.service;
 
 import com.moni.common.error.exception.CustomException;
-import com.moni.portfolio.application.analysis.PortfolioRiskCalculator;
-import com.moni.portfolio.application.analysis.TendencySuitabilityResult;
-import com.moni.portfolio.application.analysis.TendencyType;
+import com.moni.common.response.paging.PageRes;
+import com.moni.portfolio.application.policy.PortfolioAnalysisPolicyService;
 import com.moni.portfolio.domain.entity.Portfolio;
 import com.moni.portfolio.domain.entity.PortfolioAnalysis;
 import com.moni.portfolio.domain.enums.AnalysisStatus;
 import com.moni.portfolio.domain.exception.PortfolioErrorCode;
 import com.moni.portfolio.domain.repository.PortfolioAnalysisRepository;
 import com.moni.portfolio.domain.repository.PortfolioRepository;
-import com.moni.portfolio.infrastructure.client.TradeServiceClient;
-import com.moni.portfolio.infrastructure.client.UserServiceClient;
-import com.moni.portfolio.infrastructure.client.dto.request.AiPortfolioAnalysisRequestDto;
-import com.moni.portfolio.infrastructure.client.dto.request.AiPortfolioTendencyAnalysisRequestDto;
-import com.moni.portfolio.infrastructure.client.dto.response.ExternalApiResponseDto;
-import com.moni.portfolio.infrastructure.client.dto.response.TradeAssetHoldingResponseDto;
-import com.moni.portfolio.infrastructure.client.dto.response.TradeAssetHoldingsResponseDto;
-import com.moni.portfolio.infrastructure.client.dto.response.TradeAssetResponseDto;
-import com.moni.portfolio.infrastructure.client.dto.response.UserTendencyResponseDto;
 import com.moni.portfolio.presentation.dto.response.PortfolioAnalysisCreateResponseDto;
+import com.moni.portfolio.presentation.dto.response.PortfolioAnalysisResponseDto;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -38,9 +33,11 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 
 @DisplayName("PortfolioAnalysisService 테스트")
@@ -58,13 +55,7 @@ class PortfolioAnalysisServiceTest {
     private PortfolioAnalysisRepository portfolioAnalysisRepository;
 
     @Mock
-    private PortfolioRiskCalculator portfolioRiskCalculator;
-
-    @Mock
-    private TradeServiceClient tradeServiceClient;
-
-    @Mock
-    private UserServiceClient userServiceClient;
+    private PortfolioAnalysisPolicyService portfolioAnalysisPolicyService;
 
     @Mock
     private PortfolioAnalysisAsyncExecutor portfolioAnalysisAsyncExecutor;
@@ -72,78 +63,21 @@ class PortfolioAnalysisServiceTest {
     @InjectMocks
     private PortfolioAnalysisService portfolioAnalysisService;
 
+    @BeforeEach
+    void setUp() {
+        ReflectionTestUtils.setField(portfolioAnalysisService, "pendingTimeoutMinutes", 10L);
+    }
+
     @Nested
     @DisplayName("requestAnalysis()")
     class RequestAnalysis {
 
         @Test
-        @DisplayName("성공 - 외부 서비스 응답으로 분석 스냅샷을 만들고 AI 분석을 요청한다")
+        @DisplayName("성공 - 정책 검증 후 PENDING 분석을 저장하고 비동기 분석을 요청한다")
         void success_request_analysis() {
             // given
             Portfolio portfolio = portfolio();
-            UserTendencyResponseDto userTendency = new UserTendencyResponseDto(
-                    UUID.fromString("00000000-0000-0000-0000-000000000010"),
-                    33,
-                    "STABLE"
-            );
-
-            given(portfolioRepository.findByUserId(USER_ID)).willReturn(Optional.of(portfolio));
-            given(tradeServiceClient.getAssets(USER_ID))
-                    .willReturn(success(new TradeAssetResponseDto(
-                            new BigDecimal("10000000.00"),
-                            new BigDecimal("5841500.00"),
-                            new BigDecimal("4158500.00"),
-                            new BigDecimal("10000000.00"),
-                            new BigDecimal("-177500.00"),
-                            new BigDecimal("-1.7750")
-                    )));
-            given(tradeServiceClient.getAssetHoldings(USER_ID, 0, 10, "evaluationAmount,desc"))
-                    .willReturn(success(new TradeAssetHoldingsResponseDto(
-                            List.of(
-                                    holding(
-                                            "000660",
-                                            "SK하이닉스",
-                                            10L,
-                                            "220000.00",
-                                            "210000.00",
-                                            "2100000.00",
-                                            "-100000.00",
-                                            "-4.5455",
-                                            "50.50"
-                                    ),
-                                    holding(
-                                            "005930",
-                                            "삼성전자",
-                                            30L,
-                                            "70000.00",
-                                            "68616.67",
-                                            "2058500.00",
-                                            "-41500.00",
-                                            "-1.9762",
-                                            "49.50"
-                                    )
-                            ),
-                            0,
-                            10,
-                            2,
-                            1,
-                            "evaluationAmount,desc"
-                    )));
-            given(userServiceClient.getTendency(USER_ID)).willReturn(success(userTendency));
-            given(portfolioRiskCalculator.calculate(
-                    any(UserTendencyResponseDto.class),
-                    any(BigDecimal.class),
-                    any(BigDecimal.class),
-                    any(BigDecimal.class),
-                    anyInt()
-            )).willReturn(new TendencySuitabilityResult(
-                    TendencyType.STABLE,
-                    33,
-                    TendencyType.ACTIVE,
-                    70,
-                    63,
-                    "보통"
-            ));
+            given(portfolioRepository.findByUserIdForUpdate(USER_ID)).willReturn(Optional.of(portfolio));
             given(portfolioAnalysisRepository.save(any(PortfolioAnalysis.class)))
                     .willAnswer(invocation -> {
                         PortfolioAnalysis analysis = invocation.getArgument(0);
@@ -157,66 +91,209 @@ class PortfolioAnalysisServiceTest {
             // then
             assertThat(result.analysisId()).isEqualTo(ANALYSIS_ID);
             assertThat(result.status()).isEqualTo(AnalysisStatus.PENDING);
-            assertThat(portfolio.getAiAnalysisCount()).isEqualTo(1L);
-
-            ArgumentCaptor<AiPortfolioAnalysisRequestDto> aiRequestCaptor =
-                    ArgumentCaptor.forClass(AiPortfolioAnalysisRequestDto.class);
-            then(portfolioAnalysisAsyncExecutor).should().requestAiAnalysis(
-                    any(UUID.class),
-                    aiRequestCaptor.capture()
-            );
-            AiPortfolioAnalysisRequestDto aiRequest = aiRequestCaptor.getValue();
-            assertThat(aiRequest.analysisId()).isEqualTo(ANALYSIS_ID);
-            assertThat(aiRequest.userId()).isEqualTo(USER_ID);
-            assertThat(aiRequest.totalEvaluationAmount()).isEqualByComparingTo("4158500.00");
-            assertThat(aiRequest.totalReturnRate()).isEqualByComparingTo("-1.7750");
-            assertThat(aiRequest.concentrationScore()).isEqualByComparingTo("50.50");
-            assertThat(aiRequest.concentrationThreshold()).isEqualByComparingTo("60.00");
-            assertThat(aiRequest.holdings()).hasSize(2);
-            assertThat(aiRequest.holdings().getFirst().stockName()).isEqualTo("SK하이닉스");
-
-            AiPortfolioTendencyAnalysisRequestDto tendencyAnalysis = aiRequest.tendencyAnalysis();
-            assertThat(tendencyAnalysis).isNotNull();
-            assertThat(tendencyAnalysis.userTendencyType()).isEqualTo("STABLE");
-            assertThat(tendencyAnalysis.userTendencyLabel()).isEqualTo("안정추구형");
-            assertThat(tendencyAnalysis.portfolioRiskType()).isEqualTo("ACTIVE");
-            assertThat(tendencyAnalysis.suitabilityScore()).isEqualTo(63);
+            assertThat(portfolio.getAiAnalysisCount()).isZero();
+            then(portfolioAnalysisPolicyService).should().validateRequest(USER_ID, portfolio);
+            then(portfolioAnalysisAsyncExecutor).should().requestAiAnalysis(ANALYSIS_ID, USER_ID);
         }
 
         @Test
-        @DisplayName("실패 - 보유 종목이 없으면 분석 요청을 저장하지 않는다")
-        void fail_empty_holdings() {
+        @DisplayName("성공 - 오늘 진행 중인 분석 조회 전에 오래된 PENDING 분석을 FAILED 처리한다")
+        void success_fail_stale_pending_before_daily_check() {
             // given
             Portfolio portfolio = portfolio();
-            given(portfolioRepository.findByUserId(USER_ID)).willReturn(Optional.of(portfolio));
-            given(tradeServiceClient.getAssets(USER_ID))
-                    .willReturn(success(new TradeAssetResponseDto(
-                            new BigDecimal("10000000.00"),
-                            new BigDecimal("10000000.00"),
-                            BigDecimal.ZERO,
-                            new BigDecimal("10000000.00"),
-                            BigDecimal.ZERO,
-                            BigDecimal.ZERO
-                    )));
-            given(tradeServiceClient.getAssetHoldings(USER_ID, 0, 10, "evaluationAmount,desc"))
-                    .willReturn(success(new TradeAssetHoldingsResponseDto(
-                            List.of(),
-                            0,
-                            10,
-                            0,
-                            0,
-                            "evaluationAmount,desc"
-                    )));
+            given(portfolioRepository.findByUserIdForUpdate(USER_ID)).willReturn(Optional.of(portfolio));
+            given(portfolioAnalysisRepository.save(any(PortfolioAnalysis.class)))
+                    .willAnswer(invocation -> {
+                        PortfolioAnalysis analysis = invocation.getArgument(0);
+                        ReflectionTestUtils.setField(analysis, "id", ANALYSIS_ID);
+                        return analysis;
+                    });
+
+            // when
+            portfolioAnalysisService.requestAnalysis(USER_ID);
+
+            // then
+            InOrder inOrder = inOrder(portfolioAnalysisRepository);
+            inOrder.verify(portfolioAnalysisRepository).failPendingByPortfolioIdCreatedBefore(
+                    eq(PORTFOLIO_ID),
+                    any(LocalDateTime.class),
+                    eq("포트폴리오 AI 분석 처리 시간이 초과되었습니다."),
+                    any(LocalDateTime.class)
+            );
+            inOrder.verify(portfolioAnalysisRepository).findPendingByPortfolioIdAndCreatedAtBetween(
+                    eq(PORTFOLIO_ID),
+                    any(LocalDateTime.class),
+                    any(LocalDateTime.class)
+            );
+        }
+
+        @Test
+        @DisplayName("성공 - 오늘 진행 중인 분석이 있으면 기존 분석 ID를 반환한다")
+        void success_return_existing_pending_analysis() {
+            // given
+            Portfolio portfolio = portfolio();
+            PortfolioAnalysis pendingAnalysis = PortfolioAnalysis.request(portfolio);
+            ReflectionTestUtils.setField(pendingAnalysis, "id", ANALYSIS_ID);
+
+            given(portfolioRepository.findByUserIdForUpdate(USER_ID)).willReturn(Optional.of(portfolio));
+            given(portfolioAnalysisRepository.findPendingByPortfolioIdAndCreatedAtBetween(
+                    eq(PORTFOLIO_ID),
+                    any(LocalDateTime.class),
+                    any(LocalDateTime.class)
+            )).willReturn(Optional.of(pendingAnalysis));
+
+            // when
+            PortfolioAnalysisCreateResponseDto result = portfolioAnalysisService.requestAnalysis(USER_ID);
+
+            // then
+            assertThat(result.analysisId()).isEqualTo(ANALYSIS_ID);
+            assertThat(result.status()).isEqualTo(AnalysisStatus.PENDING);
+            assertThat(portfolio.getAiAnalysisCount()).isZero();
+            then(portfolioAnalysisPolicyService).should(never()).validateRequest(USER_ID, portfolio);
+            then(portfolioAnalysisRepository).should(never()).save(any(PortfolioAnalysis.class));
+            then(portfolioAnalysisAsyncExecutor).should(never()).requestAiAnalysis(any(UUID.class), any(UUID.class));
+        }
+
+        @Test
+        @DisplayName("실패 - 오늘 이미 분석을 요청했으면 추가 요청할 수 없다")
+        void fail_daily_limit_exceeded() {
+            // given
+            Portfolio portfolio = portfolio();
+            given(portfolioRepository.findByUserIdForUpdate(USER_ID)).willReturn(Optional.of(portfolio));
+            willThrow(new CustomException(PortfolioErrorCode.PORTFOLIO_ANALYSIS_DAILY_LIMIT_EXCEEDED))
+                    .given(portfolioAnalysisPolicyService)
+                    .validateRequest(USER_ID, portfolio);
 
             // when & then
             assertThatThrownBy(() -> portfolioAnalysisService.requestAnalysis(USER_ID))
                     .isInstanceOfSatisfying(CustomException.class, exception ->
                             assertThat(exception.getErrorCode())
-                                    .isEqualTo(PortfolioErrorCode.INVALID_PORTFOLIO_QUERY));
+                                    .isEqualTo(PortfolioErrorCode.PORTFOLIO_ANALYSIS_DAILY_LIMIT_EXCEEDED));
 
             then(portfolioAnalysisRepository).should(never()).save(any(PortfolioAnalysis.class));
-            then(portfolioAnalysisAsyncExecutor).should(never())
-                    .requestAiAnalysis(any(UUID.class), any(AiPortfolioAnalysisRequestDto.class));
+            then(portfolioAnalysisAsyncExecutor).should(never()).requestAiAnalysis(any(UUID.class), any(UUID.class));
+        }
+
+        @Test
+        @DisplayName("실패 - 무료 플랜은 계정당 최대 5번까지만 분석을 요청할 수 있다")
+        void fail_free_plan_limit_exceeded() {
+            // given
+            Portfolio portfolio = portfolio();
+            ReflectionTestUtils.setField(portfolio, "aiAnalysisCount", 5L);
+            given(portfolioRepository.findByUserIdForUpdate(USER_ID)).willReturn(Optional.of(portfolio));
+            willThrow(new CustomException(PortfolioErrorCode.PORTFOLIO_ANALYSIS_FREE_LIMIT_EXCEEDED))
+                    .given(portfolioAnalysisPolicyService)
+                    .validateRequest(USER_ID, portfolio);
+
+            // when & then
+            assertThatThrownBy(() -> portfolioAnalysisService.requestAnalysis(USER_ID))
+                    .isInstanceOfSatisfying(CustomException.class, exception ->
+                            assertThat(exception.getErrorCode())
+                                    .isEqualTo(PortfolioErrorCode.PORTFOLIO_ANALYSIS_FREE_LIMIT_EXCEEDED));
+
+            then(portfolioAnalysisRepository).should(never()).save(any(PortfolioAnalysis.class));
+            then(portfolioAnalysisAsyncExecutor).should(never()).requestAiAnalysis(any(UUID.class), any(UUID.class));
+        }
+    }
+
+    @Nested
+    @DisplayName("getAnalysis()")
+    class GetAnalysis {
+
+        @Test
+        @DisplayName("성공 - 단건 조회 전 해당 분석 ID의 오래된 PENDING 분석을 FAILED 처리한다")
+        void success_fail_stale_pending_analysis_before_get_analysis() {
+            // given
+            Portfolio portfolio = portfolio();
+            PortfolioAnalysis analysis = PortfolioAnalysis.request(portfolio);
+            ReflectionTestUtils.setField(analysis, "id", ANALYSIS_ID);
+
+            given(portfolioRepository.findByUserId(USER_ID)).willReturn(Optional.of(portfolio));
+            given(portfolioAnalysisRepository.findByIdAndPortfolioId(ANALYSIS_ID, PORTFOLIO_ID))
+                    .willReturn(Optional.of(analysis));
+
+            // when
+            PortfolioAnalysisResponseDto result = portfolioAnalysisService.getAnalysis(USER_ID, ANALYSIS_ID);
+
+            // then
+            assertThat(result.analysisId()).isEqualTo(ANALYSIS_ID);
+            then(portfolioAnalysisRepository).should().failPendingByIdAndPortfolioIdCreatedBefore(
+                    eq(ANALYSIS_ID),
+                    eq(PORTFOLIO_ID),
+                    any(LocalDateTime.class),
+                    eq("포트폴리오 AI 분석 처리 시간이 초과되었습니다."),
+                    any(LocalDateTime.class)
+            );
+            then(portfolioAnalysisRepository).should(never()).failPendingByPortfolioIdCreatedBefore(
+                    any(UUID.class),
+                    any(LocalDateTime.class),
+                    any(String.class),
+                    any(LocalDateTime.class)
+            );
+        }
+    }
+
+    @Nested
+    @DisplayName("getAnalyses()")
+    class GetAnalyses {
+
+        @Test
+        @DisplayName("성공 - 분석 이력 목록은 FAILED를 제외하고 PENDING, SUCCESS만 조회한다")
+        void success_exclude_failed_analysis() {
+            // given
+            Portfolio portfolio = portfolio();
+            PortfolioAnalysis pendingAnalysis = PortfolioAnalysis.request(portfolio);
+            ReflectionTestUtils.setField(pendingAnalysis, "id", ANALYSIS_ID);
+            PortfolioAnalysis successAnalysis = PortfolioAnalysis.request(portfolio);
+            successAnalysis.succeed(
+                    "요약입니다.",
+                    new BigDecimal("2.1200"),
+                    new BigDecimal("5100000.00"),
+                    new BigDecimal("45.00"),
+                    new BigDecimal("60.00")
+            );
+            ReflectionTestUtils.setField(
+                    successAnalysis,
+                    "id",
+                    UUID.fromString("00000000-0000-0000-0000-000000000003")
+            );
+
+            given(portfolioRepository.findByUserId(USER_ID)).willReturn(Optional.of(portfolio));
+            given(portfolioAnalysisRepository.findAllByPortfolioIdAndStatusIn(
+                    eq(PORTFOLIO_ID),
+                    eq(List.of(AnalysisStatus.PENDING, AnalysisStatus.SUCCESS)),
+                    any(PageRequest.class)
+            )).willReturn(new PageImpl<>(
+                    List.of(pendingAnalysis, successAnalysis),
+                    PageRequest.of(0, 10),
+                    2
+            ));
+
+            // when
+            PageRes<PortfolioAnalysisResponseDto> result = portfolioAnalysisService.getAnalyses(USER_ID, 0, 10);
+
+            // then
+            assertThat(result.getContent())
+                    .extracting(PortfolioAnalysisResponseDto::status)
+                    .containsExactly(AnalysisStatus.PENDING, AnalysisStatus.SUCCESS);
+            then(portfolioAnalysisRepository).should().findAllByPortfolioIdAndStatusIn(
+                    eq(PORTFOLIO_ID),
+                    eq(List.of(AnalysisStatus.PENDING, AnalysisStatus.SUCCESS)),
+                    any(PageRequest.class)
+            );
+            then(portfolioAnalysisRepository).should(never()).failPendingByPortfolioIdCreatedBefore(
+                    any(UUID.class),
+                    any(LocalDateTime.class),
+                    any(String.class),
+                    any(LocalDateTime.class)
+            );
+            then(portfolioAnalysisRepository).should(never()).failPendingByIdAndPortfolioIdCreatedBefore(
+                    any(UUID.class),
+                    any(UUID.class),
+                    any(LocalDateTime.class),
+                    any(String.class),
+                    any(LocalDateTime.class)
+            );
         }
     }
 
@@ -224,33 +301,5 @@ class PortfolioAnalysisServiceTest {
         Portfolio portfolio = Portfolio.create(USER_ID);
         ReflectionTestUtils.setField(portfolio, "id", PORTFOLIO_ID);
         return portfolio;
-    }
-
-    private TradeAssetHoldingResponseDto holding(
-            String ticker,
-            String stockName,
-            Long quantity,
-            String averagePurchasePrice,
-            String currentPrice,
-            String evaluationAmount,
-            String profitLoss,
-            String profitRate,
-            String weight
-    ) {
-        return new TradeAssetHoldingResponseDto(
-                ticker,
-                stockName,
-                quantity,
-                new BigDecimal(averagePurchasePrice),
-                new BigDecimal(currentPrice),
-                new BigDecimal(evaluationAmount),
-                new BigDecimal(profitLoss),
-                new BigDecimal(profitRate),
-                new BigDecimal(weight)
-        );
-    }
-
-    private <T> ExternalApiResponseDto<T> success(T data) {
-        return new ExternalApiResponseDto<>(200, "SUCCESS", data, null);
     }
 }

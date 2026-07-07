@@ -23,7 +23,7 @@ public enum SubscriptionStatus {
     CANCELLING {
         @Override
         public Set<SubscriptionStatus> allowedNextStatuses() {
-            return EnumSet.of(CANCELLED);
+            return EnumSet.of(CANCELLED, ACTIVE);
         }
     },
     CANCELLED {

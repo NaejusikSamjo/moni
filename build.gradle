@@ -48,6 +48,14 @@ subprojects {
         toolVersion = '13.5.0'
         configFile = file("$rootDir/config/checkstyle/checkstyle.xml")
         maxWarnings = 0
+        showViolations = false
+    }
+
+    tasks.withType(Checkstyle).configureEach {
+        reports {
+            xml.required = true
+            html.required = false
+        }
     }
 
     configurations.configureEach {

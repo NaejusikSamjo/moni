@@ -200,6 +200,7 @@ services:
       REDIS_HOST: ${REDIS_HOST}
       REDIS_PORT: ${REDIS_PORT}
       REDIS_PASSWORD: ${REDIS_PASSWORD}
+      GATEWAY_SECRET: ${GATEWAY_SECRET}
       SPRING_PROFILES_ACTIVE: prod
       OTEL_SERVICE_NAME: notification-service
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
@@ -255,6 +256,7 @@ services:
     expose:
       - "19096"
     environment:
+      TZ: Asia/Seoul # 시간 고정
       DB_URL: ${AI_DB_URL}
       DB_USERNAME: ${AI_DB_USERNAME}
       DB_PASSWORD: ${AI_DB_PASSWORD}

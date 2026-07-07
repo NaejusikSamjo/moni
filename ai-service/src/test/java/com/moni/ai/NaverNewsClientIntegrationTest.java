@@ -1,12 +1,19 @@
 package com.moni.ai;
 
 import com.moni.ai.application.service.AiService;
+import com.moni.ai.application.service.AsyncNewsCollectService;
+import com.moni.ai.application.service.MarketNewsCollectService;
+import com.moni.ai.application.service.NewsService;
 import com.moni.ai.application.service.NewsCollectService;
-import com.moni.ai.domain.entity.NewsEntity;
+import com.moni.ai.domain.entity.CompanyIssueAnalysisEntity;
+import com.moni.ai.domain.enums.ImpactKeyword;
+import com.moni.ai.domain.enums.WatchCompany;
+import com.moni.ai.domain.repository.CompanyIssueAnalysisRepository;
 import com.moni.ai.domain.repository.NewsRepository;
 import com.moni.ai.infrastructure.client.NaverNewsClient;
 import com.moni.ai.presentation.dto.response.CompanyIssueResDto;
 import com.moni.ai.presentation.dto.response.NaverNewsResDto;
+import com.moni.common.error.exception.CustomException;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
@@ -16,12 +23,19 @@ import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verify;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -40,27 +54,38 @@ class NaverNewsClientIntegrationTest {
     private NewsRepository newsRepository;
 
     @Autowired
+    private AsyncNewsCollectService asyncNewsCollectService;
+
+    @Autowired
+    private NewsService newsService;
+
+    @Autowired
+    private MarketNewsCollectService marketNewsCollectService;
+
+    @Autowired
+    private CompanyIssueAnalysisRepository companyIssueAnalysisRepository;
+
+
+    @Autowired
     private VectorStore vectorStore;
 
     @Autowired
     private AiService aiService;
 
     @Test
-    @DisplayName("DB저장 확인")
-    void API_호출_정상_반환() {
+    @DisplayName("병렬 처리가 순차 처리보다 빠르다")
+    void 병렬_처리_성능_검증() {
         // when
-        newsCollectService.collectByTicker("005930","삼성전자");
+        long start = System.currentTimeMillis();
+        newsService.collectAll();  // 실제 Naver API 호출
+        long elapsed = System.currentTimeMillis() - start;
 
-        // then
-        List<NewsEntity> saved = newsRepository.findByTicker("005930");
-        assertThat(saved).isNotEmpty();
-        assertThat(saved.get(0).getTicker()).isEqualTo("005930");
+        // 순차 처리 예상 시간: 기업수 × 키워드수 × 평균응답시간(300ms)
+        long expectedSequential = (long) WatchCompany.toMap().size()
+                * ImpactKeyword.getAllKeywords().size() * 300;
 
-        // 저장된 내용 로그로 확인
-        saved.forEach(news ->
-                log.info("저장된 뉴스 - 제목: {}, 날짜: {}", news.getTitle(), news.getPublishedAt())
-        );
-
+        log.info("순차 예상: {}ms, 실제: {}ms", expectedSequential, elapsed);
+        assertThat(elapsed).isLessThan(expectedSequential);
     }
 
     @Test
@@ -102,7 +127,7 @@ class NaverNewsClientIntegrationTest {
     @DisplayName("삼성전자 AI 분석 결과 반환 확인")
     void 삼성전자_AI_분석() {
         // when
-        CompanyIssueResDto result = aiService.analyze("005930", null);
+        CompanyIssueResDto result = aiService.companyAnalyze("005930");
 
         // then
         assertThat(result).isNotNull();
@@ -114,5 +139,47 @@ class NaverNewsClientIntegrationTest {
         log.info("분석 결과 - companyName: {}", result.companyName);
         log.info("분석 결과 - sentiment: {}", result.sentiment);
         log.info("분석 결과 - summary: {}", result.summary);
+    }
+
+    @Test
+    @DisplayName("동시에 같은 ticker로 요청 시 LLM은 1번만 호출된다")
+    void 동시_요청_분산락_검증() throws InterruptedException {
+        // given
+        int threadCount = 5;
+        ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
+        CountDownLatch latch = new CountDownLatch(threadCount);
+
+        AtomicInteger successCount = new AtomicInteger(0);
+        AtomicInteger failCount = new AtomicInteger(0);
+
+        // when - 5개 스레드가 동시에 같은 ticker 분석 요청
+        for (int i = 0; i < threadCount; i++) {
+            executorService.submit(() -> {
+                try {
+                    aiService.companyAnalyze("005930");
+                    successCount.incrementAndGet();
+                    log.info("분석 성공 - 스레드: {}", Thread.currentThread().getName());
+                } catch (CustomException e) {
+                    failCount.incrementAndGet();
+                    log.info("분석 실패 - 스레드: {}, 이유: {}", Thread.currentThread().getName(), e.getMessage());
+                } finally {
+                    latch.countDown();
+                }
+            });
+        }
+
+        latch.await(60, TimeUnit.SECONDS);
+        executorService.shutdown();
+
+        // then - 성공은 1번, 나머지는 실패
+        log.info("성공: {}, 실패: {}", successCount.get(), failCount.get());
+        assertThat(successCount.get()).isEqualTo(1);
+        assertThat(failCount.get()).isEqualTo(threadCount - 1);
+
+        // DB에도 1건만 저장됐는지 확인
+        List<CompanyIssueAnalysisEntity> saved = companyIssueAnalysisRepository.findAll();
+        assertThat(saved.stream()
+                .filter(e -> e.getTicker().equals("005930"))
+                .count()).isEqualTo(1);
     }
 }

@@ -30,11 +30,6 @@ spring:
     generate-ddl: true
     hibernate:
       ddl-auto: update
-    show-sql: true
-    open-in-view: false
-    properties:
-      hibernate:
-        format_sql: true
     defer-datasource-initialization: true
 
   ai:
@@ -64,6 +59,8 @@ naver:
 springdoc:
   api-docs:
     path: /v3/api-docs
+  swagger-ui:
+    enabled: true
 
 management:
   endpoints:

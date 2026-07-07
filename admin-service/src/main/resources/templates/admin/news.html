@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{admin/layout/default :: layout(~{::title}, ~{::#page-content}, 'news', ~{})}">
+<head>
+    <title>뉴스 관리 - moni 관리자</title>
+</head>
+<body>
+<div id="page-content">
+    <h2 class="page-title">뉴스 관리</h2>
+
+    <div class="news-grid">
+        <div class="news-card">
+            <p class="news-card-title">기업 뉴스 수집</p>
+            <p class="news-card-desc">관심 기업 전체의 최신 뉴스를 수동으로 수집하고 벡터 DB에 저장합니다.</p>
+            <form th:action="@{/admin/news/fetch}" method="post" data-loading>
+                <button type="submit" class="btn btn-primary" data-loading-text="수집 중...">수집 시작</button>
+            </form>
+        </div>
+        <div class="news-card">
+            <p class="news-card-title">시장 뉴스 수집</p>
+            <p class="news-card-desc">코스피, 금리, 달러 등 시장 전반의 뉴스를 수동으로 수집합니다.</p>
+            <form th:action="@{/admin/news/market/fetch}" method="post" data-loading>
+                <button type="submit" class="btn btn-primary" data-loading-text="수집 중...">수집 시작</button>
+            </form>
+        </div>
+        <div class="news-card">
+            <p class="news-card-title">뉴스 직접 등록</p>
+            <p class="news-card-desc">ticker와 회사명 검증 후 뉴스를 직접 입력해 벡터 DB에 저장합니다.</p>
+            <a th:href="@{/admin/news/register}" class="btn btn-primary">등록 페이지로</a>
+        </div>
+    </div>
+</div>
+</body>
+</html>

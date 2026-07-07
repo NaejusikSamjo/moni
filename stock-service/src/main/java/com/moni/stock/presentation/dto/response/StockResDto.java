@@ -14,4 +14,8 @@ public class StockResDto {
     public String name;
 
     public BigDecimal price;
+
+    public String section;
+
+    public boolean available;
 }
