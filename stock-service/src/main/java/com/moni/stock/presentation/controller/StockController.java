@@ -4,6 +4,7 @@ import com.moni.common.response.paging.PageRes;
 import com.moni.stock.application.masterFile.StockMasterService;
 import com.moni.stock.application.port.in.StockQueryUseCase;
 import com.moni.stock.domain.type.ChartIndex;
+import com.moni.stock.presentation.dto.request.BatchStockRequest;
 import com.moni.stock.presentation.dto.response.StockChartResponse;
 import com.moni.stock.presentation.dto.response.StockResDto;
 import com.moni.stock.presentation.dto.response.ThemeRankingResponse;
@@ -19,6 +20,8 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -32,17 +35,6 @@ import java.util.Map;
 public class StockController {
 
     private final StockQueryUseCase stockQueryUseCase;
-    private final StockMasterService stockMasterService;
-
-    @Operation(summary = "초기 코스피, 코스닥, 테마 마스터 파일 전처리, 저장 로직", description = "초기 한번만 실행하면 되는 로직임.")
-    @PostMapping("/download/stocks")
-    public Map<String, String> downloadStocks() {
-        stockMasterService.runOnceOnStartupKosdaq();
-        stockMasterService.runOnceOnStartupKospi();
-        stockMasterService.updateThemeMasters();
-
-        return Map.of("message", "success download stocks");
-    }
 
     @Operation(summary = "주식 조회 기능 (검색)", description = "주식 조회 기능을 제공한다, 검색어는 필수가 아니다, 페이징처리가 된다.")
     @GetMapping("/search")
@@ -52,10 +44,17 @@ public class StockController {
 
     }
 
-    @Operation(summary = "주식 상세 조회 기능", description = "주식 단일 항목에 대해 조회 기능 제공")
+    @Operation(summary = "주식 단일 상세 조회 기능", description = "주식 단일 항목에 대해 조회 기능 제공")
     @GetMapping("/{ticker}")
     public StockResDto getStockDetail(@Parameter(description = "조회할 주식 Code", example = "000020") @PathVariable String ticker) {
         return stockQueryUseCase.getStockDetail(ticker);
+    }
+
+    @Operation(summary = "주식 다중 상세 조회 기능", description = "주식 다중 항목에 대해 조회 기능 제공")
+    @PostMapping("/batch")
+    public List<StockResDto> getStockListDetail (@RequestBody BatchStockRequest tickers) {
+        return stockQueryUseCase.getStockDetailList(tickers);
+
     }
 
     @Operation(summary = "주식 분봉 조회", description = "단일 주식 항목에 대한 분봉을 제공 (1,3,5,10분 단위 지원)")

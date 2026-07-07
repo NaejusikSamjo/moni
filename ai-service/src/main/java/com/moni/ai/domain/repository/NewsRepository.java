@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.Optional;
 
-public interface NewsRepository extends JpaRepository<NewsEntity, UUID> {
+public interface NewsRepository extends JpaRepository<NewsEntity, UUID>, NewsRepositoryCustom {
     boolean existsByUrl(String url);
 
     List<NewsEntity> findByTicker(String number);

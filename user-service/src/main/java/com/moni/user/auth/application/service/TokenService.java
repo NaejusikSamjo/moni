@@ -4,6 +4,7 @@ import com.moni.common.error.exception.CustomException;
 import com.moni.user.auth.domain.exception.TokenErrorCode;
 import com.moni.user.auth.presentation.dto.response.LoginResponse;
 import com.moni.user.global.jwt.JwtUtil;
+import com.moni.user.global.redis.CasResult;
 import com.moni.user.global.redis.RedisService;
 import com.moni.user.user.domain.entity.User;
 import lombok.RequiredArgsConstructor;
@@ -44,13 +45,9 @@ public class TokenService {
         return new LoginResponse(accessToken, refreshToken);
     }
 
-    // Refresh Token 검증 + Redis 비교 → userId 반환
+    // Refresh Token 검증 + Redis 비교 → userId 반환 (logout 등 원자성이 필요 없는 조회 전용 경로)
     public UUID validateAndGetUserId(String refreshToken) {
-        if (!jwtUtil.validateToken(refreshToken)) {
-            throw new CustomException(TokenErrorCode.INVALID_REFRESH_TOKEN);
-        }
-
-        UUID userId = jwtUtil.getUserId(refreshToken);
+        UUID userId = getVerifiedUserId(refreshToken);
 
         String stored = redisService.get(jwtUtil.getRefreshTokenKey(userId));
         if (stored == null) {
@@ -61,6 +58,36 @@ public class TokenService {
         }
 
         return userId;
+    }
+
+    // JWT 서명/만료만 검증 (Redis 조회 없음) — refresh 흐름에서 원자적 rotate 전 userId 확보용
+    public UUID getVerifiedUserId(String refreshToken) {
+        if (!jwtUtil.validateToken(refreshToken)) {
+            throw new CustomException(TokenErrorCode.INVALID_REFRESH_TOKEN);
+        }
+        return jwtUtil.getUserId(refreshToken);
+    }
+
+    // 새 토큰 발급 + Redis의 기존 refresh token을 원자적 교체 (동시 refresh 시 재사용/중복 발급 방지)
+    public LoginResponse rotateRefreshToken(User user, String oldRefreshToken) {
+        String newAccessToken = jwtUtil.createAccessToken(user.getId(), user.getEmail(), user.getRole().name());
+        String newRefreshToken = jwtUtil.createRefreshToken(user.getId());
+
+        CasResult result = redisService.compareAndSet(
+                jwtUtil.getRefreshTokenKey(user.getId()),
+                oldRefreshToken,
+                newRefreshToken,
+                Duration.ofMillis(jwtUtil.getRefreshTokenExpiration())
+        );
+
+        if (result == CasResult.NOT_FOUND) {
+            throw new CustomException(TokenErrorCode.REFRESH_TOKEN_NOT_FOUND);
+        }
+        if (result == CasResult.MISMATCH) {
+            throw new CustomException(TokenErrorCode.REFRESH_TOKEN_REUSED);
+        }
+
+        return new LoginResponse(newAccessToken, newRefreshToken);
     }
 
     // Access Token 블랙리스트 등록 (refresh/logout에서 재사용)

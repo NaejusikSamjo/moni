@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8"/>
+    <title>뉴스 직접 등록 - moni 관리자</title>
+    <link rel="stylesheet" th:href="@{/css/admin.css}"/>
+</head>
+<body>
+
+<header class="header">
+    <span class="logo">moni 관리자</span>
+    <nav>
+        <a th:href="@{/admin/dashboard}">대시보드</a>
+        <a th:href="@{/admin/users}">사용자 관리</a>
+        <a th:href="@{/admin/users/deleted}">삭제된 사용자</a>
+        <a th:href="@{/admin/news}" class="active">뉴스 관리</a>
+    </nav>
+    <form id="logout-form" class="logout-form" th:action="@{/admin/logout}" method="post">
+        <span class="nav-username" sec:authentication="name"></span>
+        <button type="submit" class="logout-btn">로그아웃</button>
+    </form>
+</header>
+
+<main class="main">
+    <div class="page-header-row">
+        <h2 class="page-title">뉴스 직접 등록</h2>
+        <a th:href="@{/admin/news}" class="btn btn-secondary">뒤로가기</a>
+    </div>
+
+    <div th:if="${successMsg}" class="alert alert-success" th:text="${successMsg}"></div>
+    <div th:if="${errorMsg}" class="alert alert-error" th:text="${errorMsg}"></div>
+
+    <div class="form-card">
+        <form th:action="@{/admin/news/register}" method="post">
+            <div class="form-group">
+                <label for="ticker" class="form-label">티커 (최대 6자)</label>
+                <input id="ticker" type="text" name="ticker" class="form-input" maxlength="6" placeholder="예: 005930" required/>
+            </div>
+            <div class="form-group">
+                <label for="companyName" class="form-label">회사명</label>
+                <input id="companyName" type="text" name="companyName" class="form-input" placeholder="예: 삼성전자" required/>
+            </div>
+            <div class="form-group">
+                <label for="title" class="form-label">제목</label>
+                <input id="title" type="text" name="title" class="form-input" placeholder="뉴스 제목" required/>
+            </div>
+            <div class="form-group">
+                <label for="content" class="form-label">본문</label>
+                <textarea id="content" name="content" class="form-input form-textarea" placeholder="뉴스 본문 내용" required></textarea>
+            </div>
+            <div class="form-group">
+                <label for="source" class="form-label">출처 (최대 50자)</label>
+                <input id="source" type="text" name="source" class="form-input" maxlength="50" placeholder="예: 연합뉴스" required/>
+            </div>
+            <div class="form-group">
+                <label for="url" class="form-label">URL</label>
+                <input id="url" type="url" name="url" class="form-input" placeholder="https://..." required/>
+            </div>
+            <div class="form-group">
+                <label for="publishedAt" class="form-label">발행일시</label>
+                <input id="publishedAt" type="datetime-local" name="publishedAt" class="form-input" required/>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">등록</button>
+            </div>
+        </form>
+    </div>
+</main>
+
+<script th:src="@{/js/inactivity.js}"></script>
+</body>
+</html>

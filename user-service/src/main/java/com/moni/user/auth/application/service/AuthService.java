@@ -64,13 +64,15 @@ public class AuthService {
 
     @Transactional
     public LoginResponse refresh(String accessToken, String refreshToken) {
-        UUID userId = tokenService.validateAndGetUserId(refreshToken);
-        tokenService.blacklistAccessToken(accessToken, "refresh");
+        UUID userId = tokenService.getVerifiedUserId(refreshToken);
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(AuthErrorCode.USER_NOT_FOUND));
 
-        return tokenService.issueTokens(user);
+        LoginResponse newTokens = tokenService.rotateRefreshToken(user, refreshToken);
+        tokenService.blacklistAccessToken(accessToken, "refresh");
+
+        return newTokens;
     }
 
     public void logout(String accessToken, String refreshToken) {

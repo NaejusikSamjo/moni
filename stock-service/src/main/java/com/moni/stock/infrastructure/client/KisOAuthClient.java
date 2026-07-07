@@ -2,6 +2,10 @@ package com.moni.stock.infrastructure.client;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.moni.common.error.exception.CustomException;
+import com.moni.stock.domain.exception.StockErrorCode;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 import io.swagger.v3.core.util.Json;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -62,6 +66,8 @@ public class KisOAuthClient {
         return accessToken;
     }
 
+    @Retry(name = "kisApi")
+    @CircuitBreaker(name = "kisApi", fallbackMethod = "getThemeInfoFallback")
     public synchronized JsonNode getThemeInfo(String themeCode) {
 
         JsonNode body = kisRestClient
@@ -80,11 +86,13 @@ public class KisOAuthClient {
                 .retrieve()
                 .body(JsonNode.class);
 
-        log.debug("테마 : {}", body);
+        //log.debug("테마 : {}", body);
         return body;
 
     }
 
+    @Retry(name = "kisApi")
+    @CircuitBreaker(name = "kisApi", fallbackMethod = "getCandleFallback")
     public synchronized JsonNode getCandle(String ticker, String targetTime) {
         JsonNode body = kisRestClient
                 .get()
@@ -105,11 +113,13 @@ public class KisOAuthClient {
                 .retrieve()
                 .body(JsonNode.class);
 
-        log.info("candle : {}", body);
+        //.info("candle : {}", body);
         return body;
 
     }
 
+    @Retry(name = "kisApi")
+    @CircuitBreaker(name = "kisApi", fallbackMethod = "getCurrentPriceFallback")
     public JsonNode getCurrentPrice(String ticker) {
         JsonNode body = kisRestClient
                 .get()
@@ -131,6 +141,8 @@ public class KisOAuthClient {
         return body;
     }
 
+    @Retry(name = "kisApi")
+    @CircuitBreaker(name = "kisApi", fallbackMethod = "getVolumeRankFallback")
     public JsonNode getVolumeRank () {
 
         JsonNode body = kisRestClient
@@ -159,6 +171,26 @@ public class KisOAuthClient {
                 .body(JsonNode.class);
 
         return body;
+    }
+
+    private JsonNode getThemeInfoFallback(String themeCode, Throwable t) {
+        log.warn("KIS API 호출 실패 - themeCode: {}, cause: {}", themeCode, t.toString());
+        throw new CustomException(StockErrorCode.KIS_CONNECTION_FAILED);
+    }
+
+    private JsonNode getCandleFallback(String ticker, String targetTime, Throwable t) {
+        log.warn("KIS API 호출 실패 - ticker: {}, targetTime: {}, cause: {}", ticker, targetTime, t.toString());
+        throw new CustomException(StockErrorCode.KIS_CONNECTION_FAILED);
+    }
+
+    private JsonNode getCurrentPriceFallback(String ticker, Throwable t) {
+        log.warn("KIS API 호출 실패 - ticker: {}, cause: {}", ticker, t.toString());
+        throw new CustomException(StockErrorCode.KIS_CONNECTION_FAILED);
+    }
+
+    private JsonNode getVolumeRankFallback(Throwable t) {
+        log.warn("KIS API 호출 실패 - cause: {}", t.toString());
+        throw new CustomException(StockErrorCode.KIS_CONNECTION_FAILED);
     }
 
     record ApprovalKeyRequest(

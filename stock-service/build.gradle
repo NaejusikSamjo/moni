@@ -43,6 +43,9 @@ dependencies {
     implementation 'me.paulschwarz:spring-dotenv:4.0.0'
     //postgres
     runtimeOnly 'org.postgresql:postgresql'
+    //resilience4j
+    implementation 'org.springframework.boot:spring-boot-starter-aop'
+    implementation 'io.github.resilience4j:resilience4j-spring-boot3:2.2.0'
 
 
 }
@@ -54,5 +57,23 @@ dependencyManagement {
 }
 
 tasks.named('test') {
-    useJUnitPlatform()
+    useJUnitPlatform {
+        excludeTags 'benchmark'
+    }
+}
+
+// ./gradlew :stock-service:benchmarkTest --tests "*StockRedisStandaloneBenchmarkTest"
+// ./gradlew :stock-service:benchmarkTest --tests "*StockRedisClusterBenchmarkTest"
+tasks.register('benchmarkTest', Test) {
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    useJUnitPlatform {
+        includeTags 'benchmark'
+    }
+
+    systemProperty 'logging.level.root', 'WARN'
+    outputs.upToDateWhen { false }
+    testLogging {
+        showStandardStreams = true
+    }
 }

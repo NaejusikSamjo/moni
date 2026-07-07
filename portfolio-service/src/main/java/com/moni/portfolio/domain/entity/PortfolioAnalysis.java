@@ -99,15 +99,9 @@ public class PortfolioAnalysis extends BaseEntity {
     }
 
     /** 분석 요청 시 사용 */
-    public static PortfolioAnalysis request(
-            Portfolio portfolio,
-            BigDecimal totalReturnRate,
-            BigDecimal totalEvaluationAmount
-    ) {
+    public static PortfolioAnalysis request(Portfolio portfolio) {
         return PortfolioAnalysis.builder()
                 .portfolio(portfolio)
-                .totalReturnRate(totalReturnRate)
-                .totalEvaluationAmount(totalEvaluationAmount)
                 .build();
     }
 
@@ -121,10 +115,14 @@ public class PortfolioAnalysis extends BaseEntity {
     /** 분석 성공 시 사용 */
     public void succeed(
             String summary,
+            BigDecimal totalReturnRate,
+            BigDecimal totalEvaluationAmount,
             BigDecimal concentrationScore,
             BigDecimal concentrationThreshold
     ) {
         this.status = AnalysisStatus.SUCCESS;
+        this.totalReturnRate = totalReturnRate;
+        this.totalEvaluationAmount = totalEvaluationAmount;
         this.summary = summary;
         this.concentrationScore = concentrationScore;
         this.concentrationThreshold = concentrationThreshold;

@@ -1,5 +1,7 @@
 package com.moni.ai.domain.enums;
 
+import com.moni.ai.domain.exception.AiErrorCode;
+import com.moni.common.error.exception.CustomException;
 import lombok.Getter;
 
 import java.util.Arrays;
@@ -28,5 +30,13 @@ public enum MarketKeyword {
         return Arrays.stream(values())
                 .map(MarketKeyword::getKeyword)
                 .toList();
+    }
+
+
+    public static MarketKeyword fromKeyword(String keyword){
+        return Arrays.stream(values())
+                .filter(c -> c.getKeyword().equals(keyword))
+                .findFirst()
+                .orElseThrow(() -> new CustomException(AiErrorCode.MARKET_KEYWORD_MISMATCH));
     }
 }

@@ -2,6 +2,7 @@ package com.moni.ai;
 
 import com.moni.ai.application.service.AiService;
 import com.moni.ai.application.service.AsyncNewsCollectService;
+import com.moni.ai.application.service.MarketNewsCollectService;
 import com.moni.ai.application.service.NewsService;
 import com.moni.ai.application.service.NewsCollectService;
 import com.moni.ai.domain.enums.ImpactKeyword;
@@ -48,6 +49,10 @@ class NaverNewsClientIntegrationTest {
 
     @Autowired
     private NewsService newsService;
+
+    @Autowired
+    private MarketNewsCollectService marketNewsCollectService;
+
 
     @Autowired
     private VectorStore vectorStore;
@@ -110,7 +115,7 @@ class NaverNewsClientIntegrationTest {
     @DisplayName("삼성전자 AI 분석 결과 반환 확인")
     void 삼성전자_AI_분석() {
         // when
-        CompanyIssueResDto result = aiService.analyze("005930", null);
+        CompanyIssueResDto result = aiService.companyAnalyze("005930");
 
         // then
         assertThat(result).isNotNull();

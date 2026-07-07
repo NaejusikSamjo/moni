@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8"/>
+    <title>뉴스 관리 - moni 관리자</title>
+    <link rel="stylesheet" th:href="@{/css/admin.css}"/>
+</head>
+<body>
+
+<header class="header">
+    <span class="logo">moni 관리자</span>
+    <nav>
+        <a th:href="@{/admin/dashboard}">대시보드</a>
+        <a th:href="@{/admin/users}">사용자 관리</a>
+        <a th:href="@{/admin/users/deleted}">삭제된 사용자</a>
+        <a th:href="@{/admin/news}" class="active">뉴스 관리</a>
+    </nav>
+    <form id="logout-form" class="logout-form" th:action="@{/admin/logout}" method="post">
+        <span class="nav-username" sec:authentication="name"></span>
+        <button type="submit" class="logout-btn">로그아웃</button>
+    </form>
+</header>
+
+<main class="main">
+    <h2 class="page-title">뉴스 관리</h2>
+
+    <div th:if="${successMsg}" class="alert alert-success" th:text="${successMsg}"></div>
+    <div th:if="${errorMsg}" class="alert alert-error" th:text="${errorMsg}"></div>
+
+    <div class="news-grid">
+        <div class="news-card">
+            <p class="news-card-title">기업 뉴스 수집</p>
+            <p class="news-card-desc">관심 기업 전체의 최신 뉴스를 수동으로 수집하고 벡터 DB에 저장합니다.</p>
+            <form th:action="@{/admin/news/fetch}" method="post" data-loading>
+                <button type="submit" class="btn btn-primary" data-loading-text="수집 중...">수집 시작</button>
+            </form>
+        </div>
+        <div class="news-card">
+            <p class="news-card-title">시장 뉴스 수집</p>
+            <p class="news-card-desc">코스피, 금리, 달러 등 시장 전반의 뉴스를 수동으로 수집합니다.</p>
+            <form th:action="@{/admin/news/market/fetch}" method="post" data-loading>
+                <button type="submit" class="btn btn-primary" data-loading-text="수집 중...">수집 시작</button>
+            </form>
+        </div>
+        <div class="news-card">
+            <p class="news-card-title">뉴스 직접 등록</p>
+            <p class="news-card-desc">ticker와 회사명 검증 후 뉴스를 직접 입력해 벡터 DB에 저장합니다.</p>
+            <a th:href="@{/admin/news/register}" class="btn btn-primary">등록 페이지로</a>
+        </div>
+    </div>
+</main>
+
+<script th:src="@{/js/inactivity.js}"></script>
+<script th:src="@{/js/form-loading.js}"></script>
+</body>
+</html>
