@@ -5,6 +5,7 @@ import com.moni.payment.common.exception.PaymentErrorCode;
 import com.moni.payment.common.exception.PaymentException;
 import com.moni.payment.domain.event.SubscriptionActivatedEvent;
 import com.moni.payment.domain.event.SubscriptionCancelledEvent;
+import com.moni.payment.domain.event.SubscriptionSuspendedEvent;
 import com.moni.payment.infrastructure.messaging.dto.SubscriptionEventMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +32,17 @@ public class SubscriptionKafkaEventListener {
                 event.occurredAt(),
                 event);
         send(KafkaConfig.TOPIC_SUBSCRIPTION_SUCCEEDED, event.subscriptionId().toString(), message);
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onSubscriptionSuspended(SubscriptionSuspendedEvent event) {
+        SubscriptionEventMessage message = new SubscriptionEventMessage(
+                "SUBSCRIPTION_SUSPENDED",
+                event.subscriptionId(),
+                event.userId(),
+                event.occurredAt(),
+                event);
+        send(KafkaConfig.TOPIC_SUBSCRIPTION_SUSPENDED, event.subscriptionId().toString(), message);
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)

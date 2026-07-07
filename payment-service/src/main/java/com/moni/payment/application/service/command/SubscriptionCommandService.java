@@ -78,6 +78,7 @@ public class SubscriptionCommandService {
             log.warn("구독 SUSPENDED 전환: subscriptionId={}", subscriptionId);
         }
         subscriptionJpaRepository.save(subscription);
+        subscription.pullDomainEvents().forEach(applicationEventPublisher::publishEvent);
         log.info("결제 실패 처리: subscriptionId={}, retryCount={}", subscriptionId, subscription.getRetryCount());
     }
 

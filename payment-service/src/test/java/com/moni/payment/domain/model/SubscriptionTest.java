@@ -4,6 +4,7 @@ import com.moni.payment.common.exception.PaymentErrorCode;
 import com.moni.payment.common.exception.PaymentException;
 import com.moni.payment.domain.event.SubscriptionActivatedEvent;
 import com.moni.payment.domain.event.SubscriptionCancelledEvent;
+import com.moni.payment.domain.event.SubscriptionSuspendedEvent;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -322,6 +323,18 @@ class SubscriptionTest {
             assertThat(subscription.getHistories()).hasSize(prevSize + 1);
             assertThat(subscription.getHistories().get(prevSize).getToStatus())
                     .isEqualTo(SubscriptionStatus.SUSPENDED);
+        }
+
+        @Test
+        void suspend_후_SubscriptionSuspendedEvent가_발행된다() {
+            Subscription subscription = activeSubscription();
+            subscription.pullDomainEvents(); // activate 이벤트 소비
+
+            subscription.suspend("결제 실패");
+
+            List<Object> events = subscription.pullDomainEvents();
+            assertThat(events).hasSize(1);
+            assertThat(events.get(0)).isInstanceOf(SubscriptionSuspendedEvent.class);
         }
 
         @Test

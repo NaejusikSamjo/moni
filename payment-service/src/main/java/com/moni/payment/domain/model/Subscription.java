@@ -2,6 +2,7 @@ package com.moni.payment.domain.model;
 
 import com.moni.payment.domain.event.SubscriptionActivatedEvent;
 import com.moni.payment.domain.event.SubscriptionCancelledEvent;
+import com.moni.payment.domain.event.SubscriptionSuspendedEvent;
 import com.moni.payment.domain.model.converter.BillingKeyConverter;
 import com.moni.payment.domain.model.converter.MoneyConverter;
 import jakarta.persistence.Column;
@@ -174,6 +175,7 @@ public class Subscription {
         this.updatedAt = Instant.now();
 
         histories.add(SubscriptionHistory.of(id, previousStatus, SubscriptionStatus.SUSPENDED, reason));
+        domainEvents.add(new SubscriptionSuspendedEvent(id, userId, reason));
     }
 
     public void reactivate(String reason) {

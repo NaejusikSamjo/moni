@@ -141,6 +141,24 @@ class SubscribeScheduleUseCaseTest {
         }
 
         @Test
+        void 결제_실패_3건_처리_시_handlePaymentFailure가_3회_호출된다() {
+            Subscription s1 = activeSubscriptionWithAmount();
+            Subscription s2 = activeSubscriptionWithAmount();
+            Subscription s3 = activeSubscriptionWithAmount();
+            given(subscriptionJpaRepository.findActiveSubscriptionsDueBefore(
+                    eq(SubscriptionStatus.ACTIVE), any(LocalDate.class)))
+                    .willReturn(List.of(s1, s2, s3));
+            given(paymentCommandService.recordPendingPayment(any())).willReturn(PAYMENT_ID);
+            given(tossPaymentsAdapter.requestBillingPayment(any(), any(), any())).willReturn(PG_FAILED);
+
+            subscribeScheduleUseCase.execute();
+
+            then(subscriptionCommandService).should().handlePaymentFailure(s1.getId());
+            then(subscriptionCommandService).should().handlePaymentFailure(s2.getId());
+            then(subscriptionCommandService).should().handlePaymentFailure(s3.getId());
+        }
+
+        @Test
         void 정기결제_성공_시_activateSubscription은_호출되지_않는다() {
             Subscription subscription = activeSubscriptionWithAmount();
             given(subscriptionJpaRepository.findActiveSubscriptionsDueBefore(
