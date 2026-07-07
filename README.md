@@ -93,9 +93,9 @@
 | eureka-server        | 8761  | 서비스 디스커버리                                                         |
 | api-gateway          | 8080  | 라우팅, JWT 인증/인가, 외부 단일 진입점                                         |
 | user-service         | 19090 | 회원가입/로그인, OAuth2, JWT 발급, 투자 성향·관심사·관심종목                          |
-| trade-service        | 19091 | 모의 매수/매도, 거래 체결, 모의 계좌(balance) 관리                                |
+| trade-service        | 19091 | 모의 매수/매도, 거래 체결, 모의 계좌(balance) 관리, 수익률 계산                        |
 | stock-service        | 19092 | 실시간 시세 (한국투자증권 KIS API), 종목 정보, 테마, 인기 종목 (Redis Cluster)         |
-| portfolio-service    | 19093 | 포트폴리오 대시보드, 수익률 계산, AI 분석 연동                                      |
+| portfolio-service    | 19093 | AI 분석 연동, 포트폴리오 조회                                                |
 | notification-service | 19094 | 맞춤 알림 발송                                                          |
 | payment-service      | 19095 | AI 분석 구독/결제 (토스)                                                  |
 | ai-service           | 19096 | RAG 기반 기업 이슈 분석, 뉴스 요약/수집 (Naver), 포트폴리오 AI 리포트 (OpenAI + Gemini) |
@@ -162,6 +162,7 @@ user-service
 └── admin/      # 관리자 전용 — 유저 조회/정지/삭제
 
 trade-service
+├── asset/      # 조회·계산용 계좌 스냅샷, 수익률 계산
 ├── account/    # 모의 계좌 (현금 잔고, 보유 종목) — 소스 오브 트루스
 ├── trade/      # 매수/매도 주문 처리, 체결
 └── holding/    # 보유 종목 내역
@@ -171,8 +172,7 @@ stock-service
 └── theme/      # 테마별 종목 분류
 
 portfolio-service
-├── portfolio/  # 포트폴리오 대시보드, 수익률 계산
-└── account/    # 조회·계산용 계좌 스냅샷 (trade-service 소유 데이터 참조)
+└── portfolio/  # 포트폴리오 AI 분석, 포트폴리오 조회
 
 notification-service
 └── notification/  # 알림 설정, 발송 이력
@@ -193,16 +193,16 @@ admin-service
 
 ## 도메인 정의
 
-| 도메인          | 설명                                               |
-|:-------------|:-------------------------------------------------|
-| User         | 회원가입/로그인, OAuth2 소셜 인증, 투자 성향 측정, 관심 섹터·관심 종목 설정 |
-| Trade        | 모의 매수/매도 체결, 모의 계좌(현금 잔고·보유 종목) 관리               |
-| Stock        | 실시간 시세, 종목 마스터 데이터, 테마, 인기 종목, Redis Cluster 캐싱  |
-| Portfolio    | 포트폴리오 대시보드, 자산 현황, 수익률 계산, AI 리포트 연동             |
-| Notification | 가격 알림·공지 발송, 알림 수신 이력 관리                         |
-| Payment      | AI 분석 기능 구독 플랜, 결제(아임포트 연동)                      |
-| AI           | RAG 기반 기업 이슈·뉴스 분석, 포트폴리오 맞춤 리포트 생성              |
-| Admin        | 관리자 전용 UI — 유저 목록 조회, 계정 정지/삭제, 뉴스 등록            |
+| 도메인          | 설명                                                |
+|:-------------|:--------------------------------------------------|
+| User         | 회원가입/로그인, OAuth2 소셜 인증, 투자 성향 측정, 관심 섹터·관심 종목 설정  |
+| Trade        | 모의 매수/매도 체결, 모의 계좌(현금 잔고·보유 종목) 관리, 자산 현황, 수익률 계산 |
+| Stock        | 실시간 시세, 종목 마스터 데이터, 테마, 인기 종목, Redis Cluster 캐싱   |
+| Portfolio    | AI 리포트 연동, 포트폴리오 조회                               |
+| Notification | 가격 알림·공지 발송, 알림 수신 이력 관리                          |
+| Payment      | AI 분석 기능 구독 플랜, 결제(아임포트 연동)                       |
+| AI           | RAG 기반 기업 이슈·뉴스 분석, 포트폴리오 맞춤 리포트 생성               |
+| Admin        | 관리자 전용 UI — 유저 목록 조회, 계정 정지/삭제, 뉴스 등록             |
 
 ### 상태 흐름
 
