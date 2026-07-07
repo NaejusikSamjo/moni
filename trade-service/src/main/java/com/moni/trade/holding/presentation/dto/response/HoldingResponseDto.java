@@ -8,7 +8,7 @@ import java.util.UUID;
 public record HoldingResponseDto(
         UUID id,
         String ticker,
-        Integer quantity,
+        BigDecimal quantity,
         BigDecimal averagePrice,
         BigDecimal totalAmount
 ) {

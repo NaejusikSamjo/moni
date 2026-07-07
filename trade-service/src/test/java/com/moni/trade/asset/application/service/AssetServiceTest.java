@@ -96,8 +96,8 @@ class AssetServiceTest {
                     )));
 
             List<HoldingInput> holdingInputs = List.of(
-                    new HoldingInput("999991", 3L, money("10.01"), money("30.02")),
-                    new HoldingInput("999992", 2L, money("15000"), money("30000"))
+                    new HoldingInput("999991", money("3"), money("10.01"), money("30.02")),
+                    new HoldingInput("999992", money("2"), money("15000"), money("30000"))
             );
             List<PriceInput> priceInputs = List.of(
                     new PriceInput("999991", "999991 name", money("11.00")),
@@ -210,8 +210,8 @@ class AssetServiceTest {
                     )));
 
             List<HoldingInput> holdingInputs = List.of(
-                    new HoldingInput("999991", 3L, money("10.01"), money("30.02")),
-                    new HoldingInput("999992", 2L, money("15000"), money("30000"))
+                    new HoldingInput("999991", money("3"), money("10.01"), money("30.02")),
+                    new HoldingInput("999992", money("2"), money("15000"), money("30000"))
             );
             List<PriceInput> priceInputs = List.of(
                     new PriceInput("999991", "999991 name", money("11.00")),
@@ -355,7 +355,7 @@ class AssetServiceTest {
             for (int index = 1; index <= 11; index++) {
                 String ticker = "9000" + index;
                 tradeHoldings.add(holding(ticker, 1, "1000", "1000"));
-                holdingInputs.add(new HoldingInput(ticker, 1L, money("1000"), money("1000")));
+                holdingInputs.add(new HoldingInput(ticker, money("1"), money("1000"), money("1000")));
                 priceInputs.add(new PriceInput(ticker, ticker + " name", money("1000")));
                 holdingResults.add(holdingResult(ticker, "1000.00", String.valueOf(index)));
                 stocks.add(stock(ticker, "1000"));
@@ -439,7 +439,7 @@ class AssetServiceTest {
     ) {
         Holding holding = mock(Holding.class);
         given(holding.getTicker()).willReturn(ticker);
-        given(holding.getQuantity()).willReturn(quantity);
+        given(holding.getQuantity()).willReturn(BigDecimal.valueOf(quantity));
         given(holding.getAveragePrice()).willReturn(money(averagePrice));
         given(holding.getTotalAmount()).willReturn(money(totalAmount));
         return holding;
@@ -457,7 +457,7 @@ class AssetServiceTest {
         return new HoldingResult(
                 ticker,
                 ticker + " name",
-                1L,
+                money("1"),
                 money("10000"),
                 money(evaluationAmount),
                 money(evaluationAmount),

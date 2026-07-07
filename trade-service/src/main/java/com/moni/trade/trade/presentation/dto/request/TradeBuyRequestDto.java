@@ -1,11 +1,13 @@
 package com.moni.trade.trade.presentation.dto.request;
 
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
+
+import java.math.BigDecimal;
 
 public record TradeBuyRequestDto(
         @NotBlank String ticker,
-        @NotNull @Positive Integer quantity
+        @NotNull @DecimalMin("0.01") BigDecimal amount
 ) {
 }

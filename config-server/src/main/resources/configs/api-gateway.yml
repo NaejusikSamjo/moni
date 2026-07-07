@@ -20,8 +20,7 @@ spring:
             - id: trade-service
               uri: lb://trade-service
               predicates:
-                - Path=/api/v1/trades/**, /api/v1/holdings/**, /api/v1/accounts/**, /api/v1/auto-orders/**, /api/v1/saving-plans/**, /api/v1/rankings/**, /api/v1/assets/**
-
+                - Path=/api/v1/trades/**, /api/v1/holdings/**, /api/v1/accounts/**, /api/v1/auto-orders/**, /api/v1/saving-plans/**, /api/v1/rankings/**, /api/v1/assets/**, /api/v1/reserved-orders, /api/v1/reserved-orders/**
             - id: stock-service
               uri: lb://stock-service
               predicates:
