@@ -3,6 +3,7 @@ package com.moni.ai.domain.entity;
 import io.micrometer.core.instrument.Meter;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -12,6 +13,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Getter
+@Table(name="p_market_news_analysis")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class MarketNewsAnalysisEntity extends IdAudit {
 
