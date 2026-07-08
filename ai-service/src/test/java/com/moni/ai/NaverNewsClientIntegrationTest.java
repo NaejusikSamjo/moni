@@ -5,13 +5,18 @@ import com.moni.ai.application.service.AsyncNewsCollectService;
 import com.moni.ai.application.service.MarketNewsCollectService;
 import com.moni.ai.application.service.NewsService;
 import com.moni.ai.application.service.NewsCollectService;
+import com.moni.ai.domain.entity.AiLogEntity;
 import com.moni.ai.domain.entity.CompanyIssueAnalysisEntity;
+import com.moni.ai.domain.entity.MarketNewsAnalysisEntity;
 import com.moni.ai.domain.enums.ImpactKeyword;
 import com.moni.ai.domain.enums.WatchCompany;
+import com.moni.ai.domain.repository.AiLogRepository;
 import com.moni.ai.domain.repository.CompanyIssueAnalysisRepository;
+import com.moni.ai.domain.repository.MarketNewsAnalysisRepository;
 import com.moni.ai.domain.repository.NewsRepository;
 import com.moni.ai.infrastructure.client.NaverNewsClient;
 import com.moni.ai.presentation.dto.response.CompanyIssueResDto;
+import com.moni.ai.presentation.dto.response.MarketAnalysisResDto;
 import com.moni.ai.presentation.dto.response.NaverNewsResDto;
 import com.moni.common.error.exception.CustomException;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +32,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -65,6 +71,12 @@ class NaverNewsClientIntegrationTest {
     @Autowired
     private CompanyIssueAnalysisRepository companyIssueAnalysisRepository;
 
+
+    @Autowired
+    private MarketNewsAnalysisRepository marketNewsAnalysisRepository;
+
+    @Autowired
+    private AiLogRepository aiLogRepository;
 
     @Autowired
     private VectorStore vectorStore;
@@ -181,5 +193,48 @@ class NaverNewsClientIntegrationTest {
         assertThat(saved.stream()
                 .filter(e -> e.getTicker().equals("005930"))
                 .count()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("시장 뉴스 분석 생성 시 MarketNewsAnalysis와 AiLog가 같은 트랜잭션으로 저장된다")
+    void 시장_분석_생성_저장_검증() {
+        // given
+        String keyword = "달러";
+
+        // when
+        MarketAnalysisResDto result = aiService.analyzeMarket(keyword);
+
+        // then - MarketNewsAnalysis 저장 확인
+        assertThat(result).isNotNull();
+        assertThat(result.getSummary()).isNotBlank();
+
+        // DB에서 저장된 MarketNewsAnalysis 조회
+        List<MarketNewsAnalysisEntity> analyses = marketNewsAnalysisRepository.findAll();
+        assertThat(analyses).isNotEmpty();
+
+        MarketNewsAnalysisEntity savedAnalysis = analyses.stream()
+                .filter(a -> a.getExpiredAt().isAfter(LocalDateTime.now()))
+                .findFirst()
+                .orElseThrow();
+
+        log.info("저장된 MarketNewsAnalysis id: {}", savedAnalysis.getId());
+
+        // AiLog FK 참조 검증
+        List<AiLogEntity> logs = aiLogRepository.findAll();
+        assertThat(logs).isNotEmpty();
+
+        AiLogEntity savedLog = logs.stream()
+                .filter(l -> l.getMarketAnalysis() != null)
+                .filter(l -> l.getMarketAnalysis().getId().equals(savedAnalysis.getId()))
+                .findFirst()
+                .orElse(null);
+
+        assertThat(savedLog)
+                .as("AiLog의 market_news_analysis_id가 저장된 MarketNewsAnalysis의 id와 일치해야 한다")
+                .isNotNull();
+
+        log.info("AiLog id: {}, market_analysis_id: {}",
+                savedLog.getId(),
+                savedLog.getMarketAnalysis().getId());
     }
 }
