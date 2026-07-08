@@ -94,13 +94,17 @@ jobs:
               fi
             done
 
-            # config-server/src/main/resources/configs/<서비스명>.yml 변경 시
+            # config-server/src/main/resources/configs/<서비스명>.yml 또는 <서비스명>-<프로필>.yml 변경 시
             # 해당 서비스도 재시작해야 새 설정을 적용받음
             while IFS= read -r FILE; do
-              SERVICE_NAME=$(basename "$FILE" .yml)
-              if [[ " $ALL " == *" $SERVICE_NAME "* ]] && [[ " $CHANGED_SERVICES " != *" $SERVICE_NAME "* ]]; then
-                CHANGED_SERVICES="$CHANGED_SERVICES $SERVICE_NAME"
-              fi
+              BASENAME=$(basename "$FILE" .yml)
+              for SVC in $ALL; do
+                if [[ "$BASENAME" == "$SVC" || "$BASENAME" == "$SVC-"* ]]; then
+                  if [[ " $CHANGED_SERVICES " != *" $SVC "* ]]; then
+                    CHANGED_SERVICES="$CHANGED_SERVICES $SVC"
+                  fi
+                fi
+              done
             done < <(echo "$CHANGED" | grep "^config-server/src/main/resources/configs/")
 
             CHANGED_SERVICES="${CHANGED_SERVICES# }"
