@@ -160,13 +160,13 @@ jobs:
           for SERVICE in ${{ env.CHANGED_SERVICES }}; do
             PORT=${PORTS[$SERVICE]}
             OK=false
-            for i in $(seq 1 12); do
+            for i in $(seq 1 15); do
               if ssh service "docker exec moni-${SERVICE}-1 curl -sf http://localhost:${PORT}/actuator/health > /dev/null 2>&1"; then
                 echo "✓ ${SERVICE} (${i}번째 시도)"
                 OK=true
                 break
               fi
-              echo "  ${SERVICE}: 대기 중... (${i}/12)"
+              echo "  ${SERVICE}: 대기 중... (${i}/15)"
               sleep 15
             done
             $OK || FAILED+=($SERVICE)
