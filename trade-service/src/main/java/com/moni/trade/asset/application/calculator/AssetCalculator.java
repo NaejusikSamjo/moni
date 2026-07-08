@@ -121,7 +121,7 @@ public class AssetCalculator {
             throw new CustomException(AssetErrorCode.STOCK_PRICE_NOT_FOUND);
         }
 
-        BigDecimal quantity = BigDecimal.valueOf(holding.quantity());
+        BigDecimal quantity = holding.quantity();
         BigDecimal purchaseAmount = holding.totalPurchaseAmount();
         BigDecimal evaluationAmount = price.currentPrice().multiply(quantity);
         BigDecimal profitLoss = evaluationAmount.subtract(purchaseAmount);

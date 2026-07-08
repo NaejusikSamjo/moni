@@ -13,6 +13,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.UUID;
 
 @Entity
@@ -31,8 +32,8 @@ public class Trade extends TradeBaseEntity {
     @Column(nullable = false, length = 4)
     private TradeType tradeType;
 
-    @Column(nullable = false)
-    private Integer quantity;
+    @Column(nullable = false, precision = 18, scale = 2)
+    private BigDecimal quantity;
 
     @Column(nullable = false, precision = 18, scale = 2)
     private BigDecimal price;
@@ -50,19 +51,19 @@ public class Trade extends TradeBaseEntity {
     @Column(nullable = false, length = 10)
     private TradeStatus status;
 
-    public static Trade createBuy(UUID accountId, String ticker, Integer quantity, BigDecimal price) {
+    public static Trade createBuy(UUID accountId, String ticker, BigDecimal quantity, BigDecimal price) {
         Trade trade = new Trade();
         trade.accountId = accountId;
         trade.ticker = ticker;
         trade.tradeType = TradeType.BUY;
         trade.quantity = quantity;
         trade.price = price;
-        trade.totalAmount = price.multiply(BigDecimal.valueOf(quantity));
+        trade.totalAmount = price.multiply(quantity).setScale(2, RoundingMode.DOWN);
         trade.status = TradeStatus.PENDING;
         return trade;
     }
 
-    public static Trade createSell(UUID accountId, String ticker, Integer quantity, BigDecimal price,
+    public static Trade createSell(UUID accountId, String ticker, BigDecimal quantity, BigDecimal price,
                                    BigDecimal profitAmount, BigDecimal profitRate) {
         Trade trade = new Trade();
         trade.accountId = accountId;
@@ -70,7 +71,7 @@ public class Trade extends TradeBaseEntity {
         trade.tradeType = TradeType.SELL;
         trade.quantity = quantity;
         trade.price = price;
-        trade.totalAmount = price.multiply(BigDecimal.valueOf(quantity));
+        trade.totalAmount = price.multiply(quantity).setScale(2, RoundingMode.DOWN);
         trade.profitAmount = profitAmount;
         trade.profitRate = profitRate;
         trade.status = TradeStatus.PENDING;

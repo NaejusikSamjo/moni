@@ -5,6 +5,7 @@ import com.moni.payment.application.service.command.SubscriptionCommandService;
 import com.moni.payment.application.service.command.SubscriptionQueryService;
 import com.moni.payment.domain.event.PaymentCompletedEvent;
 import com.moni.payment.domain.model.BillingKey;
+import com.moni.payment.domain.model.PaymentType;
 import com.moni.payment.domain.model.Subscription;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +25,9 @@ public class SubscriptionActivationListener {
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onPaymentCompleted(PaymentCompletedEvent event) {
+        if (event.paymentType() == PaymentType.SUBSCRIPTION_RECURRING) {
+            return;
+        }
         log.info("결제 완료 이벤트 수신, 구독 활성화 시작: paymentId={}, userId={}",
                 event.paymentId(), event.userId());
 
