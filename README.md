@@ -1,6 +1,7 @@
 <!-- 상단 배너 이미지 교체 예정 -->
 <div align="center">
-  <img src="docs/images/banner.gif" alt="moni banner" width="1080"/>
+  <img src="docs/images/banner1.png" alt="moni banner-1" width="1920"/>
+  <img src="docs/images/banner2.png" alt="moni banner-2" width="1920"/>
 
   <h1>moni · 모니</h1>
 
@@ -243,35 +244,9 @@ FeignClient 호출에는 timeout을 명시하고 Resilience4j Circuit Breaker + 
 
 추후 작성 예정
 
-## ERD 명세서
+## ERD
 
-<details>
-<summary>ERD 보기</summary>
-
-<!-- ERD 이미지 교체 예정 -->
-
-### User
-![User ERD](docs/images/erd-user.png)
-
-### Trade
-![Trade ERD](docs/images/erd-trade.png)
-
-### Stock
-![Stock ERD](docs/images/erd-stock.png)
-
-### Portfolio
-![Portfolio ERD](docs/images/erd-portfolio.png)
-
-### Notification
-![Notification ERD](docs/images/erd-notification.png)
-
-### Payment
-![Payment ERD](docs/images/erd-payment.png)
-
-### AI
-![AI ERD](docs/images/erd-ai.png)
-
-</details>
+![ERD](docs/images/erd-diagram.png)
 
 ---
 
