@@ -119,6 +119,17 @@ class PaymentTest {
         }
 
         @Test
+        void complete_후_PaymentCompletedEvent에_paymentType이_담긴다() {
+            Payment payment = pendingPayment(); // SUBSCRIPTION_INITIAL
+            payment.pullDomainEvents();
+
+            payment.complete("pg-key-001", "billing-key-001", "{}", Instant.now(), ACTOR);
+
+            PaymentCompletedEvent event = (PaymentCompletedEvent) payment.pullDomainEvents().get(0);
+            assertThat(event.paymentType()).isEqualTo(PaymentType.SUBSCRIPTION_INITIAL);
+        }
+
+        @Test
         void COMPLETED_상태에서_다시_complete_호출_시_PAY_001_예외가_발생한다() {
             Payment payment = pendingPayment();
             payment.complete("pg-key-001", "billing-key-001", "{}", Instant.now(), ACTOR);

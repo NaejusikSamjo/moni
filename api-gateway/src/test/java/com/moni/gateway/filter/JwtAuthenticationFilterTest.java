@@ -7,6 +7,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
+import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.mock.http.server.reactive.MockServerHttpRequest;
 import org.springframework.mock.web.server.MockServerWebExchange;
@@ -20,10 +21,12 @@ import java.util.Date;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 @DisplayName("JwtAuthenticationFilter 단위 테스트 (목업)")
 class JwtAuthenticationFilterTest {
@@ -34,17 +37,21 @@ class JwtAuthenticationFilterTest {
     private JwtAuthenticationFilter filter;
     private GatewayFilterChain chain;
     private SecretKey key;
+    private ReactiveStringRedisTemplate redisTemplate;
 
     @BeforeEach
     void setUp() {
-        filter = new JwtAuthenticationFilter();
+        redisTemplate = mock(ReactiveStringRedisTemplate.class);
+        given(redisTemplate.hasKey(anyString())).willReturn(Mono.just(false));
+
+        filter = new JwtAuthenticationFilter(redisTemplate);
         ReflectionTestUtils.setField(filter, "secretKey", SECRET);
         ReflectionTestUtils.setField(filter, "gatewaySecret", GATEWAY_SECRET);
         ReflectionTestUtils.invokeMethod(filter, "init");
 
         key = Keys.hmacShaKeyFor(SECRET.getBytes());
         chain = mock(GatewayFilterChain.class);
-        given(chain.filter(org.mockito.ArgumentMatchers.any())).willReturn(Mono.empty());
+        given(chain.filter(any())).willReturn(Mono.empty());
     }
 
     private String createAccessToken(UUID userId, String email, String role) {
@@ -76,7 +83,7 @@ class JwtAuthenticationFilterTest {
 
             // then
             StepVerifier.create(result).verifyComplete();
-            verify(chain).filter(org.mockito.ArgumentMatchers.any());
+            verify(chain).filter(any());
         }
     }
 
@@ -97,7 +104,7 @@ class JwtAuthenticationFilterTest {
             // then
             StepVerifier.create(result).verifyComplete();
             assertThat(exchange.getResponse().getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-            verify(chain, never()).filter(org.mockito.ArgumentMatchers.any());
+            verify(chain, never()).filter(any());
         }
 
         @Test
@@ -133,7 +140,29 @@ class JwtAuthenticationFilterTest {
 
             // then
             StepVerifier.create(result).verifyComplete();
-            verify(chain).filter(org.mockito.ArgumentMatchers.any());
+            verify(chain).filter(any());
+        }
+
+        @Test
+        @DisplayName("블랙리스트에 등록된 토큰이면 401을 반환한다")
+        void blacklistedToken_returns401() {
+            // given
+            given(redisTemplate.hasKey(anyString())).willReturn(Mono.just(true));
+
+            UUID userId = UUID.randomUUID();
+            String token = createAccessToken(userId, "test@moni.com", "USER");
+            MockServerHttpRequest request = MockServerHttpRequest.get("/api/v1/users/me")
+                    .header("Authorization", "Bearer " + token)
+                    .build();
+            ServerWebExchange exchange = MockServerWebExchange.from(request);
+
+            // when
+            Mono<Void> result = filter.filter(exchange, chain);
+
+            // then
+            StepVerifier.create(result).verifyComplete();
+            assertThat(exchange.getResponse().getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+            verify(chain, never()).filter(any());
         }
 
         @Test

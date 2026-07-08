@@ -4,6 +4,7 @@ import com.moni.payment.common.exception.PaymentErrorCode;
 import com.moni.payment.common.exception.PaymentException;
 import com.moni.payment.domain.event.SubscriptionActivatedEvent;
 import com.moni.payment.domain.event.SubscriptionCancelledEvent;
+import com.moni.payment.domain.event.SubscriptionSuspendedEvent;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -157,15 +158,13 @@ class SubscriptionTest {
         }
 
         @Test
-        void cancel_후_SubscriptionCancelledEvent가_발행된다() {
+        void cancel_후_도메인_이벤트가_발행되지_않는다() {
             Subscription subscription = activeSubscription();
             subscription.pullDomainEvents(); // activate 이벤트 소비
 
             subscription.cancel("사용자 요청");
 
-            List<Object> events = subscription.pullDomainEvents();
-            assertThat(events).hasSize(1);
-            assertThat(events.get(0)).isInstanceOf(SubscriptionCancelledEvent.class);
+            assertThat(subscription.pullDomainEvents()).isEmpty();
         }
 
         @Test
@@ -266,6 +265,19 @@ class SubscriptionTest {
         }
 
         @Test
+        void completeCancellation_후_SubscriptionCancelledEvent가_발행된다() {
+            Subscription subscription = activeSubscription();
+            subscription.cancel("테스트");
+            subscription.pullDomainEvents(); // cancel 이벤트 없지만 클리어
+
+            subscription.completeCancellation("만료일 도래");
+
+            List<Object> events = subscription.pullDomainEvents();
+            assertThat(events).hasSize(1);
+            assertThat(events.get(0)).isInstanceOf(SubscriptionCancelledEvent.class);
+        }
+
+        @Test
         void ACTIVE_상태에서_completeCancellation_호출_시_SUB_001_예외가_발생한다() {
             Subscription subscription = activeSubscription();
 
@@ -311,6 +323,18 @@ class SubscriptionTest {
             assertThat(subscription.getHistories()).hasSize(prevSize + 1);
             assertThat(subscription.getHistories().get(prevSize).getToStatus())
                     .isEqualTo(SubscriptionStatus.SUSPENDED);
+        }
+
+        @Test
+        void suspend_후_SubscriptionSuspendedEvent가_발행된다() {
+            Subscription subscription = activeSubscription();
+            subscription.pullDomainEvents(); // activate 이벤트 소비
+
+            subscription.suspend("결제 실패");
+
+            List<Object> events = subscription.pullDomainEvents();
+            assertThat(events).hasSize(1);
+            assertThat(events.get(0)).isInstanceOf(SubscriptionSuspendedEvent.class);
         }
 
         @Test
