@@ -1,4 +1,9 @@
 spring:
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: portfolio-service-test
+      auto-offset-reset: earliest
   cloud:
     config:
       enabled: false
