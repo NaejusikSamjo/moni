@@ -20,7 +20,8 @@ public class MarketService {
 
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
     private static final LocalTime MARKET_OPEN = LocalTime.of(9, 0);
-    private static final LocalTime MARKET_CLOSE = LocalTime.of(15, 30);
+    // TODO : 15:30분 장마감으로 추후 변경
+    private static final LocalTime MARKET_CLOSE = LocalTime.of(23, 30);
 
     private final MarketHolidayRepository marketHolidayRepository;
 
