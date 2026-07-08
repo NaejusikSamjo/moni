@@ -60,6 +60,14 @@ public class ReservedOrderService {
         Account account = accountRepository.findByUserId(userId)
                 .orElseThrow(() -> new CustomException(AccountErrorCode.ACCOUNT_NOT_FOUND));
 
+        BigDecimal reservedAmount = reservedOrderRepository.sumAmountByAccountIdAndTradeTypeAndStatus(
+                account.getId(), TradeType.BUY, ReservedOrderStatus.PENDING);
+        BigDecimal availableBalance = account.getBalance().subtract(reservedAmount);
+
+        if (availableBalance.compareTo(request.amount()) < 0) {
+            throw new CustomException(AccountErrorCode.INSUFFICIENT_BALANCE);
+        }
+
         ReservedOrder order;
         if (request.orderType() == ReservedOrderType.LIMIT) {
             order = ReservedOrder.createLimitBuy(account.getId(), request.ticker(),
@@ -79,6 +87,17 @@ public class ReservedOrderService {
 
         Account account = accountRepository.findByUserId(userId)
                 .orElseThrow(() -> new CustomException(AccountErrorCode.ACCOUNT_NOT_FOUND));
+
+        Holding holding = holdingRepository.findByAccountIdAndTicker(account.getId(), request.ticker())
+                .orElseThrow(() -> new CustomException(HoldingErrorCode.HOLDING_NOT_FOUND));
+
+        BigDecimal reservedQuantity = reservedOrderRepository.sumQuantityByAccountIdAndTickerAndTradeTypeAndStatus(
+                account.getId(), request.ticker(), TradeType.SELL, ReservedOrderStatus.PENDING);
+        BigDecimal availableQuantity = holding.getQuantity().subtract(reservedQuantity);
+
+        if (availableQuantity.compareTo(request.quantity()) < 0) {
+            throw new CustomException(HoldingErrorCode.INSUFFICIENT_QUANTITY);
+        }
 
         ReservedOrder order;
         if (request.orderType() == ReservedOrderType.LIMIT) {
