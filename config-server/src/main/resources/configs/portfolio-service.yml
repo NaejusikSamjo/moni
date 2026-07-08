@@ -29,6 +29,11 @@ spring:
       host: ${REDIS_HOST}
       port: ${REDIS_PORT}
       password: ${REDIS_PASSWORD}
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
+    consumer:
+      group-id: ${PORTFOLIO_KAFKA_CONSUMER_GROUP_ID}
+      auto-offset-reset: ${PORTFOLIO_KAFKA_AUTO_OFFSET_RESET}
   cloud:
     openfeign:
       client:
@@ -36,9 +41,6 @@ spring:
           trade-service:
             connectTimeout: 1000
             readTimeout: 3000
-          payment-service:
-            connectTimeout: 1000
-            readTimeout: 2000
           user-service:
             connectTimeout: 1000
             readTimeout: 2000

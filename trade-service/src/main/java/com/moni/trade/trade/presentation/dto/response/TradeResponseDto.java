@@ -12,7 +12,7 @@ public record TradeResponseDto(
         UUID id,
         String ticker,
         TradeType tradeType,
-        Integer quantity,
+        BigDecimal quantity,
         BigDecimal price,
         BigDecimal totalAmount,
         BigDecimal profitAmount,
