@@ -17,7 +17,7 @@ import java.math.BigDecimal;
 import java.util.UUID;
 
 @Entity
-@Table(name = "reserved_orders")
+@Table(name = "p_reserved_orders")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ReservedOrder extends TradeBaseEntity {

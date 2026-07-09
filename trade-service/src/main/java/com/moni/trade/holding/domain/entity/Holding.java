@@ -14,7 +14,7 @@ import java.math.RoundingMode;
 import java.util.UUID;
 
 @Entity
-@Table(name = "holding")
+@Table(name = "p_holding")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Holding extends TradeBaseEntity {

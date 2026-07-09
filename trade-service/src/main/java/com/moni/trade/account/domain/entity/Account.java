@@ -13,7 +13,7 @@ import java.math.BigDecimal;
 import java.util.UUID;
 
 @Entity
-@Table(name = "account")
+@Table(name = "p_account")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Account extends TradeBaseEntity {

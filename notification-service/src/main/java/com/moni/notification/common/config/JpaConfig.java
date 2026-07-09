@@ -1,4 +1,4 @@
-package com.moni.notification.infrastructure;
+package com.moni.notification.common.config;
 
 import com.moni.common.security.AuditorAwareImpl;
 import org.springframework.context.annotation.Bean;

@@ -1,4 +1,4 @@
-package com.moni.notification.infrastructure;
+package com.moni.notification.common.config;
 
 import com.moni.common.security.GatewayHeaderAuthenticationFilter;
 import org.springframework.context.annotation.Bean;

@@ -14,7 +14,7 @@ public class SwaggerConfig {
   public OpenAPI openAPI() {
     return new OpenAPI()
         .info(new Info()
-            .title("Moni User Service API")
+            .title("Moni Payment Service API")
             .description("모니 결제 서비스 API 문서")
             .version("v1.0.0"))
         .addSecurityItem(new SecurityRequirement().addList("Bearer Authentication"))
