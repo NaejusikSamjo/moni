@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDate;
 
 @Entity
-@Table(name = "market_holiday")
+@Table(name = "p_market_holiday")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class MarketHoliday extends TradeBaseEntity {
