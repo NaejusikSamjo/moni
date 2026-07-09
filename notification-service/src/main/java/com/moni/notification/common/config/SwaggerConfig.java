@@ -14,8 +14,8 @@ public class SwaggerConfig {
   public OpenAPI openAPI() {
     return new OpenAPI()
         .info(new Info()
-            .title("Moni Alarm Service API")
-            .description("모니 알람 서비스 API 문서")
+            .title("Moni Notify Service API")
+            .description("모니 알림 서비스 API 문서")
             .version("v1.0.0"))
         .addSecurityItem(new SecurityRequirement().addList("Bearer Authentication"))
         .components(new Components()
