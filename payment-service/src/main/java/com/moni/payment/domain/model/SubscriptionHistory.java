@@ -11,7 +11,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(name = "subscription_history")
+@Table(name = "p_subscription_history")
 public class SubscriptionHistory {
 
     @Id

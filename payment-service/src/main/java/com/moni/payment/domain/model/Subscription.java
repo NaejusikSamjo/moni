@@ -25,7 +25,7 @@ import lombok.Getter;
 
 @Entity
 @Getter
-@Table(name = "subscription")
+@Table(name = "p_subscription")
 public class Subscription {
 
     @Id
