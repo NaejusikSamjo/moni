@@ -31,6 +31,11 @@ public class MarketNotificationScheduler {
     sendToAllUsers("한국장 마감 5분 전 입니다. 오늘도 좋은 하루 되세요.", NotificationType.MARKET_CLOSE);
   }
 
+  @Scheduled(fixedDelay = 300000)
+  public void pingPong() {
+    sendToAllUsers("알림 서비스 핑퐁 테스트입니다.", NotificationType.TEST);
+  }
+
   private void sendToAllUsers(String content, NotificationType notificationType) {
     // TODO: Redis Pub/sub 구조
     Map<String, SseEmitter> allEmitters = emitterRepository.findAll();

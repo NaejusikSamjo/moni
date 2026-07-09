@@ -5,5 +5,6 @@ public enum NotificationType {
   MARKET_OPEN,
   MARKET_CLOSE,
   STOCK_PRICE_ALERT,
-  PROMOTION
+  PROMOTION,
+  TEST
 }
