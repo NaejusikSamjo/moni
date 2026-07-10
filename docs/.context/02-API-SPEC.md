@@ -1,8 +1,7 @@
 # 02. API 명세
 
-> 원본: 노션 "API" 데이터베이스(서비스별 표)를 정리. 모든 API는 "진행 전" 상태이며,
-> 아직 구현된 엔드포인트는 없습니다. 신규 컨트롤러 작성 시 이 표의 URL/Method를 그대로
-> 사용하세요(불일치 발견 시 사용자에게 먼저 확인).
+> 전 서비스 API가 구현 완료되어 배포되어 있습니다. 아래 표는 실제 컨트롤러 기준으로 최신화되어 있으니,
+> 신규 엔드포인트 추가 시 이 표의 URL/Method 컨벤션을 따르세요(불일치 발견 시 실제 컨트롤러 코드를 우선 신뢰).
 
 ---
 
@@ -77,24 +76,18 @@
 |-----------------|-------------------------------------|--------|------------------|
 | 주식 매수           | `/api/v1/trades/buy`                | POST   |                  |
 | 주식 매도           | `/api/v1/trades/sell`               | POST   |                  |
-| 거래 내역 조회        | `/api/v1/trades/history`            | GET    |                  |
-| 거래 내역 상세 조회     | `/api/v1/trades/history/{tradeId}`  | GET    |                  |
+| 거래 내역 조회        | `/api/v1/trades`                    | GET    | Query: page, size (기본 0/10) |
 | 보유 종목 조회        | `/api/v1/holdings`                  | GET    |                  |
 | 보유 종목 현황 조회     | `/api/v1/holdings/{ticker}`         | GET    |                  |
 | 가상 계좌 생성        | `/api/v1/accounts`                  | POST   |                  |
 | 내 가상 자산 잔액 조회   | `/api/v1/accounts/me`               | GET    |                  |
 | 보유 종목 현황 조회     | `/api/v1/assets/holdings`           | GET    | 담당: 설아           |
 | 자산 조회           | `/api/v1/assets`                    | GET    | 담당: 설아           |
-| 자동 주문 설정 목록 조회  | `/api/v1/auto-orders`               | GET    | P2 도전: 자동 손절/익절  |
-| 자동 손절/익절 설정 등록  | `/api/v1/auto-orders`               | POST   | P2 도전            |
-| 자동 주문 목표가/수량 수정 | `/api/v1/auto-orders/{autoOrderId}` | PATCH  | P2 도전            |
-| 자동 주문 설정 삭제     | `/api/v1/auto-orders/{autoOrderId}` | DELETE | P2 도전            |
-| 주식 모으기 설정 목록 조회 | `/api/v1/saving-plans`              | GET    | P2 도전: 주식 모으기    |
-| 주식 모으기 설정 등록    | `/api/v1/saving-plans`              | POST   | P2 도전            |
-| 모으기 금액/주기 수정    | `/api/v1/saving-plans/{planId}`     | PATCH  | P2 도전            |
-| 주식 모으기 설정 삭제    | `/api/v1/saving-plans/{planId}`     | DELETE | P2 도전            |
-| 전체 수익 랭킹 조회     | `/api/v1/rankings`                  | GET    | P2 도전: 사용자 수익 랭킹 |
-| 내 순위 조회         | `/api/v1/rankings/me`               | GET    | P2 도전            |
+| AI 분석용 자산 스냅샷 조회 | `/api/v1/assets/analysis-snapshot`  | GET    | 담당: 설아, AI 포트폴리오 분석용 자산 요약 + 보유 비중 상위 종목 |
+| 예약 매수 주문 등록     | `/api/v1/reserved-orders/buy`       | POST   |                  |
+| 예약 매도 주문 등록     | `/api/v1/reserved-orders/sell`      | POST   |                  |
+| 예약 주문 취소        | `/api/v1/reserved-orders/{orderId}` | DELETE |                  |
+| 내 예약 주문 목록 조회   | `/api/v1/reserved-orders`           | GET    |                  |
 
 ---
 
@@ -106,7 +99,7 @@
 | 종목 목록 조회           | `/api/v1/stocks/search`         | GET    | 검색과 동일 URL로 기재됨 — 파라미터로 구분할지 사용자와 확인 |
 | 단일 종목 상세 조회        | `/api/v1/stocks/{ticker}`       | GET    |                                      |
 | 차트 조회              | `/api/v1/stocks/{ticker}/chart` | GET    |                                      |
-| 실시간 인기 테마 조회       | `/api/v1/themes`                | GET    |                                      |
+| 실시간 인기 테마 조회       | `/api/v1/stocks/themes`         | GET    |                                      |
 | 실시간 거래량 상위 Top5 조회 | `/api/v1/stocks/top-volume`     | GET    |                                      |
 
 ---
@@ -130,13 +123,13 @@
 | 기능             | URL                                  | Method | 비고                                                                  |
 |----------------|--------------------------------------|--------|---------------------------------------------------------------------|
 | 기업 이슈 분석       | `/api/v1/ai/{ticker}/issue-analysis` | GET    |                                                                     |
-| 뉴스 요약 조회       | `/api/v1/ai/{ticker}/news-summary`   | GET    |                                                                     |
+| 뉴스 요약 조회       | `/api/v1/ai/news-summary`            | POST   |                                                                     |
 | 포트폴리오 AI 분석    | `/api/v1/ai/portfolio/analysis`      | POST   | header: `Authorization` 필요. portfolio-service가 호출하는 내부 API / 담당: 설아 |
 | 뉴스 fetch       | `/api/v1/ai/admin/news/fetch`        | POST   | 스케줄러 또는 매니저용.       |
 | AI 분석 가능 기업 조회 | `/api/v1/ai`                         | GET    |                                                                     |
 | News 직접 등록     | `/api/v1/admin/ai/news/ticker`       | POST   |                                                                     |
 | 거시 시장 뉴스 fetch | `/api/v1/admin/ai/news/market/fetch` | POST   | 스케줄러 또는 매니저용.                                                               |
-| 뉴스 목록 조회       | `/api/v1/aai/news` | GET    |                                                              |
+| 뉴스 목록 조회       | `/api/v1/ai/news` | GET    |                                                              |
 
 
 
@@ -145,15 +138,13 @@
 
 ## 6. 결제 (payment-service, 담당: 혜수)
 
-| 기능         | URL                            | Method | 비고                                                                                                           |
-|------------|--------------------------------|--------|--------------------------------------------------------------------------------------------------------------|
-| 아임포트 구독 결제 | `/api/v1/payment/subscription` | POST   |                                                                                                              |
-| 구독 해제      | `/api/v1/payments`             | POST   | 원본 표 그대로 — URL이 결제 내역과 동일 prefix인데 method가 POST. 구현 시 `/api/v1/payment/subscription` (DELETE 등)으로 통일할지 확인 필요 |
-| 결제 내역 조회   | `/api/v1/payments/history`     | GET    |                                                                                                              |
-| 구독 상태 조회   | `/api/v1/payment/status`       | GET    |                                                                                                              |
-
-> ⚠️ 결제 관련 URL은 `payment`(단수)와 `payments`(복수)가 혼재되어 있습니다.
-> 구현 전에 사용자와 합의해서 한 가지로 통일하는 것을 권장합니다.
+| 기능           | URL                                     | Method | 비고                              |
+|--------------|------------------------------------------|--------|---------------------------------|
+| Toss 정기 구독 결제 | `/api/v1/payments/subscription`         | POST   | Header: `X-User-Id`. Toss billing 연동 |
+| 결제 내역 조회     | `/api/v1/payments`                      | GET    | Header: `X-User-Id`. Pageable (기본 size=10) |
+| 구독 상태 조회     | `/api/v1/payments/subscriptions/status` | GET    | Header: `X-User-Id`             |
+| 구독 해지        | `/api/v1/payments/subscriptions`        | DELETE | Header: `X-User-Id`             |
+| 구독 재활성화      | `/api/v1/payments/subscriptions/reactivate` | POST | Header: `X-User-Id`. SUSPENDED 상태만 가능 |
 
 ---
 

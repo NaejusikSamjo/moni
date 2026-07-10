@@ -18,9 +18,10 @@
 
 ## 2. 현재 저장소 상태 (중요)
 
-- 모든 서비스는 **스캐폴드(빈 Application 클래스 + application.yml)만 존재**하는 초기 상태입니다.
-- 실제 도메인 로직(엔티티, 컨트롤러, 서비스, 레포지토리 등)은 아직 구현되지 않았습니다.
-- 코드를 생성할 때는 아래 "5. 코드 컨벤션·아키텍처 규칙"을 반드시 따르세요.
+- 전 서비스가 도메인 로직(엔티티, 컨트롤러, 서비스, 레포지토리 등)까지 구현되어 `www.moni.my`에 배포되어 있습니다(배포 주소는 `README.md`의 "배포 주소" 참고).
+- 결제는 Toss Payments로 연동되어 있습니다(`payment-service`). Kafka 기반 비동기 이벤트 처리, Naver News API 뉴스 수집(`ai-service`) 등도 적용되어 있습니다.
+- 새 코드를 작성/수정할 때는 기존 구현체의 계층 구조와 컨벤션(아래 "5. 코드 컨벤션·아키텍처 규칙")을 그대로 따르세요.
+- `docs/.context/` 문서 중 일부(특히 API 명세·인프라 문서)는 실제 구현과 다를 수 있습니다. 불일치를 발견하면 실제 코드를 우선 신뢰하고, 문서 쪽을 갱신하세요.
 - `build/` 디렉토리는 Gradle 빌드 산출물입니다. **절대 직접 수정하지 마세요** (git에도 커밋 금지 대상).
 
 ---
@@ -37,7 +38,7 @@
 | stock-service        | `com.moni.stock`        | 19092 | 실시간 시세/종목 정보, 테마, 인기 종목                                                 | 영욱      |
 | portfolio-service    | `com.moni.portfolio`    | 19093 | 포트폴리오 대시보드, 수익률 계산, AI 포트폴리오 분석 연동                                      | 설아      |
 | notification-service | `com.moni.notification` | 19094 | 사용자 맞춤 알림                                                               | 혜수      |
-| payment-service      | `com.moni.payment`      | 19095 | AI 분석 구독/결제(아임포트)                                                       | 혜수      |
+| payment-service      | `com.moni.payment`      | 19095 | AI 분석 구독/결제(Toss Payments)                                                | 혜수      |
 | ai-service           | `com.moni.ai`           | 19096 | RAG 기반 기업 이슈 분석, 뉴스 요약/수집, 포트폴리오 AI 분석                                  | 지은      |
 | admin-service        | `com.moni.admin`        | 19097 | 관리자 웹 UI (Thymeleaf SSR), 유저 조회/정지/삭제. api-gateway 우회, Okta OIDC(세션 인증) | 동원      |
 

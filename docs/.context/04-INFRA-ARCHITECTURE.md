@@ -10,7 +10,7 @@
 |-------------------|-------------------------------------|--------------|
 | Ingress           | NGINX → Gateway                     | public       |
 | Service Discovery | Eureka                              | public       |
-| Application       | MSA 컨테이너 6개 (도메인 서비스)               | private      |
+| Application       | MSA 컨테이너 8개 (도메인 서비스)               | private      |
 | Data              | Kafka Cluster, Redis, PostgreSQL 7개 | private data |
 
 > ⚠️ 현재 MVP 단계에서는 **k8s를 사용하지 않기로 결정**됨 (`docs/06-AI-VALIDATION-LOG.md` 참고).
@@ -48,11 +48,11 @@
 | 인증                | OAuth + JWT (사용자), Okta OIDC (관리자)                                            |
 | 파일 스토리지           | AWS S3 (프로필 이미지 저장, Presigned URL 방식)                                         |
 | CDN               | AWS CloudFront (cdn.moni.my, OAC 적용 — S3 직접 접근 차단)                            |
-| 인프라               | Docker / Docker Compose                                                       |
+| 인프라               | Docker / Docker Compose, AWS(EC2·ECR·S3·CloudFront·ALB·ACM) — `moni-infra-terraform` 저장소로 Terraform 코드 관리 |
 | 비동기 메시징           | Kafka                                                                         |
-| 캐시                | Redis                                                                         |
-| AI 외부 API         | OpenAI                                                                        |
-| 분산 추적             | Zipkin                                                                        |
+| 캐시                | Redis (일반 세션/캐시), Redis Cluster 3-node (stock-service 시세 캐시 전용)              |
+| AI 외부 API         | OpenAI + Gemini (포트폴리오 분석), Naver News API (뉴스 수집)                            |
+| 분산 추적             | OpenTelemetry + Grafana Tempo                                                 |
 | 문서화 / 테스트         | Swagger(springdoc-openapi) / Postman & JUnit 5                                |
 | Spring Cloud 버전   | 2025.0.0                                                                      |
 
@@ -86,8 +86,9 @@
 | notification-db | 25435   | 알림 DB (PostgreSQL)                                  |
 | trade-db        | 25436   | 거래 DB (PostgreSQL)                                  |
 | payment-db      | 25437   | 결제 DB (PostgreSQL)                                  |
-| ai-db           | 25438   | AI DB (PostgreSQL)                                  |
-| redis           | 26379   | 캐시 / 세션                                             |
+| ai-db           | 25438   | AI DB (PostgreSQL + pgvector)                       |
+| redis           | 26379   | 캐시 / 세션 (stock-service 외 서비스)                        |
+| redis-cluster   | 27000~27002 | 시세 캐시 3-node (stock-service 전용)                  |
 | zookeeper       | 22181   | Kafka 코디네이션                                         |
 | kafka           | 29092   | 메시지 브로커                                             |
 | S3              | -       | 프로필 이미지 스토리지 (log-bucket-samzo-moni, profiles/* 경로) |
@@ -97,9 +98,9 @@
 > 주입됩니다. 새 인프라 컴포넌트를 추가할 때도 동일한 패턴(서비스별 컨테이너 + named volume +
 > `.env` 변수)을 따르세요.
 
-> `docker-compose.monitor.yml`은 **현재 전체가 주석 처리**되어 있습니다 (Prometheus/Grafana
-> 정의는 있으나 비활성 상태). 모니터링 작업을 시작할 때는 이 파일의 주석을 해제하고
-> `monitoring/prometheus.yml`을 함께 구성해야 합니다.
+> 모니터링은 `docker-compose.monitor.yml`(Tempo·Loki·Promtail·Prometheus·Grafana, 모니터링 전용 EC2)과
+> `docker-compose.alloy.yml`(Grafana Alloy — 메트릭·로그·트레이스 수집, 각 서비스 EC2에서 사이드카로 실행)로
+> 구성되어 활성화되어 있습니다. 상세 구성은 별도 저장소 `moni-monitor`를 참고하세요.
 
 ---
 
@@ -133,7 +134,7 @@
 
 ## 6. 모니터링 및 로깅 전략
 
-- Trace ID 전파 (Zipkin 분산 추적)
+- Trace ID 전파 (OpenTelemetry + Grafana Tempo 분산 추적)
 - 로그 레벨 관리
 - 필요한 정보 로깅: `trace id / user id / 도메인 정보 / 에러 정보 / etc.`
 - 민감 정보 마스킹 (예: 이메일, 카드 정보, 토큰 등은 로그에 그대로 남기지 않기)
