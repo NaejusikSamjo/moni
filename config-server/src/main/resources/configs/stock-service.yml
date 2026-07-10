@@ -1,9 +1,114 @@
 server:
   port: 19092
 
+spring:
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: ${DB_URL}?currentSchema=stock_service
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  jpa:
+    database: postgresql
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    generate-ddl: true
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+        default_schema: stock_service
+        hbm2ddl:
+          create_namespaces: true
+  data:
+    redis:
+      cluster:
+        nodes: ${REDIS_NODES:redis-cluster-0:7000,redis-cluster-1:7001,redis-cluster-2:7002}
+        max-redirects: 3
+      password: ${REDIS_CLUSTER_PASSWORD}
+
+# 단일 Redis, Redis Cluster 선택 설정 (기본 Redis Cluster)
+stock:
+  redis:
+    mode: ${STOCK_REDIS_MODE:cluster}
+    standalone:
+      host: ${REDIS_STANDALONE_HOST:redis}
+      port: ${REDIS_STANDALONE_PORT:6379}
+
+kis:
+  app-key: ${KIS_APP_KEY:}
+  app-secret: ${KIS_APP_SECRET:}
+  ws-url: ws://ops.koreainvestment.com:31000
+  rest-url: https://openapi.koreainvestment.com:9443
+  mock: false
+  connect-timeout: 2000
+  read-timeout: 3000
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      redisPrice:
+        sliding-window-size: 20
+        minimum-number-of-calls: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 5s
+        permitted-number-of-calls-in-half-open-state: 5
+      kisApi:
+        sliding-window-size: 20
+        minimum-number-of-calls: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 5
+  retry:
+    instances:
+      kisApi:
+        max-attempts: 2
+        wait-duration: 200ms
+
 eureka:
   client:
     service-url:
-      defaultZone: http://eureka-server:8761/eureka/
+      defaultZone: ${EUREKA_URL:http://eureka-server:8761/eureka/}
+    register-with-eureka: true
+    fetch-registry: true
   instance:
     prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}
+    lease-renewal-interval-in-seconds: 30
+    lease-expiration-duration-in-seconds: 90
+    metadata-map:
+      prometheus.scrape: "true"
+      prometheus.path: "/actuator/prometheus"
+      prometheus.port: "${server.port}"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, prometheus, metrics
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    tags:
+      application: ${spring.application.name}
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
+  zipkin:
+    tracing:
+      export:
+        enabled: false
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+
+kospiUrl: https://new.real.download.dws.co.kr/common/master/kospi_code.mst.zip
+kosdaqUrl: https://new.real.download.dws.co.kr/common/master/kosdaq_code.mst.zip
+themeUrl: https://new.real.download.dws.co.kr/common/master/idxcode.mst.zip

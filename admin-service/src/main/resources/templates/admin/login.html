@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>로그인 - moni 관리자</title>
+    <link rel="stylesheet" th:href="@{/css/admin.css}"/>
+</head>
+<body>
+<div class="login-wrap">
+    <div class="login-card">
+        <div class="logo">moni 관리자</div>
+        <div class="subtitle">관리자 전용 페이지</div>
+        <p class="logout-msg" th:if="${logoutMsg}" th:text="${logoutMsg}"></p>
+        <a th:href="@{/oauth2/authorization/okta}" class="btn btn-primary">Okta로 로그인</a>
+    </div>
+</div>
+</body>
+</html>

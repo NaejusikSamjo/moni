@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{admin/layout/default :: layout(~{::title}, ~{::#page-content}, 'deletedUsers', ~{})}">
+<head>
+    <title>삭제된 사용자 - moni 관리자</title>
+</head>
+<body>
+<div id="page-content">
+    <h2 class="page-title">삭제된 사용자</h2>
+
+    <div class="table-wrapper">
+        <table>
+            <thead>
+            <tr>
+                <th class="col-name">이름</th>
+                <th class="col-email">이메일</th>
+                <th class="col-nickname">닉네임</th>
+                <th class="col-provider">로그인 방식</th>
+                <th class="col-date">가입일</th>
+                <th class="col-date">삭제일</th>
+                <th class="col-reason">삭제 사유</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="user : ${page.content}">
+                <td class="cell-truncate" th:text="${user.name}" th:title="${user.name}">-</td>
+                <td class="cell-truncate" th:text="${user.email}" th:title="${user.email}">-</td>
+                <td class="cell-truncate" th:text="${user.nickname}" th:title="${user.nickname}">-</td>
+                <td th:text="${user.oauthProvider != null} ? ${user.oauthProvider} : '이메일'">이메일</td>
+                <td th:text="${#temporals.format(user.createdAt, 'yyyy-MM-dd')}">-</td>
+                <td th:text="${#temporals.format(user.deletedAt, 'yyyy-MM-dd')}">-</td>
+                <td class="cell-truncate" th:text="${user.deletedReason}" th:title="${user.deletedReason}">-</td>
+            </tr>
+
+            <tr th:if="${page.content.isEmpty()}">
+                <td colspan="7" class="empty-state">삭제된 사용자가 없습니다.</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="pagination">
+        <a th:if="${page.hasPrevious()}" th:href="@{/admin/users/deleted(page=${page.number - 1})}">← 이전</a>
+        <span th:unless="${page.hasPrevious()}" class="disabled">← 이전</span>
+
+        <span class="current" th:text="${page.number + 1} + ' / ' + ${page.totalPages}">1 / 1</span>
+
+        <a th:if="${page.hasNext()}" th:href="@{/admin/users/deleted(page=${page.number + 1})}">다음 →</a>
+        <span th:unless="${page.hasNext()}" class="disabled">다음 →</span>
+    </div>
+</div>
+</body>
+</html>

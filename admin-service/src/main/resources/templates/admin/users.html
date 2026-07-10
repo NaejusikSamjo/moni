@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{admin/layout/default :: layout(~{::title}, ~{::#page-content}, 'users', ~{})}">
+<head>
+    <title>사용자 관리 - moni 관리자</title>
+</head>
+<body>
+<div id="page-content">
+    <h2 class="page-title">사용자 관리</h2>
+
+    <div class="table-wrapper">
+        <table>
+            <thead>
+            <tr>
+                <th class="col-name">이름</th>
+                <th class="col-email">이메일</th>
+                <th class="col-nickname">닉네임</th>
+                <th class="col-role">역할</th>
+                <th class="col-status">상태</th>
+                <th class="col-provider">로그인 방식</th>
+                <th class="col-date">가입일</th>
+                <th class="col-action">액션</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="user : ${page.content}">
+                <td class="cell-truncate" th:text="${user.name}" th:title="${user.name}">-</td>
+                <td class="cell-truncate" th:text="${user.email}" th:title="${user.email}">-</td>
+                <td class="cell-truncate" th:text="${user.nickname}" th:title="${user.nickname}">-</td>
+
+                <td>
+                    <span class="badge"
+                          th:classappend="${user.role == 'ADMIN'} ? 'badge-suspended' : 'badge-active'"
+                          th:text="${user.role}">USER</span>
+                </td>
+
+                <td>
+                    <span class="badge"
+                          th:classappend="${user.status == 'ACTIVE'} ? 'badge-active' :
+                                          (${user.status == 'SUSPENDED'} ? 'badge-suspended' : 'badge-deleted')"
+                          th:text="${user.status}">ACTIVE</span>
+                </td>
+
+                <td th:text="${user.oauthProvider != null} ? ${user.oauthProvider} : '이메일'">이메일</td>
+                <td th:text="${#temporals.format(user.createdAt, 'yyyy-MM-dd')}">-</td>
+
+                <td>
+                    <div class="action-row">
+                        <form th:if="${user.status == 'ACTIVE'}"
+                              th:action="@{/admin/users/{id}/suspend(id=${user.id})}"
+                              method="post" class="inline-form">
+                            <input type="text" name="reason" placeholder="정지 사유" required aria-label="정지 사유"/>
+                            <button type="submit" class="btn btn-sm btn-warning">정지</button>
+                        </form>
+
+                        <form th:if="${user.status == 'SUSPENDED'}"
+                              th:action="@{/admin/users/{id}/unsuspend(id=${user.id})}"
+                              method="post" class="inline-form">
+                            <span class="suspend-reason"
+                                  th:text="${'사유: ' + user.suspendedReason}"></span>
+                            <button type="submit" class="btn btn-sm btn-success">해제</button>
+                        </form>
+
+                        <form th:action="@{/admin/users/{id}/delete(id=${user.id})}"
+                              method="post" class="inline-form"
+                              onsubmit="return confirm('정말 삭제하시겠습니까?')">
+                            <button type="submit" class="btn btn-sm btn-danger">삭제</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+
+            <tr th:if="${page.content.isEmpty()}">
+                <td colspan="8" class="empty-state">
+                    등록된 사용자가 없습니다.
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="pagination">
+        <a th:if="${page.hasPrevious()}" th:href="@{/admin/users(page=${page.number - 1})}">← 이전</a>
+        <span th:unless="${page.hasPrevious()}" class="disabled">← 이전</span>
+
+        <span class="current" th:text="${page.number + 1} + ' / ' + ${page.totalPages}">1 / 1</span>
+
+        <a th:if="${page.hasNext()}" th:href="@{/admin/users(page=${page.number + 1})}">다음 →</a>
+        <span th:unless="${page.hasNext()}" class="disabled">다음 →</span>
+    </div>
+</div>
+</body>
+</html>

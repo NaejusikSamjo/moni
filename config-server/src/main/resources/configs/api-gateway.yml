@@ -2,43 +2,102 @@ server:
   port: 8080
 
 spring:
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+      password: ${REDIS_PASSWORD}
   cloud:
     gateway:
-      routes:
-        - id: user-service
-          uri: lb://user-service
-          predicates:
-            - Path=/api/users/**
+      server:
+        webflux:
+          routes:
+            - id: user-service
+              uri: lb://user-service
+              predicates:
+                - Path=/api/v1/auth/**, /api/v1/users/**
 
-        - id: trade-service
-          uri: lb://trade-service
-          predicates:
-            - Path=/api/trades/**
+            - id: trade-service
+              uri: lb://trade-service
+              predicates:
+                - Path=/api/v1/trades/**, /api/v1/holdings/**, /api/v1/accounts/**, /api/v1/auto-orders/**, /api/v1/saving-plans/**, /api/v1/rankings/**, /api/v1/assets/**, /api/v1/reserved-orders, /api/v1/reserved-orders/**
+            - id: stock-service
+              uri: lb://stock-service
+              predicates:
+                - Path=/api/v1/stocks/**, /api/v1/themes/**
 
-        - id: stock-service
-          uri: lb://stock-service
-          predicates:
-            - Path=/api/stocks/**
+            - id: portfolio-service
+              uri: lb://portfolio-service
+              predicates:
+                - Path=/api/v1/portfolio/**
 
-        - id: portfolio-service
-          uri: lb://portfolio-service
-          predicates:
-            - Path=/api/portfolios/**
+            - id: notification-service
+              uri: lb://notification-service
+              predicates:
+                - Path=/api/v1/notifications/**
 
-        - id: notification-service
-          uri: lb://notification-service
-          predicates:
-            - Path=/api/notifications/**
+            - id: payment-service
+              uri: lb://payment-service
+              predicates:
+                - Path=/api/v1/payment/**, /api/v1/payments/**
+            - id: ai-service
+              uri: lb://ai-service
+              predicates:
+                - Path=/api/v1/ai/**
 
-        - id: payment-service
-          uri: lb://payment-service
-          predicates:
-            - Path=/api/payments/**
+            - id: user-service-docs
+              uri: lb://user-service
+              predicates:
+                - Path=/user-service/v3/api-docs
+              filters:
+                - RewritePath=/user-service/v3/api-docs, /v3/api-docs
 
-        - id: ai-service
-          uri: lb://ai-service
-          predicates:
-            - Path=/api/ai/**
+            - id: trade-service-docs
+              uri: lb://trade-service
+              predicates:
+                - Path=/trade-service/v3/api-docs
+              filters:
+                - RewritePath=/trade-service/v3/api-docs, /v3/api-docs
+
+            - id: stock-service-docs
+              uri: lb://stock-service
+              predicates:
+                - Path=/stock-service/v3/api-docs
+              filters:
+                - RewritePath=/stock-service/v3/api-docs, /v3/api-docs
+
+            - id: portfolio-service-docs
+              uri: lb://portfolio-service
+              predicates:
+                - Path=/portfolio-service/v3/api-docs
+              filters:
+                - RewritePath=/portfolio-service/v3/api-docs, /v3/api-docs
+
+            - id: notification-service-docs
+              uri: lb://notification-service
+              predicates:
+                - Path=/notification-service/v3/api-docs
+              filters:
+                - RewritePath=/notification-service/v3/api-docs, /v3/api-docs
+
+            - id: payment-service-docs
+              uri: lb://payment-service
+              predicates:
+                - Path=/payment-service/v3/api-docs
+              filters:
+                - RewritePath=/payment-service/v3/api-docs, /v3/api-docs
+
+            - id: payment-service-html
+              uri: lb://payment-service
+              predicates:
+                - Path=/toss-billing-test.html, /toss-success.html, /toss-fail.html
+
+            - id: ai-service-docs
+              uri: lb://ai-service
+              predicates:
+                - Path=/ai-service/v3/api-docs
+              filters:
+                - RewritePath=/ai-service/v3/api-docs, /v3/api-docs
 
 eureka:
   client:
@@ -46,3 +105,30 @@ eureka:
       defaultZone: http://eureka-server:8761/eureka/
   instance:
     prefer-ip-address: true
+
+springdoc:
+  swagger-ui:
+    urls:
+      - name: user-service
+        url: /user-service/v3/api-docs
+      - name: trade-service
+        url: /trade-service/v3/api-docs
+      - name: stock-service
+        url: /stock-service/v3/api-docs
+      - name: portfolio-service
+        url: /portfolio-service/v3/api-docs
+      - name: notification-service
+        url: /notification-service/v3/api-docs
+      - name: payment-service
+        url: /payment-service/v3/api-docs
+      - name: ai-service
+        url: /ai-service/v3/api-docs
+
+jwt:
+  secret-key: ${JWT_SECRET_KEY}
+
+gateway:
+  secret: ${GATEWAY_SECRET}
+
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS}

@@ -4,7 +4,10 @@ build/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/
+.claude
 .env
+.env.ops
+STOCK_TROUBLESHOOTING.md
 
 ### STS ###
 .apt_generated
@@ -36,3 +39,13 @@ out/
 
 ### VS Code ###
 .vscode/
+
+claudRead.md
+### local logs ###
+logs/
+
+### Docker volumes ###
+.docker-volumes/
+
+*/.DS_Store
+.DS_Store

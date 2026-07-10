@@ -1,0 +1,66 @@
+server:
+  port: 19097
+  forward-headers-strategy: framework
+  servlet:
+    session:
+      timeout: 30m
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka-server:8761/eureka/
+  instance:
+    prefer-ip-address: true
+    metadata-map:
+      prometheus.scrape: "true"
+      prometheus.path: "/actuator/prometheus"
+      prometheus.port: "${server.port}"
+
+spring:
+  cloud:
+    openfeign:
+      httpclient:
+        hc5:
+          enabled: true
+      client:
+        config:
+          default:
+            connect-timeout: 3000
+            read-timeout: 5000
+          aiAdminClient:
+            connect-timeout: 10000
+            read-timeout: 600000
+          stockAdminClient:
+            connect-timeout: 10000
+            read-timeout: 900000
+  security:
+    oauth2:
+      client:
+        registration:
+          okta:
+            client-id: ${OKTA_CLIENT_ID}
+            client-secret: ${OKTA_CLIENT_SECRET}
+            scope: openid, profile, email
+        provider:
+          okta:
+            issuer-uri: ${OKTA_ISSUER_URI}
+            user-name-attribute: email
+
+gateway:
+  secret: ${GATEWAY_SECRET}
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, prometheus, metrics
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    tags:
+      application: ${spring.application.name}
