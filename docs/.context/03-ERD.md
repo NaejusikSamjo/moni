@@ -26,21 +26,23 @@
 
 ### `p_users` — 사용자 공통정보
 
-| 컬럼명              | 데이터 타입       | 제약 조건                      | 설명                                |
-|------------------|--------------|----------------------------|-----------------------------------|
-| id               | VARCHAR(36)  | PK, Not Null               | 사용자 고유 식별자 (UUID)                 |
-| email            | VARCHAR(100) | Unique, Not Null           | 로그인 계정 (이메일)                      |
-| password         | VARCHAR(255) | Nullable                   | 비밀번호 (OAuth 시 null)               |
-| name             | VARCHAR(50)  | Not Null                   | 사용자 실명                            |
-| nickname         | VARCHAR(50)  | Not Null                   | 자동 생성 닉네임                         |
-| phone            | VARCHAR(20)  | Nullable                   | 연락처                               |
-| oauth_provider   | VARCHAR(20)  | Nullable                   | OAuth 제공자 (google / kakao)        |
-| oauth_id         | VARCHAR(255) | Nullable                   | OAuth 제공자 ID                      |
-| role             | VARCHAR(10)  | Not Null, Default 'USER'   | 권한 (USER / ADMIN)                 |
-| status           | VARCHAR(10)  | Not Null, Default 'ACTIVE' | 상태 (ACTIVE / SUSPENDED / DELETED) |
-| suspended_reason | TEXT         | Nullable                   | 정지 사유                             |
-| deleted_reason   | TEXT         | Nullable                   | 탈퇴/삭제 사유                          |
-| + 공통 감사 필드       |              |                            |                                   |
+| 컬럼명              | 데이터 타입       | 제약 조건                      | 설명                                  |
+|------------------|--------------|----------------------------|-------------------------------------|
+| id               | VARCHAR(36)  | PK, Not Null               | 사용자 고유 식별자 (UUID)                   |
+| email            | VARCHAR(100) | Unique, Not Null           | 로그인 계정 (이메일)                        |
+| password         | VARCHAR(255) | Nullable                   | 비밀번호 (OAuth 시 null)                 |
+| name             | VARCHAR(50)  | Not Null                   | 사용자 실명                              |
+| nickname         | VARCHAR(50)  | Not Null                   | 자동 생성 닉네임                           |
+| phone            | VARCHAR(20)  | Nullable                   | 연락처                                 |
+| oauth_provider   | VARCHAR(20)  | Nullable                   | OAuth 제공자 (google / kakao)          |
+| oauth_id         | VARCHAR(255) | Nullable                   | OAuth 제공자 ID                        |
+| role             | VARCHAR(10)  | Not Null, Default 'USER'   | 권한 (USER / ADMIN)                   |
+| status           | VARCHAR(10)  | Not Null, Default 'ACTIVE' | 상태 (ACTIVE / SUSPENDED / DELETED)   |
+| profile          | TEXT         | Nullable                   | 프로필 (이모지 또는 S3 CDN URL)             |
+| integrated       | BOOLEAN      | Not Null, Default false    | OAuth 통합 회원 여부 (소셜 → 이메일 통합 시 true) |
+| suspended_reason | TEXT         | Nullable                   | 정지 사유                               |
+| deleted_reason   | TEXT         | Nullable                   | 탈퇴/삭제 사유                            |
+| + 공통 감사 필드       |              |                            |                                     |
 
 ### `p_tendency` — 투자 성향
 
@@ -100,52 +102,66 @@
 | stock_id | UUID   | FK, Not Null | `stock.id` 외래키 |
 | theme_id | UUID   | FK, Not Null | `theme.id` 외래키 |
 
-> 실시간 시세(현재가/등락률/거래량 등)는 위 정적 테이블이 아니라 **Redis Hash** (종목당 10개 필드 수준)로
-> 관리하고, raw tick은 Kafka 버퍼 → 1분 단위 OHLCV 집계 컨슈머 → TimescaleDB, raw tick 원본은
-> S3 Parquet → Athena 분석 구조가 AI 검증 로그에서 논의되었습니다 (수용 여부는 `06-AI-VALIDATION-LOG.md`
-> 참고, 현재 "?" 상태 — 구현 전 사용자와 재확인 필요).
+> 실시간 시세(현재가/등락률/거래량 등)는 위 정적 테이블이 아니라 Redis String으로 관리합니다
+> (`StockPriceRedisAdapter`, 키 `stock:price:{ticker}` TTL 10초, `stock:top-volume` TTL 1분,
+> JSON 직렬화된 값 저장). Kafka 버퍼·TimescaleDB·S3 Parquet/Athena 구조는 도입하지 않았습니다.
 
 ---
 
-## 3. Payment-Service
+## 3. Payment-Service (Toss Payments 연동)
 
-### `payments` — 결제
+### `p_payment` — 결제
 
-| 컬럼명             | 데이터 타입    | 제약 조건        | 설명                       |
-|-----------------|-----------|--------------|--------------------------|
-| id              | UUID      | PK, Not Null | 결제 고유 아이디                |
-| merchant_id     | UUID      | Not Null     | 가맹점 고유 주문 번호             |
-| payment_content | enum      | Not Null     | 주문 상품 내역                 |
-| payment_state   | enum      | Not Null     | 주문 상태 (준비, 완료, 실패)       |
-| amount          | LONG      | Not Null     | 주문 가격                    |
-| version         | LONG      | Not Null     | 주문 버전                    |
-| created_at      | timestamp | Not Null     | 생성일                      |
-| created_by      | string    | Not Null     | 생성자                      |
-| user_id         | UUID      | FK, Not Null | 결제자 ID (user-service 참조) |
+| 컬럼명            | 데이터 타입      | 제약 조건            | 설명                                                                   |
+|----------------|-------------|------------------|----------------------------------------------------------------------|
+| id             | UUID        | PK, Not Null     | 결제 고유 아이디                                                            |
+| merchant_id    | VARCHAR(64) | Unique, Not Null | 가맹점 주문 번호 (`MerchantIdConverter`)                                     |
+| user_id        | UUID        | Not Null         | 결제자 ID (user-service 참조)                                             |
+| payment_type   | VARCHAR(30) | Not Null         | `SUBSCRIPTION_INITIAL` / `SUBSCRIPTION_RECURRING` / `SUBSCRIPTION_REACTIVATION` |
+| amount         | DECIMAL(19,4) | Not Null       | 결제 금액 (`MoneyConverter`)                                             |
+| pg_payment_key | VARCHAR     | Unique           | Toss 결제 키                                                            |
+| status         | VARCHAR(20) | Not Null         | `PENDING` / `COMPLETED` / `FAILED`                                    |
+| expires_at     | TIMESTAMP   | Not Null         | 결제 만료 시각                                                             |
+| + 공통 감사 필드 (created/updated) |   |                  |                                                                        |
 
-### `payment_history` — 결제 내역
+### `p_payment_history` — 결제 상태 이력
 
-| 컬럼명         | 데이터 타입    | 제약 조건        | 설명               |
-|-------------|-----------|--------------|------------------|
-| id          | UUID      | PK, Not Null | 결제 내역 아이디        |
-| payment_id  | UUID      | FK, Not Null | `payments.id` 참조 |
-| from_state  | enum      | Not Null     | 이전 상태 추적         |
-| to_state    | enum      | Not Null     | 이후 상태 추적         |
-| pg_response | JSONB     | Not Null     | PG 응답 기록         |
-| created_at  | timestamp | Not Null     | 생성일              |
-| created_by  | string    | Not Null     | 생성자              |
+| 컬럼명          | 데이터 타입      | 제약 조건        | 설명                |
+|--------------|-------------|--------------|-------------------|
+| id           | UUID        | PK, Not Null | 이력 고유 아이디         |
+| payment_id   | UUID        | FK, Not Null | `p_payment.id` 참조 |
+| from_status  | VARCHAR(20) | Not Null     | 이전 상태             |
+| to_status    | VARCHAR(20) | Not Null     | 이후 상태             |
+| pg_response  | TEXT        |              | PG 응답 원문          |
+| requested_at | TIMESTAMP   | Not Null     | 요청 시각             |
+| requested_by | VARCHAR(100) | Not Null    | 요청자               |
+| responded_at | TIMESTAMP   |              | 응답 시각             |
 
-### `billing_keys` — 결제키
+### `p_subscription` — 정기 구독
 
-| 컬럼명                                  | 데이터 타입  | 제약 조건        | 설명          |
-|--------------------------------------|---------|--------------|-------------|
-| id                                   | UUID    | PK, Not Null | 결제키 고유 아이디  |
-| user_id                              | UUID    | FK, Not Null | 결제자 ID      |
-| pg_provider                          | enum    | Not Null     | PG 제공자      |
-| pay_method                           | enum    | Not Null     | 카드 또는 간편결제  |
-| card_name                            | string  | Not Null     | 카드 이름       |
-| is_active                            | boolean | Not Null     | 결제 가능 상태 확인 |
-| + 공통 감사 필드 (created/updated/deleted) |         | Not Null     |             |
+| 컬럼명                  | 데이터 타입        | 제약 조건        | 설명                                                                                     |
+|----------------------|---------------|--------------|----------------------------------------------------------------------------------------|
+| id                   | UUID          | PK, Not Null | 구독 고유 아이디                                                                              |
+| user_id              | UUID          | Not Null     | 구독자 ID                                                                                  |
+| billing_key          | VARCHAR(50)   |              | Toss 빌링키 (`BillingKeyConverter`로 컬럼에 직접 저장 — 별도 테이블 없음)                                  |
+| amount               | DECIMAL(19,4) |            | 구독 금액                                                                                   |
+| status               | VARCHAR(30)   | Not Null     | `PENDING_ACTIVATION` / `ACTIVE` / `CANCELLING` / `CANCELLED` / `SUSPENDED`              |
+| next_billing_date    | DATE          |              | 다음 결제일                                                                                  |
+| billing_key_deleted_at | TIMESTAMP     |              | 빌링키 삭제(해지) 시각                                                                           |
+| retry_count          | INT           | Not Null     | 결제 실패 재시도 횟수                                                                            |
+| version              | BIGINT        |              | 낙관적 락(`@Version`)                                                                       |
+| + 공통 감사 필드 (created/updated) |               |              |                                                                                          |
+
+### `p_subscription_history` — 구독 상태 이력
+
+| 컬럼명            | 데이터 타입      | 제약 조건        | 설명                     |
+|----------------|-------------|--------------|------------------------|
+| id             | UUID        | PK, Not Null | 이력 고유 아이디              |
+| subscription_id| UUID        | FK, Not Null | `p_subscription.id` 참조 |
+| from_status    | VARCHAR(30) | Not Null     | 이전 상태                  |
+| to_status      | VARCHAR(30) | Not Null     | 이후 상태                  |
+| reason         | TEXT        |              | 상태 변경 사유               |
+| changed_at     | TIMESTAMP   | Not Null     | 변경 시각                  |
 
 ---
 
@@ -212,27 +228,7 @@
 
 ## 5. Portfolio-Service
 
-### `account` — 모의투자 계좌
-
-| 컬럼명                         | 데이터 타입        | 제약 조건        | 설명       |
-|-----------------------------|---------------|--------------|----------|
-| id                          | BIGINT        | PK, Not Null | 계좌번호     |
-| user_id                     | VARCHAR(36)   | FK, Not Null | 사용자 ID   |
-| balance                     | DECIMAL(18,4) | Not Null     | 보유 잔액    |
-| total_investment            | DECIMAL(18,2) | Not Null     | 누적 투자 원금 |
-| + 공통 감사 필드 (타입 VARCHAR(36)) |               |              |          |
-
-### `holding` — 보유 종목
-
-| 컬럼명                         | 데이터 타입        | 제약 조건        | 설명              |
-|-----------------------------|---------------|--------------|-----------------|
-| id                          | UUID          | PK, Not Null | 보유 종목 ID        |
-| account_id                  | BIGINT        | FK, Not Null | `account.id` 참조 |
-| ticker                      | VARCHAR(10)   | Not Null     | 주식 코드           |
-| quantity                    | INTEGER       | Not Null     | 보유 수량(주)        |
-| average_price               | DECIMAL(18,2) | Not Null     | 평균 매수 단가        |
-| total_amount                | DECIMAL(18,2) | Not Null     | 누적 매수 금액        |
-| + 공통 감사 필드 (타입 VARCHAR(36)) |               |              |                 |
+> `GET /api/v1/assets/analysis-snapshot`). 소유·정합성은 전적으로 trade-service(6번 섹션)에 있습니다.
 
 ### `portfolio` — 포트폴리오
 
@@ -272,9 +268,20 @@
 | deleted_at        | TIMESTAMP     |                      | 삭제 시각                            |
 | deleted_by        | VARCHAR(36)   |                      | 삭제자                              |
 
-> 원본 ERD 이미지 하단에 `id VARCHAR(36) PK Not Null` 만 있는 미완성 테이블이 하나 더 보입니다.
-> 용도가 불명확하므로(예: portfolio_sector_analysis 와 연계된 또 다른 분석 하위 테이블 등)
-> 구현 전 사용자에게 확인하세요.
+### `p_user_subscription_status` — 사용자 구독 상태 (읽기 모델)
+
+payment-service가 Kafka로 발행하는 구독 이벤트(`PaymentSubscriptionEventListener`가 소비)를 반영한
+읽기 전용 상태 테이블입니다. AI 분석 요청 시 유료 플랜 여부 판단에 사용됩니다.
+
+| 컬럼명             | 데이터 타입      | 제약 조건            | 설명                          |
+|-----------------|-------------|------------------|-----------------------------|
+| id              | UUID        | PK, Not Null     | ID (UUIDv7)                 |
+| user_id         | UUID        | Unique, Not Null | 사용자 ID                      |
+| subscription_id | UUID        | Not Null         | payment-service `p_subscription.id` 참조 (논리적 FK) |
+| subscribed      | BOOLEAN     | Not Null         | 구독 여부                       |
+| status          | VARCHAR(30) | Not Null         | 구독 상태 (payment-service와 동일 값 체계) |
+| last_event_type | VARCHAR(50) | Not Null         | 마지막으로 반영한 이벤트 타입            |
+| last_occurred_at| TIMESTAMP   | Not Null         | 마지막 이벤트 발생 시각 (멱등 처리 기준)     |
 
 ---
 
@@ -295,6 +302,8 @@
 | profit_rate   | DECIMAL(8,4)  | Nullable                 | 실현 수익률 (SELL일 때만, BUY는 NULL)          |
 | status        | VARCHAR(10)   | Not Null, Default 'DONE' | 거래 상태 (`PENDING` / `DONE` / `FAILED`) |
 
+테이블명: `p_holding`
+
 ### `holding` — 보유 종목 (보유 중인 주식 현황)
 
 | 컬럼명           | 데이터 타입        | 제약 조건        | 설명                       |
@@ -305,6 +314,9 @@
 | quantity      | INTEGER       | Not Null     | 보유 수량(주)                 |
 | average_price | DECIMAL(18,2) | Not Null     | 평균 매수 단가                 |
 | total_amount  | DECIMAL(18,2) | Not Null     | 누적 매수 금액                 |
+| version       | BIGINT        |              | 낙관적 락(`@Version`)        |
+
+테이블명: `p_account`
 
 ### `account` — 가상 계좌 (모의투자 시드머니 관리)
 
@@ -314,19 +326,14 @@
 | user_id          | VARCHAR(36)   | FK, Not Null | 사용자 ID (user-service 참조) |
 | balance          | DECIMAL(18,4) | Not Null     | 현재 보유 잔액                 |
 | total_investment | DECIMAL(18,2) | Not Null     | 누적 투자 원금                 |
+| version          | BIGINT        |              | 낙관적 락(`@Version`)        |
 
 ---
 
-## ⚠️ 알아두어야 할 데이터 중복/소유권 이슈
+## 데이터 소유권 정리
 
-- **`account`, `holding` 테이블이 portfolio-service(섹션 5)와 trade-service(섹션 6) 양쪽에 존재**합니다.
-  - trade-service의 `account`/`holding`: PK 타입이 `VARCHAR(36)`(UUID 문자열) — 매수/매도 처리의
-    소스 오브 트루스로 보임.
-  - portfolio-service의 `account`/`holding`: PK 타입이 `BIGINT`/`UUID` — 대시보드 표시/계산용으로
-    보임.
-  - 두 서비스가 **같은 테이블을 직접 공유하면 안 됩니다** (MSA 안티패턴 #2, `05-MSA-GUIDELINES.md` 참고).
-    구현 전 "trade-service가 account/holding의 소유자이고, portfolio-service는 Kafka 이벤트나
-    Feign 조회로 동기화/조회한다"는 방향이 맞는지 사용자에게 확인하세요.
-- payment-service의 `payments.user_id`, portfolio-service/trade-service의 `user_id` 등은
-  user-service의 `users.id`(UUID 문자열, VARCHAR(36))를 참조하는 **논리적 FK**입니다 (DB 레벨
-  FK 제약은 서비스 간에 걸 수 없으므로 애플리케이션 레벨에서 정합성을 보장해야 합니다).
+- payment-service의 구독 상태는 Kafka 이벤트로 발행되고, portfolio-service의
+  `p_user_subscription_status`가 이를 구독해 읽기 모델로 반영합니다(최종적 일관성).
+- `p_payment.user_id`, trade-service `account.user_id` 등은 user-service `p_users.id`(UUID)를
+  참조하는 **논리적 FK**입니다 (DB 레벨 FK 제약은 서비스 간에 걸 수 없으므로 애플리케이션 레벨에서
+  정합성을 보장합니다).
