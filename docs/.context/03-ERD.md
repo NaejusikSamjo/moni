@@ -26,21 +26,23 @@
 
 ### `p_users` — 사용자 공통정보
 
-| 컬럼명              | 데이터 타입       | 제약 조건                      | 설명                                |
-|------------------|--------------|----------------------------|-----------------------------------|
-| id               | VARCHAR(36)  | PK, Not Null               | 사용자 고유 식별자 (UUID)                 |
-| email            | VARCHAR(100) | Unique, Not Null           | 로그인 계정 (이메일)                      |
-| password         | VARCHAR(255) | Nullable                   | 비밀번호 (OAuth 시 null)               |
-| name             | VARCHAR(50)  | Not Null                   | 사용자 실명                            |
-| nickname         | VARCHAR(50)  | Not Null                   | 자동 생성 닉네임                         |
-| phone            | VARCHAR(20)  | Nullable                   | 연락처                               |
-| oauth_provider   | VARCHAR(20)  | Nullable                   | OAuth 제공자 (google / kakao)        |
-| oauth_id         | VARCHAR(255) | Nullable                   | OAuth 제공자 ID                      |
-| role             | VARCHAR(10)  | Not Null, Default 'USER'   | 권한 (USER / ADMIN)                 |
-| status           | VARCHAR(10)  | Not Null, Default 'ACTIVE' | 상태 (ACTIVE / SUSPENDED / DELETED) |
-| suspended_reason | TEXT         | Nullable                   | 정지 사유                             |
-| deleted_reason   | TEXT         | Nullable                   | 탈퇴/삭제 사유                          |
-| + 공통 감사 필드       |              |                            |                                   |
+| 컬럼명              | 데이터 타입       | 제약 조건                      | 설명                                  |
+|------------------|--------------|----------------------------|-------------------------------------|
+| id               | VARCHAR(36)  | PK, Not Null               | 사용자 고유 식별자 (UUID)                   |
+| email            | VARCHAR(100) | Unique, Not Null           | 로그인 계정 (이메일)                        |
+| password         | VARCHAR(255) | Nullable                   | 비밀번호 (OAuth 시 null)                 |
+| name             | VARCHAR(50)  | Not Null                   | 사용자 실명                              |
+| nickname         | VARCHAR(50)  | Not Null                   | 자동 생성 닉네임                           |
+| phone            | VARCHAR(20)  | Nullable                   | 연락처                                 |
+| oauth_provider   | VARCHAR(20)  | Nullable                   | OAuth 제공자 (google / kakao)          |
+| oauth_id         | VARCHAR(255) | Nullable                   | OAuth 제공자 ID                        |
+| role             | VARCHAR(10)  | Not Null, Default 'USER'   | 권한 (USER / ADMIN)                   |
+| status           | VARCHAR(10)  | Not Null, Default 'ACTIVE' | 상태 (ACTIVE / SUSPENDED / DELETED)   |
+| profile          | TEXT         | Nullable                   | 프로필 (이모지 또는 S3 CDN URL)             |
+| integrated       | BOOLEAN      | Not Null, Default false    | OAuth 통합 회원 여부 (소셜 → 이메일 통합 시 true) |
+| suspended_reason | TEXT         | Nullable                   | 정지 사유                               |
+| deleted_reason   | TEXT         | Nullable                   | 탈퇴/삭제 사유                            |
+| + 공통 감사 필드       |              |                            |                                     |
 
 ### `p_tendency` — 투자 성향
 
