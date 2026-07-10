@@ -137,18 +137,18 @@
 
 ### `p_subscription` — 정기 구독
 
-| 컬럼명                  | 데이터 타입      | 제약 조건        | 설명                                                                                     |
-|----------------------|-------------|--------------|----------------------------------------------------------------------------------------|
-| id                   | UUID        | PK, Not Null | 구독 고유 아이디                                                                              |
-| user_id              | UUID        | Not Null     | 구독자 ID                                                                                  |
-| billing_key          | -           |              | Toss 빌링키 (`BillingKeyConverter`로 컬럼에 직접 저장 — 별도 테이블 없음)                                  |
+| 컬럼명                  | 데이터 타입        | 제약 조건        | 설명                                                                                     |
+|----------------------|---------------|--------------|----------------------------------------------------------------------------------------|
+| id                   | UUID          | PK, Not Null | 구독 고유 아이디                                                                              |
+| user_id              | UUID          | Not Null     | 구독자 ID                                                                                  |
+| billing_key          | VARCHAR(50)   |              | Toss 빌링키 (`BillingKeyConverter`로 컬럼에 직접 저장 — 별도 테이블 없음)                                  |
 | amount               | DECIMAL(19,4) |            | 구독 금액                                                                                   |
-| status               | VARCHAR(30) | Not Null     | `PENDING_ACTIVATION` / `ACTIVE` / `CANCELLING` / `CANCELLED` / `SUSPENDED`              |
-| next_billing_date    | DATE        |              | 다음 결제일                                                                                  |
-| billing_key_deleted_at | TIMESTAMP |              | 빌링키 삭제(해지) 시각                                                                           |
-| retry_count          | INT         | Not Null     | 결제 실패 재시도 횟수                                                                            |
-| version              | BIGINT      |              | 낙관적 락(`@Version`)                                                                       |
-| + 공통 감사 필드 (created/updated) |  |              |                                                                                          |
+| status               | VARCHAR(30)   | Not Null     | `PENDING_ACTIVATION` / `ACTIVE` / `CANCELLING` / `CANCELLED` / `SUSPENDED`              |
+| next_billing_date    | DATE          |              | 다음 결제일                                                                                  |
+| billing_key_deleted_at | TIMESTAMP     |              | 빌링키 삭제(해지) 시각                                                                           |
+| retry_count          | INT           | Not Null     | 결제 실패 재시도 횟수                                                                            |
+| version              | BIGINT        |              | 낙관적 락(`@Version`)                                                                       |
+| + 공통 감사 필드 (created/updated) |               |              |                                                                                          |
 
 ### `p_subscription_history` — 구독 상태 이력
 
@@ -226,8 +226,6 @@
 
 ## 5. Portfolio-Service
 
-> portfolio-service는 `account`/`holding`을 자체 테이블로 갖지 않습니다. 자산·보유 종목 데이터는
-> trade-service를 Feign으로 직접 조회합니다(`TradeServiceClient.getAnalysisSnapshot`,
 > `GET /api/v1/assets/analysis-snapshot`). 소유·정합성은 전적으로 trade-service(6번 섹션)에 있습니다.
 
 ### `portfolio` — 포트폴리오
@@ -332,8 +330,6 @@ payment-service가 Kafka로 발행하는 구독 이벤트(`PaymentSubscriptionEv
 
 ## 데이터 소유권 정리
 
-- `account`/`holding`은 trade-service(섹션 6)가 유일한 소유자입니다. portfolio-service는 이 데이터를
-  자체 테이블로 복제하지 않고 Feign으로 직접 조회합니다(섹션 5 참고).
 - payment-service의 구독 상태는 Kafka 이벤트로 발행되고, portfolio-service의
   `p_user_subscription_status`가 이를 구독해 읽기 모델로 반영합니다(최종적 일관성).
 - `p_payment.user_id`, trade-service `account.user_id` 등은 user-service `p_users.id`(UUID)를
