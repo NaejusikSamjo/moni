@@ -6,8 +6,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.mock.http.server.reactive.MockServerHttpRequest;
 import org.springframework.mock.web.server.MockServerWebExchange;
@@ -223,5 +225,58 @@ class JwtAuthenticationFilterTest {
     @DisplayName("필터 순서는 -1이다 (가장 먼저 실행)")
     void getOrder_returnsMinusOne() {
         assertThat(filter.getOrder()).isEqualTo(-1);
+    }
+
+    @Test
+    @DisplayName("클라이언트가 위조한 X-User-Id/X-User-Role은 토큰 기반 값으로 대체된다")
+    void forgedUserIdHeader_isOverriddenByTokenValue() {
+        // given
+        UUID realUserId = UUID.randomUUID();
+        UUID forgedUserId = UUID.randomUUID();
+        String token = createAccessToken(realUserId, "test@moni.com", "USER");
+
+        MockServerHttpRequest request = MockServerHttpRequest.get("/api/v1/users/me")
+                .header("Authorization", "Bearer " + token)
+                .header("X-User-Id", forgedUserId.toString())
+                .header("X-User-Role", "ADMIN")
+                .build();
+        ServerWebExchange exchange = MockServerWebExchange.from(request);
+
+        ArgumentCaptor<ServerWebExchange> captor = ArgumentCaptor.forClass(ServerWebExchange.class);
+        given(chain.filter(captor.capture())).willReturn(Mono.empty());
+
+        // when
+        Mono<Void> result = filter.filter(exchange, chain);
+
+        // then
+        StepVerifier.create(result).verifyComplete();
+        HttpHeaders headers = captor.getValue().getRequest().getHeaders();
+        assertThat(headers.getFirst("X-User-Id")).isEqualTo(realUserId.toString());
+        assertThat(headers.getFirst("X-User-Id")).isNotEqualTo(forgedUserId.toString());
+        assertThat(headers.getFirst("X-User-Role")).isEqualTo("USER");
+    }
+
+    @Test
+    @DisplayName("화이트리스트 경로에서도 클라이언트가 보낸 X-User-Id는 제거된다")
+    void whitelistedPath_stripsForgedUserIdHeader() {
+        // given
+        MockServerHttpRequest request = MockServerHttpRequest.post("/api/v1/auth/login")
+                .header("X-User-Id", UUID.randomUUID().toString())
+                .header("X-User-Role", "ADMIN")
+                .build();
+        ServerWebExchange exchange = MockServerWebExchange.from(request);
+
+        ArgumentCaptor<ServerWebExchange> captor = ArgumentCaptor.forClass(ServerWebExchange.class);
+        given(chain.filter(captor.capture())).willReturn(Mono.empty());
+
+        // when
+        Mono<Void> result = filter.filter(exchange, chain);
+
+        // then
+        StepVerifier.create(result).verifyComplete();
+        HttpHeaders headers = captor.getValue().getRequest().getHeaders();
+        assertThat(headers.getFirst("X-User-Id")).isNull();
+        assertThat(headers.getFirst("X-User-Role")).isNull();
+        assertThat(headers.getFirst("X-Gateway-Secret")).isEqualTo(GATEWAY_SECRET);
     }
 }
