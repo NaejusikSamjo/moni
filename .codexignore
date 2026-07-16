@@ -1,0 +1,27 @@
+# 빌드 결과물 및 컴파일된 파일
+target/
+build/
+out/
+*.class
+
+# 빌드 도구 캐시 및 설정
+.gradle/
+.mvn/
+
+# IDE 설정 파일 (IntelliJ, Eclipse, VSCode 등)
+.idea/
+*.iml
+.settings/
+.classpath
+.project
+.vscode/
+
+# 로그 및 임시 파일
+logs/
+*.log
+tmp/
+temp/
+
+# 프론트엔드/기타 패키지 파일 (Spring 내부에 프론트엔드가 있는 경우)
+node_modules/
+.npm/
