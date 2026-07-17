@@ -18,4 +18,11 @@ public class KisProperties {
     private boolean mock;
     private int connectTimeout = 2000;
     private int readTimeout = 3000;
+    private int connectionRequestTimeout = 1000;
+    private int poolMaxTotal = 50;
+    private int poolMaxPerRoute = 20;
+    private int connectionTtl = 120000;
+    private int validateAfterInactivity = 5000;
+    private int evictIdleConnections = 30000;
+    private int evictExpiredConnections = 30000;
 }

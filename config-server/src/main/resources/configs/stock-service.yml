@@ -44,6 +44,13 @@ kis:
   mock: false
   connect-timeout: 2000
   read-timeout: 3000
+  connection-request-timeout: 1000
+  pool-max-total: 50
+  pool-max-per-route: 20
+  connection-ttl: 120000
+  validate-after-inactivity: 5000
+  evict-idle-connections: 30000
+  evict-expired-connections: 30000
 
 resilience4j:
   circuitbreaker:
@@ -63,8 +70,8 @@ resilience4j:
   retry:
     instances:
       kisApi:
-        max-attempts: 2
-        wait-duration: 200ms
+        max-attempts: 3
+        wait-duration: 300ms
 
 eureka:
   client:

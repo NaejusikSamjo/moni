@@ -6,7 +6,6 @@ import com.moni.common.error.exception.CustomException;
 import com.moni.stock.domain.exception.StockErrorCode;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
-import io.swagger.v3.core.util.Json;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -33,7 +32,9 @@ public class KisOAuthClient {
 
     // WebSocket 구독에 사용하는 approval_key (REST API 토큰과 별개)
     public synchronized String getApprovalKey() {
-        if (approvalKey != null) return approvalKey;
+        if (approvalKey != null) {
+            return approvalKey;
+        }
 
         ApprovalKeyResponse response = kisRestClient
                 .post()
@@ -50,7 +51,9 @@ public class KisOAuthClient {
 
     // REST API 호출에 사용하는 access_token
     public synchronized String getAccessToken() {
-        if (accessToken != null && LocalDateTime.now().isBefore(tokenExpiry)) return accessToken;
+        if (accessToken != null && LocalDateTime.now().isBefore(tokenExpiry)) {
+            return accessToken;
+        }
 
         AccessTokenResponse response = kisRestClient
                 .post()
@@ -138,6 +141,7 @@ public class KisOAuthClient {
                 .body(JsonNode.class);
 
 //        log.info("현재가 조회 - ticker: {}", ticker);
+        validateCurrentPriceResponse(ticker, body);
         return body;
     }
 
@@ -191,6 +195,21 @@ public class KisOAuthClient {
     private JsonNode getVolumeRankFallback(Throwable t) {
         log.warn("KIS API 호출 실패 - cause: {}", t.toString());
         throw new CustomException(StockErrorCode.KIS_CONNECTION_FAILED);
+    }
+
+    private void validateCurrentPriceResponse(String ticker, JsonNode body) {
+        if (body == null || body.isMissingNode() || body.isNull()) {
+            throw new IllegalStateException("KIS 현재가 응답 본문이 비어있습니다. ticker=" + ticker);
+        }
+
+        String responseCode = body.path("rt_cd").asText();
+        JsonNode output = body.path("output");
+        String currentPrice = output.path("stck_prpr").asText();
+
+        if (!"0".equals(responseCode) || output.isMissingNode() || currentPrice.isBlank()) {
+            throw new IllegalStateException("KIS 현재가 응답이 유효하지 않습니다. ticker="
+                    + ticker + ", rt_cd=" + responseCode + ", msg=" + body.path("msg1").asText());
+        }
     }
 
     record ApprovalKeyRequest(

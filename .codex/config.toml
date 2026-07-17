@@ -1,0 +1,80 @@
+# Project-local Codex configuration for MONI.
+#
+# 적용 위치:
+# - 이 파일은 프로젝트 루트 기준 `C:\spring\moni\.codex\config.toml` 입니다.
+# - Codex가 이 프로젝트를 trusted project로 인식해야 적용됩니다.
+# - 변경 후 Codex 세션을 새로 열거나 재시작하는 것을 권장합니다.
+#
+# 역할:
+# 1. 기본 실행 권한을 workspace-write로 제한
+# 2. 민감 파일/빌드 산출물 접근을 deny로 차단
+# 3. shell 명령 실행 전 hook으로 위험 명령을 검사
+
+sandbox_mode = "workspace-write"
+approval_policy = "on-request"
+
+[sandbox_workspace_write]
+# 기본적으로 네트워크가 필요한 명령은 승인 요청을 거치게 둡니다.
+network_access = false
+
+# 필요 시 이 프로젝트 외부의 loadtest 저장소까지 작업해야 할 때만 주석 해제하세요.
+# writable_roots = ["C:\\spring\\moni-loadtest"]
+
+# 환경변수 보호 정책입니다.
+# 기본 KEY/SECRET/TOKEN 계열 자동 제외를 유지하고, 민감 prefix를 추가로 제외합니다.
+[shell_environment_policy]
+inherit = "core"
+ignore_default_excludes = false
+exclude = [
+  "AWS_*",
+  "AZURE_*",
+  "GCP_*",
+  "GOOGLE_*",
+  "KIS_*",
+  "NAVER_*",
+  "TOSS_*",
+  "JWT_*",
+  "OAUTH_*",
+  "GEMINI_*",
+  "SENTRY_*",
+  "DB_PASSWORD",
+  "POSTGRES_PASSWORD"
+]
+
+# 파일 접근 제어 예시입니다.
+# `deny`는 broader read/write 권한보다 우선합니다.
+# 민감 설정 파일, 빌드 산출물, IDE/캐시 파일은 Codex가 읽거나 수정하지 않도록 막는 목적입니다.
+#
+# 참고:
+# - deny glob은 Codex 버전/실행 환경에 따라 startup scan이 필요할 수 있습니다.
+# - 패턴이 너무 넓으면 필요한 설정 파일도 못 읽을 수 있으니 프로젝트에 맞게 조정하세요.
+[permissions.project-edit.filesystem]
+glob_scan_max_depth = 6
+
+[permissions.project-edit.filesystem.":workspace_roots"]
+"." = "write"
+"**/.env" = "deny"
+"**/.env.*" = "deny"
+"**/*secret*" = "deny"
+"**/*Secret*" = "deny"
+"**/application-prod.yml" = "deny"
+"**/application-prod.yaml" = "deny"
+"**/application-secret.yml" = "deny"
+"**/application-secret.yaml" = "deny"
+"**/build/**" = "deny"
+"**/.gradle/**" = "deny"
+"**/.idea/**" = "deny"
+"**/target/**" = "deny"
+"**/node_modules/**" = "deny"
+
+# 명령 실행 전 정책 검사 hook입니다.
+# Codex 표면/버전에 따라 shell tool 이름이 Bash/Shell/shell_command 등으로 다를 수 있어
+# 넓게 매칭하고, 실제 차단 여부는 PowerShell 스크립트에서 판단합니다.
+[[hooks.PreToolUse]]
+matcher = ".*"
+
+[[hooks.PreToolUse.hooks]]
+type = "command"
+command = "powershell -NoProfile -ExecutionPolicy Bypass -File .codex/hooks/pre_tool_use_policy.ps1"
+timeout = 10
+statusMessage = "MONI 명령 정책 검사 중"

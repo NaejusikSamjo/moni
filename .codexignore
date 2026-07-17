@@ -25,3 +25,33 @@ temp/
 # 프론트엔드/기타 패키지 파일 (Spring 내부에 프론트엔드가 있는 경우)
 node_modules/
 .npm/
+
+# 민감 설정 파일 및 인증 정보
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.jks
+*secret*
+*Secret*
+*credential*
+*Credential*
+application-prod.yml
+application-prod.yaml
+application-secret.yml
+application-secret.yaml
+**/application-prod.yml
+**/application-prod.yaml
+**/application-secret.yml
+**/application-secret.yaml
+
+# 테스트/부하 테스트 결과 산출물
+results/
+reports/
+*.summary.json
+*.summary.report.md
+
+# 대용량/자동 생성 문서 및 산출물
+coverage/
+.scannerwork/
